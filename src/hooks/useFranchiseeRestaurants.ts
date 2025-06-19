@@ -41,13 +41,32 @@ export const useFranchiseeRestaurants = () => {
         return;
       }
 
-      // Remover la verificación de franquiciado temporal, usar siempre los datos reales
+      // Si es un franquiciado temporal, no hacer consulta a base de datos
+      if (franchisee.id.startsWith('temp-')) {
+        console.log('useFranchiseeRestaurants - Temporary franchisee detected, skipping database query');
+        
+        // Si tenemos restaurantes en el contexto de autenticación, usarlos
+        if (user.restaurants && Array.isArray(user.restaurants) && user.restaurants.length > 0) {
+          console.log('useFranchiseeRestaurants - Using restaurants from auth context:', user.restaurants.length);
+          setRestaurants(user.restaurants);
+          toast.success(`Se cargaron ${user.restaurants.length} restaurantes`);
+        } else {
+          console.log('useFranchiseeRestaurants - No restaurants in auth context for temporary franchisee');
+          setRestaurants([]);
+          toast.info('No se encontraron restaurantes asignados');
+        }
+        
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
+      // Para franquiciados reales, consultar la base de datos
       setLoading(true);
       setError(null);
 
-      console.log('useFranchiseeRestaurants - Fetching restaurants for franchisee:', franchisee.id);
+      console.log('useFranchiseeRestaurants - Fetching restaurants for real franchisee:', franchisee.id);
 
-      // Consultar directamente con el ID real del franquiciado
       const { data, error } = await supabase
         .from('franchisee_restaurants')
         .select(`
