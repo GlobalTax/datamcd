@@ -41,26 +41,14 @@ export const useFranchiseeRestaurants = () => {
         return;
       }
 
-      // Si es un franchisee temporal (creado por timeout), no hacer consultas
-      if (franchisee.id?.startsWith('temp-')) {
-        console.log('useFranchiseeRestaurants - Temporary franchisee detected, skipping database query');
-        setRestaurants([]);
-        setError(null);
-        setLoading(false);
-        return;
-      }
-
+      // Remover la verificación de franquiciado temporal, usar siempre los datos reales
       setLoading(true);
       setError(null);
 
       console.log('useFranchiseeRestaurants - Fetching restaurants for franchisee:', franchisee.id);
 
-      // Aumentar timeout a 12 segundos para aprovechar el nuevo plan
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Restaurants query timeout after 12 seconds')), 12000);
-      });
-
-      const restaurantsPromise = supabase
+      // Consultar directamente con el ID real del franquiciado
+      const { data, error } = await supabase
         .from('franchisee_restaurants')
         .select(`
           *,
@@ -87,12 +75,8 @@ export const useFranchiseeRestaurants = () => {
             created_by
           )
         `)
-        .eq('franchisee_id', franchisee.id);
-
-      const { data, error } = await Promise.race([
-        restaurantsPromise,
-        timeoutPromise
-      ]) as any;
+        .eq('franchisee_id', franchisee.id)
+        .eq('status', 'active');
 
       console.log('useFranchiseeRestaurants - Query result:', { data: data?.length || 0, error });
 
