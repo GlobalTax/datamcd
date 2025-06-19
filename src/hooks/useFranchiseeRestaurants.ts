@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,7 +5,7 @@ import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
 import { toast } from 'sonner';
 
 export const useFranchiseeRestaurants = () => {
-  const { user, franchisee } = useAuth();
+  const { user, franchisee, restaurants: authRestaurants } = useAuth();
   const [restaurants, setRestaurants] = useState<FranchiseeRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,10 +45,10 @@ export const useFranchiseeRestaurants = () => {
         console.log('useFranchiseeRestaurants - Temporary franchisee detected, skipping database query');
         
         // Si tenemos restaurantes en el contexto de autenticación, usarlos
-        if (user.restaurants && Array.isArray(user.restaurants) && user.restaurants.length > 0) {
-          console.log('useFranchiseeRestaurants - Using restaurants from auth context:', user.restaurants.length);
-          setRestaurants(user.restaurants);
-          toast.success(`Se cargaron ${user.restaurants.length} restaurantes`);
+        if (authRestaurants && Array.isArray(authRestaurants) && authRestaurants.length > 0) {
+          console.log('useFranchiseeRestaurants - Using restaurants from auth context:', authRestaurants.length);
+          setRestaurants(authRestaurants);
+          toast.success(`Se cargaron ${authRestaurants.length} restaurantes`);
         } else {
           console.log('useFranchiseeRestaurants - No restaurants in auth context for temporary franchisee');
           setRestaurants([]);
