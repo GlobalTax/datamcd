@@ -1,99 +1,64 @@
 
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Franchisee } from '@/types/auth';
-import { toast } from 'sonner';
 
-interface FranchiseeFetcherProps {
-  setFranchisee: (franchisee: Franchisee | null) => void;
-}
+export const useFranchiseeFetcher = () => {
+  const [isLoading, setIsLoading] = useState(false);
 
-export const useFranchiseeFetcher = ({ setFranchisee }: FranchiseeFetcherProps) => {
-  
-  const fetchFranchiseeData = async (userId: string, profile: any) => {
+  const fetchFranchiseeData = useCallback(async (userId: string) => {
+    console.log('fetchFranchiseeData - Starting for user:', userId);
+    setIsLoading(true);
+    
     try {
-      console.log('fetchFranchiseeData - Starting for user:', userId);
+      // Timeout más corto y mejor manejo de errores
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Franchisee query timeout')), 5000)
+      );
       
-      // Reducir timeout a 6 segundos para fallar más rápido
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Franchisee query timeout')), 6000);
-      });
-      
-      const franchiseePromise = supabase
+      const queryPromise = supabase
         .from('franchisees')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
-      const { data: franchiseeData, error: franchiseeError } = await Promise.race([
-        franchiseePromise,
-        timeoutPromise
-      ]) as any;
+      const { data: franchisee, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
-      console.log('fetchFranchiseeData - Franchisee query completed');
-
-      if (franchiseeError && !franchiseeError.message?.includes('timeout')) {
-        console.error('fetchFranchiseeData - Franchisee error details:', franchiseeError);
-        
-        // Si no existe el franquiciado, crear uno básico inmediatamente
-        if (franchiseeError.code === 'PGRST116') {
-          console.log('fetchFranchiseeData - No franchisee found, creating basic one');
-          
-          const basicFranchisee = {
-            id: 'temp-' + userId,
-            user_id: userId,
-            franchisee_name: profile.full_name || profile.email || 'Usuario',
-            company_name: 'Empresa',
-            total_restaurants: 0,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          } as Franchisee;
-
-          setFranchisee(basicFranchisee);
-          return basicFranchisee;
-        }
-        return null;
+      if (error) {
+        console.error('fetchFranchiseeData - Database error:', error);
+        throw error;
       }
 
-      if (franchiseeData) {
-        console.log('fetchFranchiseeData - Setting franchisee:', franchiseeData);
-        setFranchisee(franchiseeData as Franchisee);
-        return franchiseeData;
+      if (franchisee) {
+        console.log('fetchFranchiseeData - Franchisee found:', franchisee);
+        return franchisee;
+      } else {
+        console.log('fetchFranchiseeData - No franchisee found, creating temporary one');
+        // Crear franquiciado temporal si no existe
+        const tempFranchisee = {
+          id: `temp-${userId}`,
+          user_id: userId,
+          franchisee_name: 'Franquiciado Temporal',
+          company_name: 'Empresa Temporal',
+          total_restaurants: 0
+        };
+        return tempFranchisee;
       }
-
-      // Si no hay franquiciado, crear uno básico inmediatamente
-      console.log('fetchFranchiseeData - No franchisee data, creating basic one');
-      const basicFranchisee = {
-        id: 'temp-' + userId,
-        user_id: userId,
-        franchisee_name: profile.full_name || profile.email || 'Usuario',
-        company_name: 'Empresa',
-        total_restaurants: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      } as Franchisee;
-
-      setFranchisee(basicFranchisee);
-      return basicFranchisee;
-      
     } catch (error) {
-      console.error('fetchFranchiseeData - Timeout or error:', error);
-      
-      // Crear franquiciado básico inmediatamente en caso de timeout
-      const basicFranchisee = {
-        id: 'temp-' + userId,
-        user_id: userId,
-        franchisee_name: profile.full_name || profile.email || 'Usuario',
-        company_name: 'Empresa',
-        total_restaurants: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      } as Franchisee;
-
+      console.log('fetchFranchiseeData - Timeout or error:', error);
       console.log('fetchFranchiseeData - Setting basic franchisee due to timeout');
-      setFranchisee(basicFranchisee);
-      return basicFranchisee;
+      
+      // Franquiciado de fallback en caso de error
+      return {
+        id: `temp-${userId}`,
+        user_id: userId,
+        franchisee_name: 'Franquiciado Temporal',
+        company_name: 'Empresa Temporal',
+        total_restaurants: 0
+      };
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, []);
 
-  return { fetchFranchiseeData };
+  return { fetchFranchiseeData, isLoading };
 };
