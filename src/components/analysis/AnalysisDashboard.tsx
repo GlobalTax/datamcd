@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, TrendingUp, TrendingDown, DollarSign, BarChart3 } from 'lucide-react';
+import { Download, TrendingUp, TrendingDown, DollarSign, BarChart3, Upload } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
+import { DataImportDialog } from '@/components/DataImportDialog';
 import { FinancialMetrics } from './FinancialMetrics';
 import { PerformanceCharts } from './PerformanceCharts';
 import { RestaurantComparison } from './RestaurantComparison';
@@ -21,6 +22,11 @@ export const AnalysisDashboard = () => {
   // Generar años disponibles
   const currentYear = new Date().getFullYear();
   const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - 4 + i);
+
+  const handleImportComplete = () => {
+    // Refrescar datos después de la importación
+    window.location.reload();
+  };
 
   if (!franchisee) {
     return (
@@ -66,6 +72,8 @@ export const AnalysisDashboard = () => {
               ))}
             </SelectContent>
           </Select>
+
+          <DataImportDialog onImportComplete={handleImportComplete} />
 
           <Button variant="outline">
             <Download className="w-4 h-4 mr-2" />
