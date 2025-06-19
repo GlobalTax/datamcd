@@ -2,16 +2,17 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
+import { useRestaurantUpdate } from '@/hooks/useRestaurantUpdate';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
-import { toast } from 'sonner';
 import RestaurantHeader from '@/components/restaurant/RestaurantHeader';
 import RestaurantCard from '@/components/restaurant/RestaurantCard';
 import EmptyRestaurantsState from '@/components/restaurant/EmptyRestaurantsState';
 
 const RestaurantManagementPage = () => {
   const { user, franchisee } = useAuth();
-  const { restaurants } = useFranchiseeRestaurants();
+  const { restaurants, refetch } = useFranchiseeRestaurants();
+  const { updateRestaurant, isUpdating } = useRestaurantUpdate();
   const [editingRestaurant, setEditingRestaurant] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
 
@@ -27,15 +28,13 @@ const RestaurantManagementPage = () => {
   };
 
   const handleSave = async (restaurantId: string) => {
-    try {
-      // Aquí iría la llamada a la API para guardar los cambios
-      console.log('Guardando cambios para restaurante:', restaurantId, editData);
-      
-      toast.success('Datos del restaurante actualizados correctamente');
+    const success = await updateRestaurant(restaurantId, editData);
+    
+    if (success) {
       setEditingRestaurant(null);
       setEditData({});
-    } catch (error) {
-      toast.error('Error al actualizar los datos del restaurante');
+      // Refrescar los datos
+      refetch();
     }
   };
 
@@ -96,6 +95,7 @@ const RestaurantManagementPage = () => {
                     onSave={handleSave}
                     onCancel={handleCancel}
                     formatNumber={formatNumber}
+                    isUpdating={isUpdating}
                   />
                 ))}
               </div>

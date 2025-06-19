@@ -7,15 +7,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, TrendingUp, TrendingDown, DollarSign, BarChart3, Upload } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
+import { useDataExport } from '@/hooks/useDataExport';
 import { DataImportDialog } from '@/components/DataImportDialog';
 import { FinancialMetrics } from './FinancialMetrics';
 import { PerformanceCharts } from './PerformanceCharts';
 import { RestaurantComparison } from './RestaurantComparison';
 import { ProfitabilityAnalysis } from './ProfitabilityAnalysis';
+import { toast } from 'sonner';
 
 export const AnalysisDashboard = () => {
   const { franchisee } = useAuth();
   const { restaurants } = useFranchiseeRestaurants();
+  const { exportRestaurantsData } = useDataExport();
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('all');
 
@@ -23,9 +26,62 @@ export const AnalysisDashboard = () => {
   const currentYear = new Date().getFullYear();
   const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - 4 + i);
 
+  // Calcular métricas reales de los restaurantes
+  const calculateMetrics = () => {
+    if (restaurants.length === 0) {
+      return {
+        totalRevenue: 0,
+        operatingMargin: 0,
+        averageROI: 0,
+        activeRestaurants: 0
+      };
+    }
+
+    const totalRevenue = restaurants.reduce((sum, restaurant) => 
+      sum + (restaurant.last_year_revenue || 0), 0
+    );
+
+    const totalRent = restaurants.reduce((sum, restaurant) => 
+      sum + (restaurant.monthly_rent || 0) * 12, 0
+    );
+
+    const operatingMargin = totalRevenue > 0 ? ((totalRevenue - totalRent) / totalRevenue) * 100 : 0;
+    const averageROI = totalRevenue > 0 && totalRent > 0 ? ((totalRevenue - totalRent) / totalRent) * 100 : 0;
+
+    return {
+      totalRevenue,
+      operatingMargin,
+      averageROI,
+      activeRestaurants: restaurants.length
+    };
+  };
+
+  const metrics = calculateMetrics();
+
   const handleImportComplete = () => {
-    // Refrescar datos después de la importación
     window.location.reload();
+  };
+
+  const handleExport = () => {
+    try {
+      exportRestaurantsData(restaurants);
+      toast.success('Datos exportados correctamente');
+    } catch (error) {
+      toast.error('Error al exportar los datos');
+    }
+  };
+
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+
+  const formatPercentage = (value: number): string => {
+    return `${value.toFixed(1)}%`;
   };
 
   if (!franchisee) {
@@ -75,14 +131,14 @@ export const AnalysisDashboard = () => {
 
           <DataImportDialog onImportComplete={handleImportComplete} />
 
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
         </div>
       </div>
 
-      {/* KPIs Summary */}
+      {/* KPIs Summary - Datos Reales */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -90,9 +146,9 @@ export const AnalysisDashboard = () => {
             <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">€1,234,567</div>
+            <div className="text-2xl font-bold">{formatCurrency(metrics.totalRevenue)}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+12.3%</span> vs año anterior
+              {restaurants.length} restaurantes
             </p>
           </CardContent>
         </Card>
@@ -103,9 +159,9 @@ export const AnalysisDashboard = () => {
             <TrendingUp className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">18.5%</div>
+            <div className="text-2xl font-bold">{formatPercentage(metrics.operatingMargin)}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+2.1%</span> vs año anterior
+              Estimado vs renta
             </p>
           </CardContent>
         </Card>
@@ -116,9 +172,9 @@ export const AnalysisDashboard = () => {
             <BarChart3 className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24.8%</div>
+            <div className="text-2xl font-bold">{formatPercentage(metrics.averageROI)}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-red-600">-1.2%</span> vs año anterior
+              Retorno sobre inversión
             </p>
           </CardContent>
         </Card>
@@ -129,7 +185,7 @@ export const AnalysisDashboard = () => {
             <TrendingUp className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{restaurants.length}</div>
+            <div className="text-2xl font-bold">{metrics.activeRestaurants}</div>
             <p className="text-xs text-muted-foreground">
               En operación
             </p>

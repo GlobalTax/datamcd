@@ -6,7 +6,8 @@ import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { RefreshCw, Wifi, WifiOff, BarChart3, Building, TrendingUp } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type DisplayRestaurant = {
   id: string;
@@ -62,7 +63,31 @@ const DashboardPage = () => {
     isOwnedByMcD: false,
   }));
 
-  const totalRestaurants = displayRestaurants?.length || 0;
+  // Calcular métricas del dashboard
+  const calculateDashboardMetrics = () => {
+    const totalRevenue = displayRestaurants.reduce((sum, r) => sum + (r.lastYearRevenue || 0), 0);
+    const totalRent = displayRestaurants.reduce((sum, r) => sum + (r.baseRent || 0) * 12, 0);
+    const operatingMargin = totalRevenue > 0 ? ((totalRevenue - totalRent) / totalRevenue) * 100 : 0;
+    const averageROI = totalRevenue > 0 && totalRent > 0 ? ((totalRevenue - totalRent) / totalRent) * 100 : 0;
+
+    return {
+      totalRevenue,
+      operatingMargin,
+      averageROI,
+      totalRestaurants: displayRestaurants.length
+    };
+  };
+
+  const metrics = calculateDashboardMetrics();
+
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
 
   // Loading rápido - máximo 1 segundo
   if (loading) {
@@ -102,22 +127,82 @@ const DashboardPage = () => {
                 {isUsingCache ? 'Datos predefinidos - Carga rápida' : 'Datos actualizados'}
               </p>
             </div>
-            <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline" 
-              size="sm"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Actualizar
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => navigate('/analysis')} 
+                variant="default" 
+                size="sm"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Análisis
+              </Button>
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline" 
+                size="sm"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Actualizar
+              </Button>
+            </div>
           </header>
 
           <main className="flex-1 p-6">
-            <DashboardSummary 
-              totalRestaurants={totalRestaurants} 
-              displayRestaurants={displayRestaurants}
-              isTemporaryData={isUsingCache}
-            />
+            <div className="space-y-6">
+              {/* Métricas principales */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Restaurantes</CardTitle>
+                    <Building className="h-4 w-4 text-blue-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{metrics.totalRestaurants}</div>
+                    <p className="text-xs text-muted-foreground">En operación</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{formatCurrency(metrics.totalRevenue)}</div>
+                    <p className="text-xs text-muted-foreground">Último año</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Margen Operativo</CardTitle>
+                    <BarChart3 className="h-4 w-4 text-purple-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{metrics.operatingMargin.toFixed(1)}%</div>
+                    <p className="text-xs text-muted-foreground">Estimado</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">ROI Promedio</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{metrics.averageROI.toFixed(1)}%</div>
+                    <p className="text-xs text-muted-foreground">Retorno anual</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Dashboard principal */}
+              <DashboardSummary 
+                totalRestaurants={metrics.totalRestaurants} 
+                displayRestaurants={displayRestaurants}
+                isTemporaryData={isUsingCache}
+              />
+            </div>
           </main>
         </SidebarInset>
       </div>

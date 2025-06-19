@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Building, MapPin, Edit, Save, X } from 'lucide-react';
+import { Building, MapPin, Edit, Save, X, Loader2 } from 'lucide-react';
 import RestaurantEditForm from './RestaurantEditForm';
 import RestaurantDisplayForm from './RestaurantDisplayForm';
 
@@ -15,6 +15,7 @@ interface RestaurantCardProps {
   onSave: (restaurantId: string) => void;
   onCancel: () => void;
   formatNumber: (value: number | undefined | null) => string;
+  isUpdating?: boolean;
 }
 
 const RestaurantCard = ({
@@ -25,7 +26,8 @@ const RestaurantCard = ({
   onEdit,
   onSave,
   onCancel,
-  formatNumber
+  formatNumber,
+  isUpdating = false
 }: RestaurantCardProps) => {
   const isEditing = editingRestaurant === restaurant.id;
 
@@ -57,14 +59,20 @@ const RestaurantCard = ({
                 size="sm"
                 onClick={() => onSave(restaurant.id)}
                 className="bg-green-600 hover:bg-green-700"
+                disabled={isUpdating}
               >
-                <Save className="w-4 h-4 mr-1" />
-                Guardar
+                {isUpdating ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-1" />
+                )}
+                {isUpdating ? 'Guardando...' : 'Guardar'}
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={onCancel}
+                disabled={isUpdating}
               >
                 <X className="w-4 h-4 mr-1" />
                 Cancelar
