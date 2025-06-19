@@ -18,6 +18,8 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
   selectedRestaurant,
   restaurants
 }) => {
+  console.log('DashboardTabs - Rendering with restaurants:', restaurants.length);
+  
   return (
     <Tabs defaultValue="metrics" className="w-full">
       <TabsList className="grid w-full grid-cols-5">
