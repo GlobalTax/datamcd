@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
+import { useOptimizedFranchiseeRestaurants } from '@/hooks/useOptimizedFranchiseeRestaurants';
 import { useRestaurantUpdate } from '@/hooks/useRestaurantUpdate';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
@@ -11,10 +11,15 @@ import EmptyRestaurantsState from '@/components/restaurant/EmptyRestaurantsState
 
 const RestaurantManagementPage = () => {
   const { user, franchisee } = useAuth();
-  const { restaurants, refetch } = useFranchiseeRestaurants();
+  const { restaurants, loading, refetch } = useOptimizedFranchiseeRestaurants();
   const { updateRestaurant, isUpdating } = useRestaurantUpdate();
   const [editingRestaurant, setEditingRestaurant] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
+
+  console.log('RestaurantManagementPage - User:', user ? { id: user.id, role: user.role } : null);
+  console.log('RestaurantManagementPage - Franchisee:', franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null);
+  console.log('RestaurantManagementPage - Restaurants:', restaurants.length, restaurants);
+  console.log('RestaurantManagementPage - Loading:', loading);
 
   const handleEdit = (restaurant: any) => {
     setEditingRestaurant(restaurant.id);
@@ -50,12 +55,33 @@ const RestaurantManagementPage = () => {
     return value.toLocaleString('es-ES');
   };
 
-  if (!user || !franchisee) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando datos...</p>
+          <p className="text-gray-600">Cargando datos del usuario...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.role !== 'franchisee') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Acceso no autorizado. Solo para franquiciados.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!franchisee) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando datos del franquiciado...</p>
         </div>
       </div>
     );
@@ -83,24 +109,31 @@ const RestaurantManagementPage = () => {
                 restaurantCount={restaurants.length}
               />
 
-              <div className="grid gap-6">
-                {restaurants.map((restaurant) => (
-                  <RestaurantCard
-                    key={restaurant.id}
-                    restaurant={restaurant}
-                    editingRestaurant={editingRestaurant}
-                    editData={editData}
-                    setEditData={setEditData}
-                    onEdit={handleEdit}
-                    onSave={handleSave}
-                    onCancel={handleCancel}
-                    formatNumber={formatNumber}
-                    isUpdating={isUpdating}
-                  />
-                ))}
-              </div>
-
-              {restaurants.length === 0 && <EmptyRestaurantsState />}
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Cargando restaurantes...</p>
+                </div>
+              ) : (
+                <div className="grid gap-6">
+                  {restaurants.map((restaurant) => (
+                    <RestaurantCard
+                      key={restaurant.id}
+                      restaurant={restaurant}
+                      editingRestaurant={editingRestaurant}
+                      editData={editData}
+                      setEditData={setEditData}
+                      onEdit={handleEdit}
+                      onSave={handleSave}
+                      onCancel={handleCancel}
+                      formatNumber={formatNumber}
+                      isUpdating={isUpdating}
+                    />
+                  ))}
+                  
+                  {restaurants.length === 0 && <EmptyRestaurantsState />}
+                </div>
+              )}
             </div>
           </main>
         </SidebarInset>
