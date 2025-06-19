@@ -7,6 +7,7 @@ import { ManualEntryCard } from './historical/ManualEntryCard';
 import { DataReviewSection } from './historical/DataReviewSection';
 import { ImportConfirmationSection } from './historical/ImportConfirmationSection';
 import { YearlyData, ImportStep, ImportMethod } from './historical/types';
+import { createEmptyYearlyData } from './historical/utils';
 
 interface HistoricalDataImporterProps {
   restaurantId: string;
@@ -23,16 +24,43 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const handleDataParsed = (data: YearlyData[]) => {
+  const handleDataParsed = (data: YearlyData[], importMethod: ImportMethod) => {
     console.log('Datos procesados:', data);
     setYearlyDataList(data);
+    setMethod(importMethod);
     setStep('review');
     toast.success(`${data.length} años de datos procesados correctamente`);
   };
 
   const handleManualEntry = () => {
+    const emptyData = createEmptyYearlyData(new Date().getFullYear());
+    setYearlyDataList([emptyData]);
     setMethod('manual');
-    toast.info('Funcionalidad de carga manual en desarrollo');
+    setStep('review');
+  };
+
+  const handleUpdateYearlyData = (index: number, field: keyof YearlyData, value: number | string) => {
+    setYearlyDataList(prev => prev.map((item, i) => 
+      i === index ? { ...item, [field]: typeof value === 'string' ? parseFloat(value) || 0 : value } : item
+    ));
+  };
+
+  const handleAddYear = () => {
+    const currentYear = new Date().getFullYear();
+    const existingYears = yearlyDataList.map(data => data.year);
+    let newYear = currentYear;
+    
+    // Encontrar el próximo año disponible
+    while (existingYears.includes(newYear)) {
+      newYear++;
+    }
+    
+    const newYearData = createEmptyYearlyData(newYear);
+    setYearlyDataList(prev => [...prev, newYearData]);
+  };
+
+  const handleRemoveYear = (index: number) => {
+    setYearlyDataList(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleImportData = async () => {
@@ -79,8 +107,8 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <FileUploadCard onDataParsed={handleDataParsed} />
-          <CopyPasteCard onDataParsed={handleDataParsed} />
+          <FileUploadCard onDataParsed={(data) => handleDataParsed(data, 'file')} />
+          <CopyPasteCard onDataParsed={(data) => handleDataParsed(data, 'csv')} />
           <ManualEntryCard onManualEntry={handleManualEntry} />
         </div>
       </div>
@@ -91,8 +119,12 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
     return (
       <DataReviewSection 
         yearlyDataList={yearlyDataList}
+        importMethod={method}
+        onUpdateYearlyData={handleUpdateYearlyData}
+        onAddYear={handleAddYear}
+        onRemoveYear={handleRemoveYear}
         onBack={handleBack}
-        onConfirm={() => setStep('import')}
+        onContinue={() => setStep('import')}
       />
     );
   }
