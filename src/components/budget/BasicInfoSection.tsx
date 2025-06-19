@@ -19,6 +19,19 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
   onInputChange
 }) => {
   console.log('BasicInfoSection - restaurants data:', restaurants);
+  console.log('BasicInfoSection - restaurants length:', restaurants.length);
+  
+  // Log detallado de cada restaurante
+  restaurants.forEach((restaurant, index) => {
+    console.log(`Restaurant ${index}:`, {
+      id: restaurant.id,
+      fullObject: restaurant,
+      baseRestaurant: restaurant.base_restaurant,
+      franchiseeName: restaurant.base_restaurant?.franchisee_name,
+      restaurantName: restaurant.base_restaurant?.restaurant_name,
+      siteNumber: restaurant.base_restaurant?.site_number
+    });
+  });
 
   return (
     <Card>
@@ -61,20 +74,32 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
               <SelectValue placeholder="Seleccionar restaurante y empresa" />
             </SelectTrigger>
             <SelectContent>
-              {restaurants.map((restaurant) => {
-                const restaurantName = restaurant.base_restaurant?.restaurant_name || 'Sin nombre';
-                const siteNumber = restaurant.base_restaurant?.site_number || 'Sin número';
-                const franchiseeName = restaurant.base_restaurant?.franchisee_name || 'Sin empresa';
-                const displayText = `${restaurantName} - #${siteNumber} (${franchiseeName})`;
-                
-                console.log(`Restaurant ${restaurant.id}: ${displayText}`);
-                
-                return (
-                  <SelectItem key={restaurant.id} value={restaurant.id}>
-                    {displayText}
-                  </SelectItem>
-                );
-              })}
+              {restaurants.length === 0 ? (
+                <SelectItem value="no-restaurants" disabled>
+                  No hay restaurantes disponibles
+                </SelectItem>
+              ) : (
+                restaurants.map((restaurant) => {
+                  const restaurantName = restaurant.base_restaurant?.restaurant_name || 'Sin nombre';
+                  const siteNumber = restaurant.base_restaurant?.site_number || 'Sin número';
+                  const franchiseeName = restaurant.base_restaurant?.franchisee_name || 'Sin empresa';
+                  const displayText = `${restaurantName} - #${siteNumber} (${franchiseeName})`;
+                  
+                  console.log(`Rendering SelectItem for restaurant ${restaurant.id}:`, {
+                    restaurantName,
+                    siteNumber,
+                    franchiseeName,
+                    displayText,
+                    rawData: restaurant
+                  });
+                  
+                  return (
+                    <SelectItem key={restaurant.id} value={restaurant.id}>
+                      {displayText}
+                    </SelectItem>
+                  );
+                })
+              )}
             </SelectContent>
           </Select>
         </div>
