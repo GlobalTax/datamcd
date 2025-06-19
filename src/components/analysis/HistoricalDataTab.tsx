@@ -1,18 +1,19 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Database, FileSpreadsheet, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
+import { useNavigate } from 'react-router-dom';
 
 export const HistoricalDataTab: React.FC = () => {
   const { franchisee } = useAuth();
   const { restaurants } = useFranchiseeRestaurants();
+  const navigate = useNavigate();
 
-  const handleUploadHistorical = () => {
-    // Esta funcionalidad se implementará cuando el usuario seleccione un restaurante específico
-    console.log('Abrir herramienta de carga de datos históricos');
+  const handleNavigateToRestaurant = (siteNumber: string) => {
+    console.log('Navigating to restaurant:', siteNumber);
+    navigate(`/profit-loss/${siteNumber}`);
   };
 
   const downloadTemplate = () => {
@@ -124,7 +125,8 @@ export const HistoricalDataTab: React.FC = () => {
                       </div>
                       <Button 
                         size="sm"
-                        onClick={() => window.open(`/profit-loss/${restaurant.base_restaurant?.site_number}`, '_blank')}
+                        onClick={() => handleNavigateToRestaurant(restaurant.base_restaurant?.site_number || '')}
+                        disabled={!restaurant.base_restaurant?.site_number}
                       >
                         <Database className="w-4 h-4 mr-2" />
                         Gestionar
