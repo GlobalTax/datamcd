@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,6 +12,7 @@ import { FinancialMetrics } from './FinancialMetrics';
 import { PerformanceCharts } from './PerformanceCharts';
 import { RestaurantComparison } from './RestaurantComparison';
 import { ProfitabilityAnalysis } from './ProfitabilityAnalysis';
+import { HistoricalDataTab } from './HistoricalDataTab';
 import { toast } from 'sonner';
 
 export const AnalysisDashboard = () => {
@@ -23,8 +23,12 @@ export const AnalysisDashboard = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('all');
 
   // Generar años disponibles
-  const currentYear = new Date().getFullYear();
-  const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - 4 + i);
+  const generateYears = () => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 5 }, (_, i) => currentYear - 4 + i);
+  };
+
+  const availableYears = generateYears();
 
   // Calcular métricas reales de los restaurantes
   const calculateMetrics = () => {
@@ -195,11 +199,12 @@ export const AnalysisDashboard = () => {
 
       {/* Main Analysis Tabs */}
       <Tabs defaultValue="metrics" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="metrics">Métricas Financieras</TabsTrigger>
           <TabsTrigger value="performance">Rendimiento</TabsTrigger>
           <TabsTrigger value="comparison">Comparación</TabsTrigger>
           <TabsTrigger value="profitability">Rentabilidad</TabsTrigger>
+          <TabsTrigger value="historical">Datos Históricos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="metrics" className="space-y-6">
@@ -231,6 +236,10 @@ export const AnalysisDashboard = () => {
             selectedRestaurant={selectedRestaurant}
             restaurants={restaurants}
           />
+        </TabsContent>
+
+        <TabsContent value="historical" className="space-y-6">
+          <HistoricalDataTab />
         </TabsContent>
       </Tabs>
     </div>
