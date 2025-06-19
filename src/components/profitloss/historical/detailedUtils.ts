@@ -68,8 +68,14 @@ const parseNumber = (value: string): number => {
 };
 
 const extractYearsFromHeader = (headerLine: string): number[] => {
+  console.log('=== EXTRACTING YEARS FROM HEADER ===');
+  console.log('Header line:', headerLine);
+  
   const years: number[] = [];
+  // Buscar patrones como "Ejerc. 2023", "2023", etc.
   const yearMatches = headerLine.match(/(\d{4})/g);
+  
+  console.log('Year matches found:', yearMatches);
   
   if (yearMatches) {
     yearMatches.forEach(yearStr => {
@@ -80,7 +86,9 @@ const extractYearsFromHeader = (headerLine: string): number[] => {
     });
   }
   
-  return years.sort();
+  const sortedYears = years.sort((a, b) => b - a); // Orden descendente (más reciente primero)
+  console.log('Final sorted years:', sortedYears);
+  return sortedYears;
 };
 
 const normalizeConceptName = (concept: string): string => {
@@ -169,20 +177,24 @@ export const parseDetailedDataFromText = (text: string): YearlyData[] => {
       const concept = normalizeConceptName(parts[0]);
       const mappedField = conceptMapping[concept];
 
+      console.log(`Processing line ${i}: "${concept}" -> ${mappedField}`);
+      console.log(`Parts count: ${parts.length}, First few parts:`, parts.slice(0, 5));
+
       if (mappedField) {
-        console.log(`Processing concept: "${concept}" -> ${mappedField}`);
-        
-        // Procesar valores para cada año
-        let valueIndex = 1;
-        years.forEach(year => {
-          if (valueIndex < parts.length) {
-            const value = parseNumber(parts[valueIndex]);
-            if (yearlyDataMap[year] && mappedField !== 'year') {
-              (yearlyDataMap[year] as any)[mappedField] = value;
-            }
-            valueIndex += 2; // Saltar columna de porcentaje
+        // Los años aparecen en columnas: 1, 3, 5, 7, 9 (valores)
+        // Los porcentajes están en: 2, 4, 6, 8, 10
+        let yearIndex = 0;
+        for (let colIndex = 1; colIndex < parts.length && yearIndex < years.length; colIndex += 2) {
+          const year = years[yearIndex];
+          const value = parseNumber(parts[colIndex]);
+          
+          console.log(`  Year ${year} (col ${colIndex}): ${parts[colIndex]} -> ${value}`);
+          
+          if (yearlyDataMap[year] && mappedField !== 'year') {
+            (yearlyDataMap[year] as any)[mappedField] = value;
           }
-        });
+          yearIndex++;
+        }
       } else {
         console.log(`Unmapped concept: "${concept}"`);
       }
@@ -195,6 +207,7 @@ export const parseDetailedDataFromText = (text: string): YearlyData[] => {
     });
 
     console.log('Final parsed data:', result.length, 'years');
+    console.log('Sample data:', result[0]);
     return result;
 
   } catch (error) {
