@@ -29,7 +29,8 @@ export const useOptimizedAuth = () => {
         .from('profiles')
         .select('id, email, full_name, role')
         .eq('id', userId)
-        .single();
+        .single()
+        .then(response => response);
 
       const profile = await quickTimeout(profilePromise, 2000);
       
@@ -53,7 +54,8 @@ export const useOptimizedAuth = () => {
         .from('franchisees')
         .select('id, user_id, franchisee_name, company_name, total_restaurants')
         .eq('user_id', userId)
-        .single();
+        .single()
+        .then(response => response);
 
       const franchisee = await quickTimeout(franchiseePromise, 2000);
       
@@ -90,7 +92,8 @@ export const useOptimizedAuth = () => {
         `)
         .eq('franchisee_id', franchiseeId)
         .eq('status', 'active')
-        .limit(10);
+        .limit(10)
+        .then(response => response);
 
       const restaurants = await quickTimeout(restaurantsPromise, 3000);
       
