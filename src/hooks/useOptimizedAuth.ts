@@ -25,13 +25,13 @@ export const useOptimizedAuth = () => {
     try {
       console.log('useOptimizedAuth - Fetching real profile data');
       
-      const profileQuery = supabase
+      const profilePromise = supabase
         .from('profiles')
         .select('id, email, full_name, role')
         .eq('id', userId)
         .single();
 
-      const { data: profile, error } = await quickTimeout(profileQuery, 5000);
+      const { data: profile, error } = await quickTimeout(profilePromise, 5000);
 
       if (error) {
         console.error('useOptimizedAuth - Profile error:', error);
@@ -53,13 +53,13 @@ export const useOptimizedAuth = () => {
     try {
       console.log('useOptimizedAuth - Fetching real franchisee data');
       
-      const franchiseeQuery = supabase
+      const franchiseePromise = supabase
         .from('franchisees')
         .select('id, user_id, franchisee_name, company_name, total_restaurants')
         .eq('user_id', userId)
         .single();
 
-      const { data: franchisee, error } = await quickTimeout(franchiseeQuery, 5000);
+      const { data: franchisee, error } = await quickTimeout(franchiseePromise, 5000);
 
       if (error) {
         console.error('useOptimizedAuth - Franchisee error:', error);
@@ -81,7 +81,7 @@ export const useOptimizedAuth = () => {
     try {
       console.log('useOptimizedAuth - Fetching real restaurants data');
       
-      const restaurantsQuery = supabase
+      const restaurantsPromise = supabase
         .from('franchisee_restaurants')
         .select(`
           id,
@@ -101,7 +101,7 @@ export const useOptimizedAuth = () => {
         .eq('status', 'active')
         .limit(20);
 
-      const { data: restaurants, error } = await quickTimeout(restaurantsQuery, 8000);
+      const { data: restaurants, error } = await quickTimeout(restaurantsPromise, 8000);
 
       if (error) {
         console.error('useOptimizedAuth - Restaurants error:', error);
@@ -123,8 +123,8 @@ export const useOptimizedAuth = () => {
         setConnectionStatus('connecting');
         
         // Verificar sesión actual
-        const sessionQuery = supabase.auth.getSession();
-        const { data: { session }, error: sessionError } = await quickTimeout(sessionQuery, 3000);
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await quickTimeout(sessionPromise, 3000);
         
         if (sessionError) {
           console.error('useOptimizedAuth - Session error:', sessionError);
