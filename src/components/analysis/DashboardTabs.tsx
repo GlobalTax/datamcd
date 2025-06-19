@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FinancialMetrics } from './FinancialMetrics';
@@ -77,7 +76,6 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
         </TabsContent>
 
         <TabsContent value="historical" className="space-y-6 mt-0">
-          {console.log('Rendering historical TabsContent')}
           <div className="p-4 border-2 border-red-500 bg-yellow-100">
             <h2 className="text-xl font-bold text-red-600">DEBUG: PESTAÑA HISTÓRICOS</h2>
             <p>Si ves esto, la pestaña funciona correctamente</p>
