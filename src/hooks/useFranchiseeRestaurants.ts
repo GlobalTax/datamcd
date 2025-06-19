@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -40,20 +41,14 @@ export const useFranchiseeRestaurants = () => {
         return;
       }
 
-      // Si es un franquiciado temporal, no hacer consulta a base de datos
+      // Si es un franquiciado temporal, usar datos del contexto de autenticación
       if (franchisee.id.startsWith('temp-')) {
         console.log('useFranchiseeRestaurants - Temporary franchisee detected, skipping database query');
         
-        // Si tenemos restaurantes en el contexto de autenticación, usarlos
-        if (authRestaurants && Array.isArray(authRestaurants) && authRestaurants.length > 0) {
-          console.log('useFranchiseeRestaurants - Using restaurants from auth context:', authRestaurants.length);
-          setRestaurants(authRestaurants);
-          toast.success(`Se cargaron ${authRestaurants.length} restaurantes`);
-        } else {
-          console.log('useFranchiseeRestaurants - No restaurants in auth context for temporary franchisee');
-          setRestaurants([]);
-          toast.info('No se encontraron restaurantes asignados');
-        }
+        // Para franquiciados temporales, crear un array vacío ya que no tienen restaurantes reales
+        console.log('useFranchiseeRestaurants - No restaurants for temporary franchisee');
+        setRestaurants([]);
+        toast.info('No se encontraron restaurantes asignados');
         
         setError(null);
         setLoading(false);
