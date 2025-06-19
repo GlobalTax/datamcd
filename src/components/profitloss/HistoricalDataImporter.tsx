@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileSpreadsheet, Download, Save, Plus, Trash2 } from 'lucide-react';
+import { Upload, FileSpreadsheet, Download, Save, Plus, Trash2, File } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useProfitLossData } from '@/hooks/useProfitLossData';
 import { ProfitLossFormData } from '@/types/profitLoss';
@@ -67,6 +66,7 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<'upload' | 'review' | 'import'>('upload');
+  const [importMethod, setImportMethod] = useState<'manual' | 'csv' | 'file'>('manual');
   
   const [yearlyDataList, setYearlyDataList] = useState<YearlyData[]>([
     {
@@ -171,18 +171,52 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
     setYearlyDataList(newList);
   };
 
-  const parseCSVData = () => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      
+      // Detectar el separador automáticamente
+      let separator = '\t';
+      if (text.includes(',') && !text.includes('\t')) {
+        separator = ',';
+      } else if (text.includes(';')) {
+        separator = ';';
+      }
+
+      try {
+        parseDataFromText(text, separator);
+        setImportMethod('file');
+        toast.success(`Archivo cargado correctamente. Detectado separador: "${separator}"`);
+      } catch (error) {
+        console.error('Error reading file:', error);
+        toast.error('Error al leer el archivo. Verifica el formato.');
+      }
+    };
+
+    if (file.type.includes('text') || file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+      reader.readAsText(file);
+    } else {
+      toast.error('Por favor, sube un archivo .csv, .txt o copia los datos directamente.');
+    }
+  };
+
+  const parseDataFromText = (text: string, separator: string = '\t') => {
     try {
-      const lines = csvData.trim().split('\n');
-      const headers = lines[0].split('\t');
+      const lines = text.trim().split('\n');
       const data: YearlyData[] = [];
 
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split('\t');
+      // Saltar la primera línea si parece ser headers
+      const startIndex = lines[0]?.toLowerCase().includes('año') || lines[0]?.toLowerCase().includes('year') ? 1 : 0;
+
+      for (let i = startIndex; i < lines.length; i++) {
+        const values = lines[i].split(separator);
         if (values.length >= 2) {
-          // Parsear datos según el formato del documento
           const yearData: YearlyData = {
-            year: parseInt(values[0]) || new Date().getFullYear(),
+            year: parseInt(values[0]?.replace(/[^\d]/g, '')) || new Date().getFullYear(),
             net_sales: parseFloat(values[1]?.replace(/[^\d.-]/g, '')) || 0,
             other_revenue: parseFloat(values[2]?.replace(/[^\d.-]/g, '')) || 0,
             food_cost: parseFloat(values[3]?.replace(/[^\d.-]/g, '')) || 0,
@@ -224,19 +258,26 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
         }
       }
 
-      setYearlyDataList(data);
-      setCurrentStep('review');
-      toast.success(`Se cargaron ${data.length} años de datos`);
+      if (data.length > 0) {
+        setYearlyDataList(data);
+        setCurrentStep('review');
+        toast.success(`Se cargaron ${data.length} años de datos`);
+      } else {
+        toast.error('No se pudieron procesar los datos. Verifica el formato.');
+      }
     } catch (error) {
-      console.error('Error parsing CSV:', error);
-      toast.error('Error al procesar los datos CSV');
+      console.error('Error parsing data:', error);
+      toast.error('Error al procesar los datos');
     }
+  };
+
+  const parseCSVData = () => {
+    parseDataFromText(csvData);
   };
 
   const convertToMonthlyData = (yearData: YearlyData): ProfitLossFormData[] => {
     const monthlyDataList: ProfitLossFormData[] = [];
     
-    // Dividir datos anuales en 12 meses
     for (let month = 1; month <= 12; month++) {
       const monthlyData: ProfitLossFormData = {
         restaurant_id: restaurantId,
@@ -331,45 +372,43 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
         <div>
           <h2 className="text-xl font-semibold mb-2">Importar Datos Históricos P&L</h2>
           <p className="text-gray-600">
-            Carga datos históricos de estados financieros para análisis y comparativas
+            Elige el método de importación que prefieras
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Carga manual */}
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Subir archivo */}
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Carga Manual
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                Introduce los datos año por año usando formularios
-              </p>
-              <Button 
-                onClick={() => setCurrentStep('review')}
-                className="w-full"
-              >
-                Comenzar Carga Manual
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Importar desde CSV */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5" />
-                Importar desde CSV/Excel
+                <File className="w-5 h-5" />
+                Subir Archivo Excel/CSV
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-gray-600">
-                Copia y pega datos desde Excel o CSV
+                Sube un archivo .csv, .txt o Excel guardado como CSV
               </p>
               
+              <div className="space-y-3">
+                <Input
+                  type="file"
+                  accept=".csv,.txt,.tsv"
+                  onChange={handleFileUpload}
+                  className="w-full"
+                />
+                
+                <div className="text-xs text-gray-500">
+                  <p><strong>Formatos soportados:</strong></p>
+                  <ul className="list-disc list-inside mt-1">
+                    <li>CSV con comas (,)</li>
+                    <li>CSV con tabulaciones (TSV)</li>
+                    <li>CSV con punto y coma (;)</li>
+                    <li>Archivos de texto separados</li>
+                  </ul>
+                </div>
+              </div>
+
               <Button 
                 variant="outline" 
                 onClick={downloadTemplate}
@@ -378,13 +417,37 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
                 <Download className="w-4 h-4 mr-2" />
                 Descargar Plantilla
               </Button>
+            </CardContent>
+          </Card>
 
+          {/* Copiar y pegar */}
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5" />
+                Copiar desde Excel
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Copia datos directamente desde Excel y pégalos aquí
+              </p>
+              
               <Textarea
                 value={csvData}
                 onChange={(e) => setCsvData(e.target.value)}
-                placeholder="Pega aquí los datos CSV (separados por tabulaciones)..."
-                className="min-h-[100px] font-mono text-xs"
+                placeholder="Pega aquí los datos copiados desde Excel..."
+                className="min-h-[120px] font-mono text-xs"
               />
+
+              <div className="text-xs text-gray-500">
+                <p><strong>Cómo copiar desde Excel:</strong></p>
+                <ol className="list-decimal list-inside mt-1">
+                  <li>Selecciona los datos en Excel</li>
+                  <li>Ctrl+C para copiar</li>
+                  <li>Pega aquí (Ctrl+V)</li>
+                </ol>
+              </div>
 
               <Button 
                 onClick={parseCSVData}
@@ -392,10 +455,51 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
                 className="w-full"
               >
                 <Upload className="w-4 h-4 mr-2" />
-                Procesar Datos CSV
+                Procesar Datos
               </Button>
             </CardContent>
           </Card>
+
+          {/* Carga manual */}
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                Carga Manual
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Introduce los datos año por año usando formularios
+              </p>
+              
+              <div className="py-8 text-center">
+                <Plus className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                <p className="text-sm text-gray-500">
+                  Formularios interactivos para cada año
+                </p>
+              </div>
+
+              <Button 
+                onClick={() => {
+                  setImportMethod('manual');
+                  setCurrentStep('review');
+                }}
+                className="w-full"
+              >
+                Comenzar Carga Manual
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <h3 className="font-medium text-blue-900 mb-2">💡 Recomendaciones:</h3>
+          <ul className="text-sm text-blue-700 space-y-1">
+            <li>• <strong>Archivo Excel/CSV:</strong> El método más rápido si ya tienes los datos organizados</li>
+            <li>• <strong>Copiar desde Excel:</strong> Perfecto para datos pequeños o verificaciones rápidas</li>
+            <li>• <strong>Carga Manual:</strong> Ideal para pocos años o cuando necesitas más control</li>
+          </ul>
         </div>
       </div>
     );
@@ -408,7 +512,7 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
           <div>
             <h2 className="text-xl font-semibold">Revisar Datos Históricos</h2>
             <p className="text-gray-600">
-              Verifica y ajusta los datos antes de importar
+              Verifica y ajusta los datos antes de importar ({importMethod === 'file' ? 'Archivo' : importMethod === 'csv' ? 'Excel Copiado' : 'Manual'})
             </p>
           </div>
           <div className="flex gap-2">
