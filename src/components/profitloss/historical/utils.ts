@@ -1,4 +1,3 @@
-
 import { YearlyData } from './types';
 import { ProfitLossFormData } from '@/types/profitLoss';
 import { toast } from 'sonner';
@@ -44,15 +43,32 @@ export const createEmptyYearlyData = (year: number): YearlyData => ({
 });
 
 export const parseDataFromText = (text: string, separator: string = '\t'): YearlyData[] => {
+  console.log('=== PARSE DATA DEBUG ===');
+  console.log('Input text length:', text.length);
+  console.log('Separator:', separator);
+  
   try {
     const lines = text.trim().split('\n');
+    console.log('Number of lines:', lines.length);
+    
     const data: YearlyData[] = [];
 
     // Saltar la primera línea si parece ser headers
-    const startIndex = lines[0]?.toLowerCase().includes('año') || lines[0]?.toLowerCase().includes('year') ? 1 : 0;
+    const firstLine = lines[0]?.toLowerCase() || '';
+    const startIndex = firstLine.includes('año') || firstLine.includes('year') ? 1 : 0;
+    console.log('Starting from line:', startIndex);
 
     for (let i = startIndex; i < lines.length; i++) {
-      const values = lines[i].split(separator);
+      const line = lines[i];
+      if (!line || !line.trim()) {
+        console.log(`Skipping empty line ${i}`);
+        continue;
+      }
+      
+      const values = line.split(separator);
+      console.log(`Line ${i}: ${values.length} values`);
+      console.log(`First 5 values:`, values.slice(0, 5));
+      
       if (values.length >= 2) {
         const yearData: YearlyData = {
           year: parseInt(values[0]?.replace(/[^\d]/g, '')) || new Date().getFullYear(),
@@ -93,14 +109,28 @@ export const parseDataFromText = (text: string, separator: string = '\t'): Yearl
           loan_payment: parseFloat(values[35]?.replace(/[^\d.-]/g, '')) || 0,
           investment_own_funds: parseFloat(values[36]?.replace(/[^\d.-]/g, '')) || 0
         };
+        
+        console.log(`Parsed year data for ${yearData.year}:`, {
+          net_sales: yearData.net_sales,
+          food_cost: yearData.food_cost
+        });
+        
         data.push(yearData);
+      } else {
+        console.log(`Line ${i} has insufficient columns: ${values.length}`);
       }
     }
 
+    console.log('Final parsed data:', data.length, 'years');
+    
+    if (data.length === 0) {
+      throw new Error('No se pudieron procesar datos válidos');
+    }
+    
     return data;
   } catch (error) {
     console.error('Error parsing data:', error);
-    throw new Error('Error al procesar los datos');
+    throw new Error('Error al procesar los datos: ' + (error instanceof Error ? error.message : 'Error desconocido'));
   }
 };
 

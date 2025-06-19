@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { File, Download } from 'lucide-react';
 import { parseDataFromText, downloadTemplate } from './utils';
-import { YearlyData } from './types';
+import { YearlyData, ImportMethod } from './types';
 import { toast } from 'sonner';
 
 interface FileUploadCardProps {
-  onDataParsed: (data: YearlyData[]) => void;
+  onDataParsed: (data: YearlyData[], method: ImportMethod) => void;
 }
 
 export const FileUploadCard: React.FC<FileUploadCardProps> = ({ onDataParsed }) => {
@@ -17,9 +17,14 @@ export const FileUploadCard: React.FC<FileUploadCardProps> = ({ onDataParsed }) 
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log('=== FILE UPLOAD DEBUG ===');
+    console.log('File selected:', file.name, file.type, file.size);
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
+      console.log('File content loaded, length:', text.length);
+      console.log('First 200 chars:', text.substring(0, 200));
       
       // Detectar el separador automáticamente
       let separator = '\t';
@@ -29,9 +34,13 @@ export const FileUploadCard: React.FC<FileUploadCardProps> = ({ onDataParsed }) 
         separator = ';';
       }
 
+      console.log('Detected separator:', separator);
+
       try {
         const data = parseDataFromText(text, separator);
-        onDataParsed(data);
+        console.log('Parsed data successfully:', data.length, 'years');
+        console.log('Sample data:', data[0]);
+        onDataParsed(data, 'file');
         toast.success(`Archivo cargado correctamente. Detectado separador: "${separator}"`);
       } catch (error) {
         console.error('Error reading file:', error);
@@ -39,9 +48,15 @@ export const FileUploadCard: React.FC<FileUploadCardProps> = ({ onDataParsed }) 
       }
     };
 
+    reader.onerror = (error) => {
+      console.error('FileReader error:', error);
+      toast.error('Error al leer el archivo.');
+    };
+
     if (file.type.includes('text') || file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
       reader.readAsText(file);
     } else {
+      console.error('Invalid file type:', file.type);
       toast.error('Por favor, sube un archivo .csv, .txt o copia los datos directamente.');
     }
   };
