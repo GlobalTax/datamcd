@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useStaticData } from './useStaticData';
@@ -25,12 +24,13 @@ export const useOptimizedAuth = () => {
     try {
       console.log('useOptimizedAuth - Trying quick profile fetch');
       
-      const profilePromise = supabase
-        .from('profiles')
-        .select('id, email, full_name, role')
-        .eq('id', userId)
-        .single()
-        .then(response => response);
+      const profilePromise = Promise.resolve(
+        supabase
+          .from('profiles')
+          .select('id, email, full_name, role')
+          .eq('id', userId)
+          .single()
+      );
 
       const profile = await quickTimeout(profilePromise, 2000);
       
@@ -50,12 +50,13 @@ export const useOptimizedAuth = () => {
     try {
       console.log('useOptimizedAuth - Trying quick franchisee fetch');
       
-      const franchiseePromise = supabase
-        .from('franchisees')
-        .select('id, user_id, franchisee_name, company_name, total_restaurants')
-        .eq('user_id', userId)
-        .single()
-        .then(response => response);
+      const franchiseePromise = Promise.resolve(
+        supabase
+          .from('franchisees')
+          .select('id, user_id, franchisee_name, company_name, total_restaurants')
+          .eq('user_id', userId)
+          .single()
+      );
 
       const franchisee = await quickTimeout(franchiseePromise, 2000);
       
@@ -74,26 +75,27 @@ export const useOptimizedAuth = () => {
     try {
       console.log('useOptimizedAuth - Trying quick restaurants fetch');
       
-      const restaurantsPromise = supabase
-        .from('franchisee_restaurants')
-        .select(`
-          id,
-          monthly_rent,
-          last_year_revenue,
-          status,
-          base_restaurant:base_restaurants!inner(
+      const restaurantsPromise = Promise.resolve(
+        supabase
+          .from('franchisee_restaurants')
+          .select(`
             id,
-            site_number,
-            restaurant_name,
-            address,
-            city,
-            restaurant_type
-          )
-        `)
-        .eq('franchisee_id', franchiseeId)
-        .eq('status', 'active')
-        .limit(10)
-        .then(response => response);
+            monthly_rent,
+            last_year_revenue,
+            status,
+            base_restaurant:base_restaurants!inner(
+              id,
+              site_number,
+              restaurant_name,
+              address,
+              city,
+              restaurant_type
+            )
+          `)
+          .eq('franchisee_id', franchiseeId)
+          .eq('status', 'active')
+          .limit(10)
+      );
 
       const restaurants = await quickTimeout(restaurantsPromise, 3000);
       
