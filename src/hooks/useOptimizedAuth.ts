@@ -29,7 +29,8 @@ export const useOptimizedAuth = () => {
         .from('profiles')
         .select('id, email, full_name, role')
         .eq('id', userId)
-        .single();
+        .single()
+        .then(response => response);
 
       const { data: profile, error } = await quickTimeout(profilePromise, 5000);
 
@@ -57,7 +58,8 @@ export const useOptimizedAuth = () => {
         .from('franchisees')
         .select('id, user_id, franchisee_name, company_name, total_restaurants')
         .eq('user_id', userId)
-        .single();
+        .single()
+        .then(response => response);
 
       const { data: franchisee, error } = await quickTimeout(franchiseePromise, 5000);
 
@@ -99,7 +101,8 @@ export const useOptimizedAuth = () => {
         `)
         .eq('franchisee_id', franchiseeId)
         .eq('status', 'active')
-        .limit(20);
+        .limit(20)
+        .then(response => response);
 
       const { data: restaurants, error } = await quickTimeout(restaurantsPromise, 8000);
 
@@ -123,7 +126,7 @@ export const useOptimizedAuth = () => {
         setConnectionStatus('connecting');
         
         // Verificar sesión actual
-        const sessionPromise = supabase.auth.getSession();
+        const sessionPromise = supabase.auth.getSession().then(response => response);
         const { data: { session }, error: sessionError } = await quickTimeout(sessionPromise, 3000);
         
         if (sessionError) {
