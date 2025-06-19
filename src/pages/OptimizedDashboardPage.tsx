@@ -6,7 +6,7 @@ import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Wifi, WifiOff, AlertTriangle, BarChart3, Building, TrendingUp, Zap } from 'lucide-react';
+import { RefreshCw, Wifi, WifiOff, AlertTriangle, BarChart3, Building, TrendingUp, Zap, Database, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -34,8 +34,8 @@ const OptimizedDashboardPage = () => {
   const { user, franchisee, restaurants, loading, connectionStatus, isUsingCache } = useOptimizedAuth();
   const navigate = useNavigate();
 
-  console.log('OptimizedDashboardPage - State:', {
-    user: user ? { id: user.id, role: user.role } : null,
+  console.log('OptimizedDashboardPage - Estado actual:', {
+    user: user ? { id: user.id, role: user.role, email: user.email } : null,
     franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
     restaurantsCount: restaurants?.length || 0,
     loading,
@@ -102,15 +102,15 @@ const OptimizedDashboardPage = () => {
         };
       case 'connected':
         return {
-          icon: <Wifi className="w-4 h-4" />,
-          text: 'Conectado',
+          icon: <Database className="w-4 h-4" />,
+          text: 'Datos Reales',
           color: 'text-green-600',
           bg: 'bg-green-100'
         };
       case 'fallback':
         return {
           icon: <WifiOff className="w-4 h-4" />,
-          text: 'Modo offline',
+          text: 'Datos Temporales',
           color: 'text-orange-600',
           bg: 'bg-orange-100'
         };
@@ -125,7 +125,7 @@ const OptimizedDashboardPage = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando datos optimizados...</p>
+          <p className="text-gray-600">Cargando datos de Supabase...</p>
           <p className="text-sm text-gray-500 mt-2">Estado: {connectionStatus}</p>
         </div>
       </div>
@@ -141,24 +141,24 @@ const OptimizedDashboardPage = () => {
             <SidebarTrigger className="-ml-1" />
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-lg font-semibold text-gray-900">Dashboard Optimizado</h1>
-                <div className={`flex items-center gap-2 px-2 py-1 ${statusDisplay.bg} ${statusDisplay.color} rounded-md text-xs`}>
+                <h1 className="text-lg font-semibold text-gray-900">Dashboard - Datos Reales</h1>
+                <div className={`flex items-center gap-2 px-3 py-1 ${statusDisplay.bg} ${statusDisplay.color} rounded-md text-sm font-medium`}>
                   {statusDisplay.icon}
                   <span>{statusDisplay.text}</span>
                 </div>
                 {connectionStatus === 'connected' && (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs">
                     <Zap className="w-3 h-3" />
-                    <span>Carga rápida</span>
+                    <span>Supabase Live</span>
                   </div>
                 )}
               </div>
               <p className="text-sm text-gray-500">
                 {connectionStatus === 'connected' 
-                  ? 'Datos en tiempo real' 
+                  ? `Datos en tiempo real desde Supabase - Usuario: ${user?.email}` 
                   : connectionStatus === 'fallback'
-                    ? 'Datos predefinidos - Modo offline'
-                    : 'Conectando a la base de datos...'
+                    ? 'Usando datos temporales - Problema de conexión con Supabase'
+                    : 'Conectando con la base de datos...'
                 }
               </p>
             </div>
@@ -177,23 +177,57 @@ const OptimizedDashboardPage = () => {
                 size="sm"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Reconectar
+                Recargar
               </Button>
             </div>
           </header>
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
+              {/* Estado de la cuenta y franquiciado */}
+              {user && franchisee && (
+                <Card className="border-blue-200 bg-blue-50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      <Users className="h-8 w-8 text-blue-600" />
+                      <div>
+                        <h3 className="font-semibold text-blue-900">
+                          {franchisee.franchisee_name}
+                        </h3>
+                        <p className="text-sm text-blue-700">
+                          Usuario: {user.full_name} ({user.email}) • Rol: {user.role}
+                        </p>
+                        <p className="text-xs text-blue-600">
+                          ID Franquiciado: {franchisee.id} • Restaurantes: {restaurants.length}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Alerta si no hay franquiciado pero sí usuario */}
+              {user && !franchisee && connectionStatus === 'connected' && (
+                <Alert className="border-amber-200 bg-amber-50">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-800">
+                    Tu usuario ({user.email}) existe en Supabase pero no tiene un franquiciado asignado. 
+                    Contacta con tu asesor para que te asigne un franquiciado.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Alerta de estado de conexión */}
               {connectionStatus === 'fallback' && (
-                <Alert className="border-orange-200 bg-orange-50">
-                  <AlertTriangle className="h-4 w-4 text-orange-600" />
-                  <AlertDescription className="text-orange-800">
-                    No se pudo conectar con la base de datos. Mostrando datos predefinidos. 
+                <Alert className="border-red-200 bg-red-50">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    No se pudo conectar con Supabase. Mostrando datos temporales. 
+                    Verifica tu conexión a internet y la configuración de Supabase.
                     <Button 
                       onClick={() => window.location.reload()} 
                       variant="link" 
-                      className="p-0 h-auto ml-2 text-orange-800 underline"
+                      className="p-0 h-auto ml-2 text-red-800 underline"
                     >
                       Intentar reconectar
                     </Button>
@@ -210,7 +244,9 @@ const OptimizedDashboardPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{metrics.totalRestaurants}</div>
-                    <p className="text-xs text-muted-foreground">En operación</p>
+                    <p className="text-xs text-muted-foreground">
+                      {connectionStatus === 'connected' ? 'Desde Supabase' : 'Datos temporales'}
+                    </p>
                   </CardContent>
                 </Card>
 

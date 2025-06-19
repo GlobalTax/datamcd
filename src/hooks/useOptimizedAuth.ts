@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useStaticData } from './useStaticData';
@@ -11,7 +12,7 @@ export const useOptimizedAuth = () => {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'fallback'>('connecting');
   const { getFranchiseeData, getRestaurantsData, isUsingCache } = useStaticData();
 
-  const quickTimeout = (promise: Promise<any>, timeoutMs: number = 3000) => {
+  const quickTimeout = (promise: Promise<any>, timeoutMs: number = 8000) => {
     return Promise.race([
       promise,
       new Promise((_, reject) => 
@@ -20,62 +21,69 @@ export const useOptimizedAuth = () => {
     ]);
   };
 
-  const tryQuickProfile = async (userId: string): Promise<any> => {
+  const tryRealProfile = async (userId: string): Promise<any> => {
     try {
-      console.log('useOptimizedAuth - Trying quick profile fetch');
+      console.log('useOptimizedAuth - Fetching real profile data');
       
-      const profilePromise = Promise.resolve(
+      const { data: profile, error } = await quickTimeout(
         supabase
           .from('profiles')
           .select('id, email, full_name, role')
           .eq('id', userId)
-          .single()
+          .single(),
+        5000
       );
 
-      const profile = await quickTimeout(profilePromise, 2000);
+      if (error) {
+        console.error('useOptimizedAuth - Profile error:', error);
+        throw error;
+      }
       
-      if (profile.data) {
-        console.log('useOptimizedAuth - Quick profile loaded successfully');
-        setConnectionStatus('connected');
-        return profile.data;
+      if (profile) {
+        console.log('useOptimizedAuth - Real profile loaded successfully:', profile);
+        return profile;
       }
       throw new Error('No profile data');
     } catch (error) {
-      console.log('useOptimizedAuth - Quick profile failed:', error);
+      console.log('useOptimizedAuth - Profile fetch failed:', error);
       throw error;
     }
   };
 
-  const tryQuickFranchisee = async (userId: string): Promise<any> => {
+  const tryRealFranchisee = async (userId: string): Promise<any> => {
     try {
-      console.log('useOptimizedAuth - Trying quick franchisee fetch');
+      console.log('useOptimizedAuth - Fetching real franchisee data');
       
-      const franchiseePromise = Promise.resolve(
+      const { data: franchisee, error } = await quickTimeout(
         supabase
           .from('franchisees')
           .select('id, user_id, franchisee_name, company_name, total_restaurants')
           .eq('user_id', userId)
-          .single()
+          .single(),
+        5000
       );
 
-      const franchisee = await quickTimeout(franchiseePromise, 2000);
+      if (error) {
+        console.error('useOptimizedAuth - Franchisee error:', error);
+        throw error;
+      }
       
-      if (franchisee.data) {
-        console.log('useOptimizedAuth - Quick franchisee loaded successfully');
-        return franchisee.data;
+      if (franchisee) {
+        console.log('useOptimizedAuth - Real franchisee loaded successfully:', franchisee);
+        return franchisee;
       }
       throw new Error('No franchisee data');
     } catch (error) {
-      console.log('useOptimizedAuth - Quick franchisee failed:', error);
+      console.log('useOptimizedAuth - Franchisee fetch failed:', error);
       throw error;
     }
   };
 
-  const tryQuickRestaurants = async (franchiseeId: string): Promise<any[]> => {
+  const tryRealRestaurants = async (franchiseeId: string): Promise<any[]> => {
     try {
-      console.log('useOptimizedAuth - Trying quick restaurants fetch');
+      console.log('useOptimizedAuth - Fetching real restaurants data');
       
-      const restaurantsPromise = Promise.resolve(
+      const { data: restaurants, error } = await quickTimeout(
         supabase
           .from('franchisee_restaurants')
           .select(`
@@ -94,18 +102,19 @@ export const useOptimizedAuth = () => {
           `)
           .eq('franchisee_id', franchiseeId)
           .eq('status', 'active')
-          .limit(10)
+          .limit(20),
+        8000
       );
 
-      const restaurants = await quickTimeout(restaurantsPromise, 3000);
-      
-      if (restaurants.data) {
-        console.log('useOptimizedAuth - Quick restaurants loaded successfully');
-        return restaurants.data;
+      if (error) {
+        console.error('useOptimizedAuth - Restaurants error:', error);
+        throw error;
       }
-      return [];
+      
+      console.log('useOptimizedAuth - Real restaurants loaded successfully:', restaurants?.length || 0);
+      return restaurants || [];
     } catch (error) {
-      console.log('useOptimizedAuth - Quick restaurants failed:', error);
+      console.log('useOptimizedAuth - Restaurants fetch failed:', error);
       return [];
     }
   };
@@ -113,99 +122,85 @@ export const useOptimizedAuth = () => {
   useEffect(() => {
     const initOptimizedAuth = async () => {
       try {
-        console.log('useOptimizedAuth - Starting optimized initialization');
+        console.log('useOptimizedAuth - Starting REAL data initialization');
         setConnectionStatus('connecting');
         
-        // Verificar sesión actual rápidamente
-        const { data: { session } } = await quickTimeout(
+        // Verificar sesión actual
+        const { data: { session }, error: sessionError } = await quickTimeout(
           supabase.auth.getSession(), 
-          1000
+          3000
         );
         
+        if (sessionError) {
+          console.error('useOptimizedAuth - Session error:', sessionError);
+          throw sessionError;
+        }
+        
         if (session?.user) {
-          console.log('useOptimizedAuth - Session found, attempting quick data load');
+          console.log('useOptimizedAuth - Session found, loading REAL data for user:', session.user.id);
           
-          // Crear usuario básico inmediatamente
-          const userData: User = {
-            id: session.user.id,
-            email: session.user.email || 'usuario@ejemplo.com',
-            role: 'franchisee',
-            full_name: session.user.user_metadata?.full_name || 'Usuario',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          
-          setUser(userData);
-
-          // Intentar carga rápida en paralelo
           try {
-            const [profileResult, franchiseeResult] = await Promise.allSettled([
-              tryQuickProfile(session.user.id),
-              tryQuickFranchisee(session.user.id)
-            ]);
+            // Intentar cargar perfil real
+            const realProfile = await tryRealProfile(session.user.id);
+            
+            // Crear usuario con datos reales
+            const userData: User = {
+              id: realProfile.id,
+              email: realProfile.email,
+              role: realProfile.role,
+              full_name: realProfile.full_name,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            
+            setUser(userData);
+            console.log('useOptimizedAuth - Real user data set');
 
-            if (profileResult.status === 'fulfilled') {
-              setUser(profileResult.value);
-            }
-
-            if (franchiseeResult.status === 'fulfilled') {
-              setFranchisee(franchiseeResult.value);
-              
-              // Intentar cargar restaurantes si el franquiciado se cargó exitosamente
-              const restaurantsData = await tryQuickRestaurants(franchiseeResult.value.id);
-              setRestaurants(restaurantsData);
-              
-              if (restaurantsData.length > 0) {
-                console.log('useOptimizedAuth - All real data loaded successfully');
+            // Si es franchisee, cargar datos del franquiciado
+            if (realProfile.role === 'franchisee') {
+              try {
+                const realFranchisee = await tryRealFranchisee(session.user.id);
+                setFranchisee(realFranchisee);
+                console.log('useOptimizedAuth - Real franchisee data set');
+                
+                // Cargar restaurantes reales
+                const realRestaurants = await tryRealRestaurants(realFranchisee.id);
+                setRestaurants(realRestaurants);
+                console.log('useOptimizedAuth - Real restaurants data set:', realRestaurants.length);
+                
                 setConnectionStatus('connected');
+                console.log('useOptimizedAuth - ALL REAL DATA LOADED SUCCESSFULLY');
+                setLoading(false);
+                return;
+                
+              } catch (franchiseeError) {
+                console.log('useOptimizedAuth - Franchisee not found, this user may not be a franchisee yet');
+                setConnectionStatus('connected'); // Usuario existe pero no es franquiciado
                 setLoading(false);
                 return;
               }
+            } else {
+              // Usuario no es franchisee
+              setConnectionStatus('connected');
+              setLoading(false);
+              return;
             }
-
-            // Si llegamos aquí, algo falló - usar fallback
-            console.log('useOptimizedAuth - Some data failed, using fallback');
-            setConnectionStatus('fallback');
             
-          } catch (error) {
-            console.log('useOptimizedAuth - Real data load failed, using fallback');
-            setConnectionStatus('fallback');
+          } catch (profileError) {
+            console.log('useOptimizedAuth - Profile not found, user may need profile creation');
+            throw profileError;
           }
-
-          // Fallback con datos estáticos
-          const fallbackFranchisee = await getFranchiseeData(session.user.id);
-          setFranchisee(fallbackFranchisee);
-          
-          const fallbackRestaurants = await getRestaurantsData(fallbackFranchisee.id);
-          setRestaurants(fallbackRestaurants);
           
         } else {
-          console.log('useOptimizedAuth - No session, using demo data');
-          setConnectionStatus('fallback');
-          
-          const demoUser: User = {
-            id: 'demo-user',
-            email: 'demo@ejemplo.com',
-            role: 'franchisee',
-            full_name: 'Usuario Demo',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          
-          setUser(demoUser);
-          
-          const demoFranchisee = await getFranchiseeData('demo-user');
-          setFranchisee(demoFranchisee);
-          
-          const demoRestaurants = await getRestaurantsData(demoFranchisee.id);
-          setRestaurants(demoRestaurants);
+          console.log('useOptimizedAuth - No session found');
+          throw new Error('No session');
         }
         
       } catch (error) {
-        console.error('useOptimizedAuth - Critical error:', error);
+        console.error('useOptimizedAuth - Failed to load real data, using fallback:', error);
         setConnectionStatus('fallback');
         
-        // Fallback completo
+        // Solo usar fallback si falla completamente
         const fallbackUser: User = {
           id: 'fallback-user',
           email: 'fallback@ejemplo.com',
@@ -238,6 +233,10 @@ export const useOptimizedAuth = () => {
           setFranchisee(null);
           setRestaurants([]);
           setConnectionStatus('connecting');
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          // Recargar datos cuando el usuario se conecte
+          setLoading(true);
+          initOptimizedAuth();
         }
       }
     );
