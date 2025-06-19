@@ -19,7 +19,7 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
   restaurants
 }) => {
   console.log('DashboardTabs - Rendering tabs with restaurants:', restaurants.length);
-  console.log('DashboardTabs - Available tabs: metrics, performance, comparison, profitability, historical');
+  console.log('DashboardTabs - TabsTrigger values: metrics, performance, comparison, profitability, historical');
   
   return (
     <div className="w-full">
@@ -74,11 +74,7 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
         </TabsContent>
 
         <TabsContent value="historical" className="space-y-6 mt-0">
-          <div className="p-4 border rounded-lg bg-white">
-            <h3 className="text-lg font-semibold mb-4">Pestaña de Datos Históricos</h3>
-            <p className="text-gray-600 mb-4">Esta pestaña debería estar visible ahora.</p>
-            <HistoricalDataTab />
-          </div>
+          <HistoricalDataTab />
         </TabsContent>
       </Tabs>
     </div>
