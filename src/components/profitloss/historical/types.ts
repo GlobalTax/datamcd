@@ -1,4 +1,56 @@
 
+export interface DetailedYearlyData {
+  year: number;
+  // Ingresos
+  ventas_netas: number;
+  valor_produccion: number;
+  
+  // Costos de Comida detallados
+  comida: number;
+  comida_empleados: number;
+  desperdicios: number;
+  papel: number;
+  
+  // Mano de Obra detallada
+  mano_obra: number;
+  mano_obra_gerencia: number;
+  seguridad_social: number;
+  gastos_viajes: number;
+  
+  // Gastos Controlables detallados
+  publicidad: number;
+  promocion: number;
+  servicios_exteriores: number;
+  uniformes: number;
+  suministros_operacion: number;
+  reparacion_mantenimiento: number;
+  luz_agua_telefono: number;
+  gastos_oficina: number;
+  diferencias_caja: number;
+  varios_controlables: number;
+  
+  // Gastos No Controlables detallados
+  pac: number;
+  renta: number;
+  renta_adicional: number;
+  royalty: number;
+  oficina_legal: number;
+  seguros: number;
+  tasas_licencias: number;
+  depreciaciones_amortizaciones: number;
+  intereses: number;
+  perdidas_venta_equipos: number;
+  varios_no_controlables: number;
+  
+  // Otros
+  ventas_no_producto: number;
+  costo_no_producto: number;
+  draw_salary: number;
+  gastos_generales: number;
+  cuota_prestamo: number;
+  inversiones_fondos_propios: number;
+}
+
 export interface YearlyData {
   year: number;
   net_sales: number;
@@ -40,4 +92,4 @@ export interface YearlyData {
 }
 
 export type ImportStep = 'upload' | 'review' | 'import';
-export type ImportMethod = 'manual' | 'csv' | 'file';
+export type ImportMethod = 'manual' | 'csv' | 'file' | 'detailed';

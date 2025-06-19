@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { FileUploadCard } from './historical/FileUploadCard';
 import { CopyPasteCard } from './historical/CopyPasteCard';
+import { DetailedCopyPasteCard } from './historical/DetailedCopyPasteCard';
 import { ManualEntryCard } from './historical/ManualEntryCard';
 import { DataReviewSection } from './historical/DataReviewSection';
 import { ImportConfirmationSection } from './historical/ImportConfirmationSection';
@@ -29,7 +30,9 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
     setYearlyDataList(data);
     setMethod(importMethod);
     setStep('review');
-    toast.success(`${data.length} años de datos procesados correctamente`);
+    
+    const methodLabel = importMethod === 'detailed' ? 'detallados' : 'estándar';
+    toast.success(`${data.length} años de datos ${methodLabel} procesados correctamente`);
   };
 
   const handleManualEntry = () => {
@@ -106,10 +109,19 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+          <DetailedCopyPasteCard onDataParsed={(data) => handleDataParsed(data, 'detailed')} />
           <FileUploadCard onDataParsed={(data) => handleDataParsed(data, 'file')} />
           <CopyPasteCard onDataParsed={(data) => handleDataParsed(data, 'csv')} />
           <ManualEntryCard onManualEntry={handleManualEntry} />
+        </div>
+
+        <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded">
+          <h3 className="font-medium text-amber-800 mb-2">💡 Recomendación</h3>
+          <p className="text-sm text-amber-700">
+            Para datos como los tuyos (con categorías detalladas como "Comida Empleados", "Desperdicios", "Seguridad Social", etc.), 
+            utiliza la opción <strong>"Datos P&L Detallados"</strong> para obtener el mapeo más preciso.
+          </p>
         </div>
       </div>
     );
