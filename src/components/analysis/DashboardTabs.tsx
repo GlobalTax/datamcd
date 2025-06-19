@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FinancialMetrics } from './FinancialMetrics';
@@ -26,20 +27,20 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
   return (
     <div className="w-full">
       <Tabs defaultValue="metrics" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-6">
-          <TabsTrigger value="metrics" className="text-sm">
+        <TabsList className="grid w-full grid-cols-5 mb-6 h-auto">
+          <TabsTrigger value="metrics" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2">
             Métricas Financieras
           </TabsTrigger>
-          <TabsTrigger value="performance" className="text-sm">
+          <TabsTrigger value="performance" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2">
             Rendimiento
           </TabsTrigger>
-          <TabsTrigger value="comparison" className="text-sm">
+          <TabsTrigger value="comparison" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2">
             Comparación
           </TabsTrigger>
-          <TabsTrigger value="profitability" className="text-sm">
+          <TabsTrigger value="profitability" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2">
             Rentabilidad
           </TabsTrigger>
-          <TabsTrigger value="historical" className="text-sm">
+          <TabsTrigger value="historical" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2 bg-red-200 border-2 border-red-500">
             Datos Históricos
           </TabsTrigger>
         </TabsList>
@@ -76,7 +77,7 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
         </TabsContent>
 
         <TabsContent value="historical" className="space-y-6 mt-0">
-          <div className="p-4 border-2 border-red-500 bg-yellow-100">
+          <div className="p-4 border-2 border-red-500 bg-yellow-100 mb-4">
             <h2 className="text-xl font-bold text-red-600">DEBUG: PESTAÑA HISTÓRICOS</h2>
             <p>Si ves esto, la pestaña funciona correctamente</p>
           </div>
