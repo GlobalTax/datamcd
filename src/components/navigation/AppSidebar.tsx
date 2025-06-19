@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -12,7 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Calculator, Calendar, BarChart3, Home, Settings, LogOut } from 'lucide-react';
+import { Calculator, Calendar, BarChart3, Home, Settings, LogOut, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -21,6 +22,11 @@ const menuItems = [
     title: "Dashboard",
     url: "/dashboard",
     icon: Home,
+  },
+  {
+    title: "Restaurantes",
+    url: "/restaurant",
+    icon: Building,
   },
   {
     title: "Valoración",
