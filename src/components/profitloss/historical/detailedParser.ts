@@ -41,43 +41,49 @@ export const parseDetailedDataFromText = (text: string): YearlyData[] => {
       const parts = line.split('\t');
       if (parts.length < 2) continue; // Al menos concepto + 1 valor
 
-      const concept = normalizeConceptName(parts[0]);
+      const rawConcept = parts[0].trim();
+      const concept = normalizeConceptName(rawConcept);
       
       // Saltar líneas de totales y encabezados
       if (isHeaderOrTotalLine(concept)) {
-        console.log(`Skipping header/total line: "${concept}"`);
+        console.log(`Skipping header/total line: "${rawConcept}"`);
         continue;
       }
       
       const mappedField = conceptMapping[concept];
 
-      console.log(`Line ${i}: "${concept}" -> ${mappedField || 'UNMAPPED'}`);
-      console.log(`Parts: [${parts.slice(0, Math.min(parts.length, 6)).join(', ')}...]`);
+      console.log(`Line ${i}: "${rawConcept}" -> "${concept}" -> ${mappedField || 'UNMAPPED'}`);
 
       if (mappedField) {
-        // Procesar valores para cada año
-        let yearIndex = 0;
-        for (let colIndex = 1; colIndex < parts.length && yearIndex < years.length; colIndex++) {
+        // Procesar valores para cada año (saltar columnas que parecen porcentajes)
+        let dataColumnIndex = 1;
+        for (let yearIndex = 0; yearIndex < years.length; yearIndex++) {
           const year = years[yearIndex];
-          const rawValue = parts[colIndex];
           
-          // Saltar si parece ser un porcentaje o está vacío
-          if (!rawValue || rawValue.trim() === '' || rawValue.includes('%')) {
-            yearIndex++;
-            continue;
+          // Buscar la siguiente columna con datos válidos
+          while (dataColumnIndex < parts.length) {
+            const rawValue = parts[dataColumnIndex];
+            
+            // Si está vacío o es porcentaje, pasar a la siguiente columna
+            if (!rawValue || rawValue.trim() === '' || rawValue.includes('%')) {
+              dataColumnIndex++;
+              continue;
+            }
+            
+            // Procesar el valor
+            const value = parseNumber(rawValue);
+            console.log(`  Year ${year}: "${rawValue}" -> ${value}`);
+            
+            if (yearlyDataMap[year] && mappedField !== 'year') {
+              (yearlyDataMap[year] as any)[mappedField] = value;
+            }
+            
+            dataColumnIndex++;
+            break;
           }
-          
-          const value = parseNumber(rawValue);
-          
-          console.log(`  Year ${year}: "${rawValue}" -> ${value}`);
-          
-          if (yearlyDataMap[year] && mappedField !== 'year') {
-            (yearlyDataMap[year] as any)[mappedField] = value;
-          }
-          yearIndex++;
         }
       } else {
-        console.log(`Concept not mapped: "${concept}"`);
+        console.log(`Concept not mapped: "${rawConcept}" -> "${concept}"`);
       }
     }
 
@@ -92,7 +98,8 @@ export const parseDetailedDataFromText = (text: string): YearlyData[] => {
       console.log('Sample data for year', result[0].year, ':', {
         net_sales: result[0].net_sales,
         food_cost: result[0].food_cost,
-        paper_cost: result[0].paper_cost
+        paper_cost: result[0].paper_cost,
+        crew_labor: result[0].crew_labor
       });
     }
     return result;

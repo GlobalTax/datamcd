@@ -72,13 +72,17 @@ export const normalizeConceptName = (concept: string): string => {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, ' ')
-    .replace(/[^\w\s\(\)\.\,]/g, '');
+    .replace(/[^\w\s\(\)\.\,\/]/g, '');
 };
 
+// Lista exacta de líneas de totales y encabezados que deben saltarse
 export const isHeaderOrTotalLine = (concept: string): boolean => {
   const normalizedConcept = normalizeConceptName(concept);
+  
+  // Lista exacta de líneas que siempre son totales o encabezados
   const skipPatterns = [
     'total coste comida y papel',
+    'total coste comida',
     'resultado bruto de explotacion',
     'resultado bruto de explotación',
     'total gastos controlables',
