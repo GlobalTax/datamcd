@@ -1,10 +1,6 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FinancialMetrics } from './FinancialMetrics';
-import { PerformanceCharts } from './PerformanceCharts';
-import { RestaurantComparison } from './RestaurantComparison';
-import { ProfitabilityAnalysis } from './ProfitabilityAnalysis';
 import { HistoricalDataTab } from './HistoricalDataTab';
 import { HistoricalYearsTab } from './HistoricalYearsTab';
 
@@ -24,24 +20,12 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
   console.log('DashboardTabs - Component loaded successfully');
   console.log('DashboardTabs - HistoricalDataTab imported:', !!HistoricalDataTab);
   console.log('DashboardTabs - HistoricalYearsTab imported:', !!HistoricalYearsTab);
-  console.log('DashboardTabs - About to render 6 tabs');
+  console.log('DashboardTabs - About to render 2 tabs');
   
   return (
     <div className="w-full">
-      <Tabs defaultValue="metrics" className="w-full">
-        <TabsList className="grid w-full grid-cols-6 mb-6 h-auto">
-          <TabsTrigger value="metrics" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2">
-            Métricas Financieras
-          </TabsTrigger>
-          <TabsTrigger value="performance" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2">
-            Rendimiento
-          </TabsTrigger>
-          <TabsTrigger value="comparison" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2">
-            Comparación
-          </TabsTrigger>
-          <TabsTrigger value="profitability" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2">
-            Rentabilidad
-          </TabsTrigger>
+      <Tabs defaultValue="years" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6 h-auto">
           <TabsTrigger value="years" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2 bg-green-200 border-2 border-green-500">
             Años Históricos
           </TabsTrigger>
@@ -49,37 +33,6 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
             Datos Históricos
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="metrics" className="space-y-6 mt-0">
-          <FinancialMetrics 
-            selectedYear={selectedYear}
-            selectedRestaurant={selectedRestaurant}
-            restaurants={restaurants}
-          />
-        </TabsContent>
-
-        <TabsContent value="performance" className="space-y-6 mt-0">
-          <PerformanceCharts 
-            selectedYear={selectedYear}
-            selectedRestaurant={selectedRestaurant}
-            restaurants={restaurants}
-          />
-        </TabsContent>
-
-        <TabsContent value="comparison" className="space-y-6 mt-0">
-          <RestaurantComparison 
-            selectedYear={selectedYear}
-            restaurants={restaurants}
-          />
-        </TabsContent>
-
-        <TabsContent value="profitability" className="space-y-6 mt-0">
-          <ProfitabilityAnalysis 
-            selectedYear={selectedYear}
-            selectedRestaurant={selectedRestaurant}
-            restaurants={restaurants}
-          />
-        </TabsContent>
 
         <TabsContent value="years" className="space-y-6 mt-0">
           <HistoricalYearsTab />
