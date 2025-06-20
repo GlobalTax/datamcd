@@ -56,12 +56,23 @@ const conceptMapping: { [key: string]: keyof DetailedYearlyData } = {
 const parseNumber = (value: string): number => {
   if (!value || value.trim() === '') return 0;
   
-  // Remover espacios, puntos de miles y reemplazar coma decimal por punto
-  const cleanValue = value
-    .replace(/\s/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.')
-    .replace(/[^\d.-]/g, '');
+  // Remover espacios y limpiar el valor
+  let cleanValue = value.trim();
+  
+  // Si tiene formato europeo (ejemplo: 3.273.161,04)
+  if (cleanValue.includes(',') && cleanValue.split(',').length === 2) {
+    // Separar parte entera y decimal
+    const parts = cleanValue.split(',');
+    const integerPart = parts[0].replace(/\./g, ''); // Remover puntos de miles
+    const decimalPart = parts[1];
+    cleanValue = integerPart + '.' + decimalPart;
+  } else {
+    // Solo remover puntos si no hay coma (números enteros con miles)
+    cleanValue = cleanValue.replace(/\./g, '');
+  }
+  
+  // Remover caracteres no numéricos excepto punto decimal y signo negativo
+  cleanValue = cleanValue.replace(/[^\d.-]/g, '');
   
   const parsed = parseFloat(cleanValue);
   return isNaN(parsed) ? 0 : parsed;
@@ -72,18 +83,34 @@ const extractYearsFromHeader = (headerLine: string): number[] => {
   console.log('Header line:', headerLine);
   
   const years: number[] = [];
-  // Buscar patrones como "Ejerc. 2023", "2023", etc.
-  const yearMatches = headerLine.match(/(\d{4})/g);
+  // Buscar específicamente "Ejerc. YYYY" o similar
+  const exerciseMatches = headerLine.match(/ejerc\.?\s*(\d{4})/gi);
   
-  console.log('Year matches found:', yearMatches);
+  console.log('Exercise matches found:', exerciseMatches);
   
-  if (yearMatches) {
-    yearMatches.forEach(yearStr => {
-      const year = parseInt(yearStr);
-      if (year >= 2000 && year <= 2050) {
-        years.push(year);
+  if (exerciseMatches) {
+    exerciseMatches.forEach(match => {
+      const yearMatch = match.match(/(\d{4})/);
+      if (yearMatch) {
+        const year = parseInt(yearMatch[1]);
+        if (year >= 2000 && year <= 2050 && !years.includes(year)) {
+          years.push(year);
+        }
       }
     });
+  }
+  
+  // Si no encuentra con "Ejerc.", buscar años directamente
+  if (years.length === 0) {
+    const directYearMatches = headerLine.match(/\b(20\d{2})\b/g);
+    if (directYearMatches) {
+      directYearMatches.forEach(yearStr => {
+        const year = parseInt(yearStr);
+        if (!years.includes(year)) {
+          years.push(year);
+        }
+      });
+    }
   }
   
   const sortedYears = years.sort((a, b) => b - a); // Orden descendente (más reciente primero)
@@ -118,7 +145,7 @@ export const parseDetailedDataFromText = (text: string): YearlyData[] => {
     console.log('Detected years:', years);
     
     if (years.length === 0) {
-      throw new Error('No se encontraron años válidos en el encabezado');
+      throw new Error('No se encontraron años válidos en el encabezado. Asegúrate de que el encabezado contenga años como "Ejerc. 2023"');
     }
 
     // Inicializar datos para cada año
@@ -172,23 +199,26 @@ export const parseDetailedDataFromText = (text: string): YearlyData[] => {
       if (!line) continue;
 
       const parts = line.split('\t');
-      if (parts.length < 2) continue;
+      if (parts.length < 3) continue; // Al menos concepto + 1 valor + 1 porcentaje
 
       const concept = normalizeConceptName(parts[0]);
       const mappedField = conceptMapping[concept];
 
-      console.log(`Processing line ${i}: "${concept}" -> ${mappedField}`);
-      console.log(`Parts count: ${parts.length}, First few parts:`, parts.slice(0, 5));
+      console.log(`Line ${i}: "${concept}" -> ${mappedField || 'UNMAPPED'}`);
+      console.log(`Parts: [${parts.slice(0, Math.min(parts.length, 6)).join(', ')}...]`);
 
       if (mappedField) {
-        // Los años aparecen en columnas: 1, 3, 5, 7, 9 (valores)
-        // Los porcentajes están en: 2, 4, 6, 8, 10
+        // Identificar columnas de valores (no porcentajes)
+        // Formato esperado: Concepto | Valor1 | %1 | Valor2 | %2 | Valor3 | %3 ...
         let yearIndex = 0;
         for (let colIndex = 1; colIndex < parts.length && yearIndex < years.length; colIndex += 2) {
-          const year = years[yearIndex];
-          const value = parseNumber(parts[colIndex]);
+          if (colIndex >= parts.length) break;
           
-          console.log(`  Year ${year} (col ${colIndex}): ${parts[colIndex]} -> ${value}`);
+          const year = years[yearIndex];
+          const rawValue = parts[colIndex];
+          const value = parseNumber(rawValue);
+          
+          console.log(`  Year ${year}: "${rawValue}" -> ${value}`);
           
           if (yearlyDataMap[year] && mappedField !== 'year') {
             (yearlyDataMap[year] as any)[mappedField] = value;
@@ -196,7 +226,7 @@ export const parseDetailedDataFromText = (text: string): YearlyData[] => {
           yearIndex++;
         }
       } else {
-        console.log(`Unmapped concept: "${concept}"`);
+        console.log(`Concept not mapped: "${concept}"`);
       }
     }
 
@@ -207,7 +237,13 @@ export const parseDetailedDataFromText = (text: string): YearlyData[] => {
     });
 
     console.log('Final parsed data:', result.length, 'years');
-    console.log('Sample data:', result[0]);
+    if (result.length > 0) {
+      console.log('Sample data for year', result[0].year, ':', {
+        net_sales: result[0].net_sales,
+        food_cost: result[0].food_cost,
+        paper_cost: result[0].paper_cost
+      });
+    }
     return result;
 
   } catch (error) {
