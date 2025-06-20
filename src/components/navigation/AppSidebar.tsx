@@ -13,7 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Calculator, Calendar, BarChart3, Home, Settings, LogOut, Building } from 'lucide-react';
+import { Calculator, Calendar, Database, Home, Settings, LogOut, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -39,9 +39,9 @@ const menuItems = [
     icon: Calendar,
   },
   {
-    title: "Análisis",
-    url: "/analysis",
-    icon: BarChart3,
+    title: "Datos Históricos",
+    url: "/historical-data",
+    icon: Database,
   },
 ];
 

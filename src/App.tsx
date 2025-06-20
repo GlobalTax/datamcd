@@ -13,7 +13,7 @@ import OptimizedDashboardPage from "./pages/OptimizedDashboardPage";
 import RestaurantPage from "./pages/RestaurantPage";
 import RestaurantManagementPage from "./pages/RestaurantManagementPage";
 import ProfitLossPage from "./pages/ProfitLossPage";
-import AnalysisPage from "./pages/AnalysisPage";
+import HistoricalDataPage from "./pages/HistoricalDataPage";
 import AdvisorPage from "./pages/AdvisorPage";
 import FranchiseeDetailPage from "./pages/FranchiseeDetailPage";
 import ValuationApp from "./pages/ValuationApp";
@@ -80,10 +80,10 @@ function App() {
                 }
               />
               <Route
-                path="/analysis"
+                path="/historical-data"
                 element={
                   <ProtectedRoute allowedRoles={['franchisee']}>
-                    <AnalysisPage />
+                    <HistoricalDataPage />
                   </ProtectedRoute>
                 }
               />
