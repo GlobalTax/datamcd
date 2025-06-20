@@ -66,6 +66,11 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              {/* Redirección de /analysis a /historical-data */}
+              <Route
+                path="/analysis"
+                element={<Navigate to="/historical-data" replace />}
+              />
               {/* Redirección de /profit-loss a /profit-loss/001 (primer restaurante) */}
               <Route
                 path="/profit-loss"
