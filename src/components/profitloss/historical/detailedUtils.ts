@@ -2,18 +2,26 @@
 import { YearlyData, DetailedYearlyData } from './types';
 import { toast } from 'sonner';
 
-// Mapeo de conceptos del P&L detallado a campos del sistema
+// Mapeo completo de conceptos del P&L detallado a campos del sistema
 const conceptMapping: { [key: string]: keyof DetailedYearlyData } = {
+  // Ingresos
   'ventas netas': 'ventas_netas',
   'valor de la produccion': 'valor_produccion',
+  'valor de la producción': 'valor_produccion',
+  
+  // Costos de Comida
   'comida': 'comida',
   'comida empleados': 'comida_empleados',
   'desperdicios': 'desperdicios',
   'papel': 'papel',
+  
+  // Mano de Obra
   'mano de obra': 'mano_obra',
   'mano de obra de gerencia': 'mano_obra_gerencia',
   'seguridad social': 'seguridad_social',
   'gastos viajes': 'gastos_viajes',
+  
+  // Gastos Controlables
   'publicidad': 'publicidad',
   'promoción': 'promocion',
   'promocion': 'promocion',
@@ -28,6 +36,8 @@ const conceptMapping: { [key: string]: keyof DetailedYearlyData } = {
   'gastos oficina': 'gastos_oficina',
   'diferencias caja': 'diferencias_caja',
   'varios controlables': 'varios_controlables',
+  
+  // Gastos No Controlables
   'p.a.c.': 'pac',
   'pac': 'pac',
   'renta': 'renta',
@@ -44,12 +54,17 @@ const conceptMapping: { [key: string]: keyof DetailedYearlyData } = {
   'pérdidas venta equipos': 'perdidas_venta_equipos',
   'perdidas venta equipos': 'perdidas_venta_equipos',
   'varios': 'varios_no_controlables',
+  
+  // Otros conceptos
   'ventas no producto': 'ventas_no_producto',
   'costo no producto': 'costo_no_producto',
+  's.o.i.': 'varios_no_controlables', // Mapear a varios no controlables por ahora
+  'soi': 'varios_no_controlables',
   'draw salary': 'draw_salary',
   'gastos generales': 'gastos_generales',
   'cuota del prestamo (interes + principal)': 'cuota_prestamo',
   'cuota del prestamo': 'cuota_prestamo',
+  'gastos de intereses': 'intereses',
   'inversiones con fondos propios': 'inversiones_fondos_propios'
 };
 
@@ -83,6 +98,7 @@ const extractYearsFromHeader = (headerLine: string): number[] => {
   console.log('Header line:', headerLine);
   
   const years: number[] = [];
+  
   // Buscar específicamente "Ejerc. YYYY" o similar
   const exerciseMatches = headerLine.match(/ejerc\.?\s*(\d{4})/gi);
   
@@ -113,7 +129,7 @@ const extractYearsFromHeader = (headerLine: string): number[] => {
     }
   }
   
-  const sortedYears = years.sort((a, b) => b - a); // Orden descendente (más reciente primero)
+  const sortedYears = years.sort((a, b) => b - a);
   console.log('Final sorted years:', sortedYears);
   return sortedYears;
 };
@@ -124,6 +140,23 @@ const normalizeConceptName = (concept: string): string => {
     .trim()
     .replace(/\s+/g, ' ')
     .replace(/[^\w\s\(\)\.\,]/g, '');
+};
+
+const isHeaderOrTotalLine = (concept: string): boolean => {
+  const normalizedConcept = normalizeConceptName(concept);
+  const skipPatterns = [
+    'total coste comida y papel',
+    'resultado bruto de explotacion',
+    'resultado bruto de explotación',
+    'total gastos controlables',
+    'total gastos no controlables',
+    'neto no producto',
+    'resultado neto',
+    'cash flow',
+    'cash flow del socio'
+  ];
+  
+  return skipPatterns.some(pattern => normalizedConcept.includes(pattern));
 };
 
 export const parseDetailedDataFromText = (text: string): YearlyData[] => {
@@ -199,23 +232,34 @@ export const parseDetailedDataFromText = (text: string): YearlyData[] => {
       if (!line) continue;
 
       const parts = line.split('\t');
-      if (parts.length < 3) continue; // Al menos concepto + 1 valor + 1 porcentaje
+      if (parts.length < 2) continue; // Al menos concepto + 1 valor
 
       const concept = normalizeConceptName(parts[0]);
+      
+      // Saltar líneas de totales y encabezados
+      if (isHeaderOrTotalLine(concept)) {
+        console.log(`Skipping header/total line: "${concept}"`);
+        continue;
+      }
+      
       const mappedField = conceptMapping[concept];
 
       console.log(`Line ${i}: "${concept}" -> ${mappedField || 'UNMAPPED'}`);
       console.log(`Parts: [${parts.slice(0, Math.min(parts.length, 6)).join(', ')}...]`);
 
       if (mappedField) {
-        // Identificar columnas de valores (no porcentajes)
-        // Formato esperado: Concepto | Valor1 | %1 | Valor2 | %2 | Valor3 | %3 ...
+        // Procesar valores para cada año
         let yearIndex = 0;
-        for (let colIndex = 1; colIndex < parts.length && yearIndex < years.length; colIndex += 2) {
-          if (colIndex >= parts.length) break;
-          
+        for (let colIndex = 1; colIndex < parts.length && yearIndex < years.length; colIndex++) {
           const year = years[yearIndex];
           const rawValue = parts[colIndex];
+          
+          // Saltar si parece ser un porcentaje o está vacío
+          if (!rawValue || rawValue.trim() === '' || rawValue.includes('%')) {
+            yearIndex++;
+            continue;
+          }
+          
           const value = parseNumber(rawValue);
           
           console.log(`  Year ${year}: "${rawValue}" -> ${value}`);
@@ -256,7 +300,7 @@ const convertDetailedToStandard = (detailed: DetailedYearlyData): YearlyData => 
   return {
     year: detailed.year,
     net_sales: detailed.ventas_netas,
-    other_revenue: 0, // No hay equivalente directo
+    other_revenue: detailed.valor_produccion - detailed.ventas_netas, // Diferencia entre valor producción y ventas netas
     food_cost: detailed.comida,
     food_employees: detailed.comida_empleados,
     waste: detailed.desperdicios,
