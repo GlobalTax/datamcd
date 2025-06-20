@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { FileUploadCard } from './historical/FileUploadCard';
 import { CopyPasteCard } from './historical/CopyPasteCard';
 import { DetailedCopyPasteCard } from './historical/DetailedCopyPasteCard';
+import { SingleYearCopyPasteCard } from './historical/SingleYearCopyPasteCard';
 import { ManualEntryCard } from './historical/ManualEntryCard';
 import { DataReviewSection } from './historical/DataReviewSection';
 import { ImportConfirmationSection } from './historical/ImportConfirmationSection';
@@ -27,12 +28,23 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
 
   const handleDataParsed = (data: YearlyData[], importMethod: ImportMethod) => {
     console.log('Datos procesados:', data);
-    setYearlyDataList(data);
+    
+    // Si ya tenemos datos, combinar con los nuevos (evitar duplicados por año)
+    const existingYears = yearlyDataList.map(item => item.year);
+    const newData = data.filter(item => !existingYears.includes(item.year));
+    
+    if (newData.length === 0) {
+      toast.error(`Los datos del año ${data[0]?.year} ya están cargados`);
+      return;
+    }
+    
+    const combinedData = [...yearlyDataList, ...newData].sort((a, b) => b.year - a.year);
+    setYearlyDataList(combinedData);
     setMethod(importMethod);
     setStep('review');
     
     const methodLabel = importMethod === 'detailed' ? 'detallados' : 'estándar';
-    toast.success(`${data.length} años de datos ${methodLabel} procesados correctamente`);
+    toast.success(`${newData.length} años de datos ${methodLabel} añadidos. Total: ${combinedData.length} años`);
   };
 
   const handleManualEntry = () => {
@@ -109,20 +121,44 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6">
+          <SingleYearCopyPasteCard onDataParsed={(data) => handleDataParsed(data, 'detailed')} />
           <DetailedCopyPasteCard onDataParsed={(data) => handleDataParsed(data, 'detailed')} />
           <FileUploadCard onDataParsed={(data) => handleDataParsed(data, 'file')} />
           <CopyPasteCard onDataParsed={(data) => handleDataParsed(data, 'csv')} />
           <ManualEntryCard onManualEntry={handleManualEntry} />
         </div>
 
-        <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded">
-          <h3 className="font-medium text-amber-800 mb-2">💡 Recomendación</h3>
-          <p className="text-sm text-amber-700">
-            Para datos como los tuyos (con categorías detalladas como "Comida Empleados", "Desperdicios", "Seguridad Social", etc.), 
-            utiliza la opción <strong>"Datos P&L Detallados"</strong> para obtener el mapeo más preciso.
+        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded">
+          <h3 className="font-medium text-green-800 mb-2">💡 Recomendación - Nuevo Método</h3>
+          <p className="text-sm text-green-700">
+            Usa la opción <strong>"Carga por Año Individual"</strong> para procesar tus datos año por año. 
+            Es el método más confiable y te permite construir tu base de datos histórica progresivamente.
           </p>
         </div>
+
+        {yearlyDataList.length > 0 && (
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">
+            <h3 className="font-medium text-blue-800 mb-2">📊 Datos Cargados</h3>
+            <p className="text-sm text-blue-700">
+              Tienes {yearlyDataList.length} años cargados: {yearlyDataList.map(d => d.year).join(', ')}
+            </p>
+            <div className="mt-2 flex gap-2">
+              <button 
+                onClick={() => setStep('review')}
+                className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+              >
+                Revisar Datos
+              </button>
+              <button 
+                onClick={() => setYearlyDataList([])}
+                className="text-sm bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+              >
+                Limpiar Todo
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
