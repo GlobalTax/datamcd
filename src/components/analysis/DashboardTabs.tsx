@@ -6,6 +6,7 @@ import { PerformanceCharts } from './PerformanceCharts';
 import { RestaurantComparison } from './RestaurantComparison';
 import { ProfitabilityAnalysis } from './ProfitabilityAnalysis';
 import { HistoricalDataTab } from './HistoricalDataTab';
+import { HistoricalYearsTab } from './HistoricalYearsTab';
 
 interface DashboardTabsProps {
   selectedYear: number;
@@ -22,12 +23,13 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
   console.log('DashboardTabs - Rendering tabs with restaurants:', restaurants.length);
   console.log('DashboardTabs - Component loaded successfully');
   console.log('DashboardTabs - HistoricalDataTab imported:', !!HistoricalDataTab);
-  console.log('DashboardTabs - About to render 5 tabs');
+  console.log('DashboardTabs - HistoricalYearsTab imported:', !!HistoricalYearsTab);
+  console.log('DashboardTabs - About to render 6 tabs');
   
   return (
     <div className="w-full">
       <Tabs defaultValue="metrics" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-6 h-auto">
+        <TabsList className="grid w-full grid-cols-6 mb-6 h-auto">
           <TabsTrigger value="metrics" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2">
             Métricas Financieras
           </TabsTrigger>
@@ -40,7 +42,10 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
           <TabsTrigger value="profitability" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2">
             Rentabilidad
           </TabsTrigger>
-          <TabsTrigger value="historical" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2 bg-red-200 border-2 border-red-500">
+          <TabsTrigger value="years" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2 bg-green-200 border-2 border-green-500">
+            Años Históricos
+          </TabsTrigger>
+          <TabsTrigger value="historical" className="text-xs sm:text-sm whitespace-nowrap px-2 py-2">
             Datos Históricos
           </TabsTrigger>
         </TabsList>
@@ -76,11 +81,11 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
           />
         </TabsContent>
 
+        <TabsContent value="years" className="space-y-6 mt-0">
+          <HistoricalYearsTab />
+        </TabsContent>
+
         <TabsContent value="historical" className="space-y-6 mt-0">
-          <div className="p-4 border-2 border-red-500 bg-yellow-100 mb-4">
-            <h2 className="text-xl font-bold text-red-600">DEBUG: PESTAÑA HISTÓRICOS</h2>
-            <p>Si ves esto, la pestaña funciona correctamente</p>
-          </div>
           <HistoricalDataTab />
         </TabsContent>
       </Tabs>
