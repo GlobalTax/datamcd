@@ -14,6 +14,7 @@ import RestaurantPage from "./pages/RestaurantPage";
 import RestaurantManagementPage from "./pages/RestaurantManagementPage";
 import ProfitLossPage from "./pages/ProfitLossPage";
 import HistoricalDataPage from "./pages/HistoricalDataPage";
+import AnalysisPage from "./pages/AnalysisPage";
 import AdvisorPage from "./pages/AdvisorPage";
 import FranchiseeDetailPage from "./pages/FranchiseeDetailPage";
 import ValuationApp from "./pages/ValuationApp";
@@ -66,10 +67,13 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              {/* Redirección de /analysis a /historical-data */}
               <Route
                 path="/analysis"
-                element={<Navigate to="/historical-data" replace />}
+                element={
+                  <ProtectedRoute allowedRoles={['franchisee']}>
+                    <AnalysisPage />
+                  </ProtectedRoute>
+                }
               />
               {/* Redirección de /profit-loss a /profit-loss/001 (primer restaurante) */}
               <Route
