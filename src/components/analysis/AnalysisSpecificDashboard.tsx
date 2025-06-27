@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/AuthProvider';
 import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
 import { AnalysisTabs } from './AnalysisTabs';
 

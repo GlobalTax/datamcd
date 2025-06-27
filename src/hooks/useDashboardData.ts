@@ -1,6 +1,6 @@
 
 import { useMemo } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/AuthProvider';
 import { CurrentValuation, RestaurantQueryData } from '@/types/valuationData';
 
 interface DisplayRestaurant {

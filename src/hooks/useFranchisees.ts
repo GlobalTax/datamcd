@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { Franchisee } from '@/types/auth';
 import { toast } from 'sonner';
 

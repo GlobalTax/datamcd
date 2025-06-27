@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/AuthProvider';
 import { useOptimizedFranchiseeRestaurants } from '@/hooks/useOptimizedFranchiseeRestaurants';
 import { useRestaurantUpdate } from '@/hooks/useRestaurantUpdate';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';

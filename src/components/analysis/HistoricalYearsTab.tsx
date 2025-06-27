@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Database, FileSpreadsheet, Upload, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/AuthProvider';
 import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
 import { useNavigate } from 'react-router-dom';
 

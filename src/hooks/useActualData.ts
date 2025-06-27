@@ -1,145 +1,162 @@
-
-import { useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
-import { ActualData, ActualDataUpdateParams } from '@/types/actualDataTypes';
-import { 
-  getMonthKey, 
-  getMonthNumber, 
-  getFieldMapping, 
-  groupDataByCategories 
-} from '@/utils/actualDataMappers';
+import { useAuth } from '@/hooks/AuthProvider';
 
-export const useActualData = () => {
+export interface ActualData {
+  id: string;
+  restaurant_id: string;
+  year: number;
+  month: number;
+  sales: number;
+  food_cost: number;
+  labor_cost: number;
+  rent: number;
+  utilities: number;
+  other_expenses: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export const useActualData = (restaurantId?: string, year?: number) => {
   const { user } = useAuth();
   const [actualData, setActualData] = useState<ActualData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchActualData = useCallback(async (restaurantId: string, year: number) => {
-    if (!user || !restaurantId) return;
+  const fetchActualData = async () => {
+    if (!user || !restaurantId) return [];
 
     try {
       setLoading(true);
       setError(null);
 
-      // Obtener datos reales de profit_loss_data agrupados por categoría/subcategoría
-      const { data, error: queryError } = await supabase
-        .from('profit_loss_data')
+      let query = supabase
+        .from('actual_data')
         .select('*')
         .eq('restaurant_id', restaurantId)
-        .eq('year', year);
+        .order('year', { ascending: false })
+        .order('month', { ascending: false });
 
-      if (queryError) {
-        console.error('Error fetching actual data:', queryError);
-        setError('Error al cargar los datos reales');
-        return;
+      if (year) {
+        query = query.eq('year', year);
       }
 
-      if (!data || data.length === 0) {
-        setActualData([]);
-        return;
+      const { data, error } = await query;
+
+      if (error) {
+        throw error;
       }
 
-      // Agrupar datos por categorías similares al presupuesto
-      const groupedData = groupDataByCategories(data);
-
-      // Calcular totales
-      Object.values(groupedData).forEach(item => {
-        item.total = item.jan + item.feb + item.mar + item.apr + item.may + item.jun +
-                    item.jul + item.aug + item.sep + item.oct + item.nov + item.dec;
-      });
-
-      setActualData(Object.values(groupedData));
-
+      return data || [];
     } catch (err) {
-      console.error('Error in fetchActualData:', err);
-      setError('Error al cargar los datos reales');
-      toast.error('Error al cargar los datos reales');
+      console.error('Error fetching actual data:', err);
+      setError(err instanceof Error ? err.message : 'Error desconocido');
+      return [];
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  };
 
-  const updateActualData = useCallback(async (data: ActualDataUpdateParams) => {
-    if (!user) return;
+  const {
+    data: queryData,
+    isLoading: queryLoading,
+    error: queryError,
+    refetch
+  } = useQuery({
+    queryKey: ['actualData', restaurantId, year],
+    queryFn: fetchActualData,
+    enabled: !!user && !!restaurantId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
+  useEffect(() => {
+    if (queryData) {
+      setActualData(queryData);
+    }
+  }, [queryData]);
+
+  const addActualData = async (data: Omit<ActualData, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      // Convertir el campo de mes a número
-      const monthFields = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-      const monthField = Object.keys(data).find(key => monthFields.includes(key));
-      
-      if (!monthField) {
-        throw new Error('No month field found');
+      const { data: newData, error } = await supabase
+        .from('actual_data')
+        .insert([data])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
       }
 
-      const monthNumber = getMonthNumber(monthField);
-      if (!monthNumber) {
-        throw new Error('Invalid month field');
-      }
-
-      // Buscar registro existente
-      const { data: existingData, error: fetchError } = await supabase
-        .from('profit_loss_data')
-        .select('*')
-        .eq('restaurant_id', data.restaurant_id)
-        .eq('year', data.year)
-        .eq('month', monthNumber)
-        .maybeSingle();
-
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      // Mapear la categoría y subcategoría a los campos de la base de datos
-      const fieldMapping = getFieldMapping(data.category, data.subcategory);
-      if (!fieldMapping) {
-        throw new Error(`No field mapping found for ${data.category} - ${data.subcategory}`);
-      }
-
-      const updateData = {
-        [fieldMapping]: data[monthField]
+      setActualData(prev => [newData, ...prev]);
+      refetch();
+      return { success: true, data: newData };
+    } catch (err) {
+      console.error('Error adding actual data:', err);
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : 'Error desconocido' 
       };
+    }
+  };
 
-      if (existingData) {
-        // Actualizar registro existente
-        const { error: updateError } = await supabase
-          .from('profit_loss_data')
-          .update(updateData)
-          .eq('id', existingData.id);
+  const updateActualData = async (id: string, updates: Partial<ActualData>) => {
+    try {
+      const { data: updatedData, error } = await supabase
+        .from('actual_data')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
-        if (updateError) {
-          throw updateError;
-        }
-      } else {
-        // Crear nuevo registro
-        const { error: insertError } = await supabase
-          .from('profit_loss_data')
-          .insert({
-            restaurant_id: data.restaurant_id,
-            year: data.year,
-            month: monthNumber,
-            ...updateData,
-            created_by: user.id
-          });
-
-        if (insertError) {
-          throw insertError;
-        }
+      if (error) {
+        throw error;
       }
 
+      setActualData(prev => 
+        prev.map(item => item.id === id ? updatedData : item)
+      );
+      refetch();
+      return { success: true, data: updatedData };
     } catch (err) {
       console.error('Error updating actual data:', err);
-      throw err;
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : 'Error desconocido' 
+      };
     }
-  }, [user]);
+  };
+
+  const deleteActualData = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('actual_data')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      setActualData(prev => prev.filter(item => item.id !== id));
+      refetch();
+      return { success: true };
+    } catch (err) {
+      console.error('Error deleting actual data:', err);
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : 'Error desconocido' 
+      };
+    }
+  };
 
   return {
     actualData,
-    loading,
-    error,
-    fetchActualData,
-    updateActualData
+    loading: loading || queryLoading,
+    error: error || (queryError instanceof Error ? queryError.message : null),
+    addActualData,
+    updateActualData,
+    deleteActualData,
+    refetch
   };
 };
