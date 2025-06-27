@@ -1,8 +1,9 @@
 
 import { useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { CurrentValuation, RestaurantQueryData } from '@/types/valuationData';
 
-type DisplayRestaurant = {
+interface DisplayRestaurant {
   id: string;
   name?: string;
   restaurant_name?: string;
@@ -19,8 +20,8 @@ type DisplayRestaurant = {
   lastYearRevenue?: number;
   baseRent?: number;
   isOwnedByMcD?: boolean;
-  currentValuation?: any;
-};
+  currentValuation?: CurrentValuation;
+}
 
 type ConnectionStatus = 'connecting' | 'connected' | 'fallback';
 
@@ -36,10 +37,10 @@ export const useDashboardData = () => {
 
   const isUsingCache = connectionStatus === 'fallback';
 
-  // Transformar datos para el componente - usando casting para propiedades dinámicas
+  // Transformar datos para el componente - usando tipos específicos
   const displayRestaurants: DisplayRestaurant[] = useMemo(() => {
     return (restaurants || []).map(r => {
-      const restaurantData = r as any;
+      const restaurantData = r as RestaurantQueryData;
       
       // Los datos de useAuth pueden tener diferentes estructuras dependiendo de si vienen de Supabase o son fallback
       if (restaurantData.base_restaurant) {
@@ -56,8 +57,6 @@ export const useDashboardData = () => {
           siteNumber: restaurantData.base_restaurant?.site_number || 'N/A',
           site_number: restaurantData.base_restaurant?.site_number || 'N/A',
           franchiseeName: franchisee?.franchisee_name || 'Franquiciado',
-          franchise_start_date: restaurantData.franchise_start_date,
-          franchise_end_date: restaurantData.franchise_end_date,
           restaurant_type: restaurantData.base_restaurant?.restaurant_type || 'traditional',
           status: restaurantData.status || 'active',
           lastYearRevenue: typeof restaurantData.last_year_revenue === 'number' ? restaurantData.last_year_revenue : 0,
@@ -66,20 +65,21 @@ export const useDashboardData = () => {
         };
       } else {
         // Estructura simple de Restaurant o datos de fallback
+        const simpleRestaurant = restaurantData as Record<string, unknown>;
         return {
-          id: restaurantData.id || `restaurant-${Math.random()}`,
-          name: restaurantData.restaurant_name || restaurantData.name || 'Restaurante',
-          restaurant_name: restaurantData.restaurant_name || restaurantData.name || 'Restaurante',
-          location: `${restaurantData.city || 'Ciudad'}, ${restaurantData.address || 'Dirección'}`,
-          city: restaurantData.city || 'Ciudad',
-          address: restaurantData.address || 'Dirección',
-          siteNumber: restaurantData.site_number || 'N/A',
-          site_number: restaurantData.site_number || 'N/A',
+          id: (simpleRestaurant.id as string) || `restaurant-${Math.random()}`,
+          name: (simpleRestaurant.restaurant_name as string) || (simpleRestaurant.name as string) || 'Restaurante',
+          restaurant_name: (simpleRestaurant.restaurant_name as string) || (simpleRestaurant.name as string) || 'Restaurante',
+          location: `${(simpleRestaurant.city as string) || 'Ciudad'}, ${(simpleRestaurant.address as string) || 'Dirección'}`,
+          city: (simpleRestaurant.city as string) || 'Ciudad',
+          address: (simpleRestaurant.address as string) || 'Dirección',
+          siteNumber: (simpleRestaurant.site_number as string) || 'N/A',
+          site_number: (simpleRestaurant.site_number as string) || 'N/A',
           franchiseeName: franchisee?.franchisee_name || 'Franquiciado',
-          restaurant_type: restaurantData.restaurant_type || 'traditional',
-          status: restaurantData.status || 'active',
-          lastYearRevenue: typeof restaurantData.lastYearRevenue === 'number' ? restaurantData.lastYearRevenue : 0,
-          baseRent: typeof restaurantData.baseRent === 'number' ? restaurantData.baseRent : 0,
+          restaurant_type: (simpleRestaurant.restaurant_type as string) || 'traditional',
+          status: (simpleRestaurant.status as string) || 'active',
+          lastYearRevenue: typeof simpleRestaurant.lastYearRevenue === 'number' ? simpleRestaurant.lastYearRevenue : 0,
+          baseRent: typeof simpleRestaurant.baseRent === 'number' ? simpleRestaurant.baseRent : 0,
           isOwnedByMcD: false,
         };
       }

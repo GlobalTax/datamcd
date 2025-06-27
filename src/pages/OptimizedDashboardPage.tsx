@@ -10,6 +10,7 @@ import { ConnectionStatus } from '@/components/dashboard/ConnectionStatus';
 import { StatusAlerts } from '@/components/dashboard/StatusAlerts';
 import { DashboardMetricsCards } from '@/components/dashboard/DashboardMetricsCards';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const OptimizedDashboardPage = () => {
   const navigate = useNavigate();
@@ -45,72 +46,74 @@ const OptimizedDashboardPage = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gray-50">
-        <AppSidebar />
-        <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-white px-6">
-            <SidebarTrigger className="-ml-1" />
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <h1 className="text-lg font-semibold text-gray-900">Dashboard Unificado</h1>
-                <ConnectionStatus connectionStatus={connectionStatus} />
+    <ErrorBoundary>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-gray-50">
+          <AppSidebar />
+          <SidebarInset className="flex-1">
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-white px-6">
+              <SidebarTrigger className="-ml-1" />
+              <div className="flex-1">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-lg font-semibold text-gray-900">Dashboard Unificado</h1>
+                  <ConnectionStatus connectionStatus={connectionStatus} />
+                </div>
+                <p className="text-sm text-gray-500">
+                  {connectionStatus === 'connected' 
+                    ? `Datos en tiempo real desde Supabase - Usuario: ${user?.email}` 
+                    : connectionStatus === 'fallback'
+                      ? 'Usando datos temporales - Problema de conexión con Supabase'
+                      : 'Conectando con la base de datos...'
+                  }
+                </p>
               </div>
-              <p className="text-sm text-gray-500">
-                {connectionStatus === 'connected' 
-                  ? `Datos en tiempo real desde Supabase - Usuario: ${user?.email}` 
-                  : connectionStatus === 'fallback'
-                    ? 'Usando datos temporales - Problema de conexión con Supabase'
-                    : 'Conectando con la base de datos...'
-                }
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => navigate('/analysis')} 
-                variant="default" 
-                size="sm"
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Análisis
-              </Button>
-              <Button 
-                onClick={() => window.location.reload()} 
-                variant="outline" 
-                size="sm"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Recargar
-              </Button>
-            </div>
-          </header>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => navigate('/analysis')} 
+                  variant="default" 
+                  size="sm"
+                >
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Análisis
+                </Button>
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  variant="outline" 
+                  size="sm"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Recargar
+                </Button>
+              </div>
+            </header>
 
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              <StatusAlerts 
-                user={user}
-                franchisee={franchisee}
-                restaurants={restaurants}
-                connectionStatus={connectionStatus}
-              />
+            <main className="flex-1 p-6">
+              <div className="space-y-6">
+                <StatusAlerts 
+                  user={user}
+                  franchisee={franchisee}
+                  restaurants={restaurants}
+                  connectionStatus={connectionStatus}
+                />
 
-              <DashboardMetricsCards 
-                metrics={metrics}
-                formatCurrency={formatCurrency}
-                connectionStatus={connectionStatus}
-              />
+                <DashboardMetricsCards 
+                  metrics={metrics}
+                  formatCurrency={formatCurrency}
+                  connectionStatus={connectionStatus}
+                />
 
-              {/* Dashboard principal */}
-              <DashboardSummary 
-                totalRestaurants={metrics.totalRestaurants} 
-                displayRestaurants={displayRestaurants}
-                isTemporaryData={connectionStatus === 'fallback'}
-              />
-            </div>
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+                {/* Dashboard principal */}
+                <DashboardSummary 
+                  totalRestaurants={metrics.totalRestaurants} 
+                  displayRestaurants={displayRestaurants}
+                  isTemporaryData={connectionStatus === 'fallback'}
+                />
+              </div>
+            </main>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </ErrorBoundary>
   );
 };
 

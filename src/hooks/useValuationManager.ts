@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRestaurantValuations } from '@/hooks/useRestaurantValuations';
 import { toast } from 'sonner';
+import { ValuationData } from '@/types/valuationData';
 
 export const useValuationManager = () => {
   const { valuations, saveValuation, updateValuation } = useRestaurantValuations();
@@ -11,7 +12,7 @@ export const useValuationManager = () => {
   const [valuationName, setValuationName] = useState<string>('');
   const [currentValuationId, setCurrentValuationId] = useState<string | null>(null);
 
-  const handleSaveValuation = async (currentData: any) => {
+  const handleSaveValuation = async (currentData: ValuationData) => {
     if (!selectedRestaurantId || !valuationName.trim()) {
       toast.error('Selecciona un restaurante e ingresa un nombre');
       return;
@@ -55,13 +56,13 @@ export const useValuationManager = () => {
     }
   };
 
-  const handleLoadValuation = (valuation: any, onValuationLoaded: (valuation: any) => void) => {
+  const handleLoadValuation = (valuation: ValuationData, onValuationLoaded: (valuation: ValuationData) => void) => {
     console.log('Loading valuation:', valuation);
-    setCurrentValuationId(valuation.id);
-    setSelectedRestaurantId(valuation.restaurant_id);
-    setSelectedRestaurantName(valuation.restaurant_name);
+    setCurrentValuationId(valuation.inputs ? 'existing' : null);
+    setSelectedRestaurantId('');
+    setSelectedRestaurantName('');
     onValuationLoaded(valuation);
-    toast.success(`Valoración "${valuation.valuation_name}" cargada`);
+    toast.success('Valoración cargada');
   };
 
   const getRestaurantValuations = () => {
