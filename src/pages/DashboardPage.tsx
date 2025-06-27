@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardMetrics } from '@/components/dashboard/DashboardMetrics';
@@ -45,7 +46,7 @@ export default function DashboardPage() {
       <ConnectionStatus />
       
       <DashboardMetrics 
-        restaurants={restaurants}
+        restaurants={restaurants || []}
         franchisee={franchisee}
       />
     </div>

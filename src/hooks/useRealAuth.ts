@@ -44,10 +44,14 @@ export const useRealAuth = (): RealAuthState & RealAuthActions => {
         throw new Error(`Error cargando perfil: ${profileError.message}`);
       }
 
+      // Validar que el rol sea uno de los tipos permitidos
+      const validRoles = ['franchisee', 'asesor', 'admin', 'superadmin', 'manager', 'asistente'];
+      const userRole = validRoles.includes(profile.role) ? profile.role : 'franchisee';
+
       const userData: User = {
         id: profile.id,
         email: profile.email,
-        role: profile.role,
+        role: userRole as User['role'],
         full_name: profile.full_name,
         created_at: profile.created_at,
         updated_at: profile.updated_at
@@ -56,7 +60,7 @@ export const useRealAuth = (): RealAuthState & RealAuthActions => {
       setUser(userData);
 
       // Si es franchisee, cargar datos del franquiciado
-      if (profile.role === 'franchisee') {
+      if (userRole === 'franchisee') {
         const { data: franchiseeData, error: franchiseeError } = await supabase
           .from('franchisees')
           .select('*')

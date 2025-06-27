@@ -3,7 +3,13 @@ import React from 'react';
 import { Database, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/AuthProvider';
 
-export const ConnectionStatus: React.FC = () => {
+interface ConnectionStatusProps {
+  connectionStatus?: 'connected' | 'connecting' | 'error' | 'fallback';
+}
+
+export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ 
+  connectionStatus 
+}) => {
   const { user, loading, error } = useAuth();
 
   if (loading) {

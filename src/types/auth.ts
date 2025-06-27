@@ -58,6 +58,7 @@ export interface AuthContextType {
   franchisee?: Franchisee | null;
   restaurants?: Restaurant[];
   loading: boolean;
+  error?: string | null;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;

@@ -36,6 +36,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     franchisee,
     restaurants,
     loading,
+    error,
     signIn,
     signUp,
     signOut
