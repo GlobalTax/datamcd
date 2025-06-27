@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Wifi, WifiOff, AlertTriangle, BarChart3, Building, TrendingUp, Zap, Database, Users } from 'lucide-react';
+import { RefreshCw, Database, AlertTriangle, BarChart3, Building, TrendingUp, Zap, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -31,20 +31,27 @@ type DisplayRestaurant = {
 };
 
 const OptimizedDashboardPage = () => {
-  const { user, franchisee, restaurants, loading, connectionStatus, isUsingCache } = useOptimizedAuth();
+  const { user, franchisee, restaurants, loading } = useAuth();
   const navigate = useNavigate();
 
   console.log('OptimizedDashboardPage - Estado actual:', {
     user: user ? { id: user.id, role: user.role, email: user.email } : null,
     franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
     restaurantsCount: restaurants?.length || 0,
-    loading,
-    connectionStatus,
-    isUsingCache
+    loading
   });
 
+  // Determinar el estado de conexión basado en los datos
+  const connectionStatus = (() => {
+    if (loading) return 'connecting';
+    if (user && user.id !== 'fallback-user') return 'connected';
+    return 'fallback';
+  })();
+
+  const isUsingCache = connectionStatus === 'fallback';
+
   // Transformar datos para el componente
-  const displayRestaurants: DisplayRestaurant[] = restaurants.map(r => ({
+  const displayRestaurants: DisplayRestaurant[] = (restaurants || []).map(r => ({
     id: r.id || `restaurant-${Math.random()}`,
     name: r.base_restaurant?.restaurant_name || 'Restaurante',
     restaurant_name: r.base_restaurant?.restaurant_name || 'Restaurante',
@@ -109,7 +116,7 @@ const OptimizedDashboardPage = () => {
         };
       case 'fallback':
         return {
-          icon: <WifiOff className="w-4 h-4" />,
+          icon: <AlertTriangle className="w-4 h-4" />,
           text: 'Datos Temporales',
           color: 'text-orange-600',
           bg: 'bg-orange-100'
@@ -125,7 +132,7 @@ const OptimizedDashboardPage = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando datos de Supabase...</p>
+          <p className="text-gray-600">Cargando datos...</p>
           <p className="text-sm text-gray-500 mt-2">Estado: {connectionStatus}</p>
         </div>
       </div>
@@ -141,7 +148,7 @@ const OptimizedDashboardPage = () => {
             <SidebarTrigger className="-ml-1" />
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-lg font-semibold text-gray-900">Dashboard - Datos Reales</h1>
+                <h1 className="text-lg font-semibold text-gray-900">Dashboard Unificado</h1>
                 <div className={`flex items-center gap-2 px-3 py-1 ${statusDisplay.bg} ${statusDisplay.color} rounded-md text-sm font-medium`}>
                   {statusDisplay.icon}
                   <span>{statusDisplay.text}</span>
@@ -198,7 +205,7 @@ const OptimizedDashboardPage = () => {
                           Usuario: {user.full_name} ({user.email}) • Rol: {user.role}
                         </p>
                         <p className="text-xs text-blue-600">
-                          ID Franquiciado: {franchisee.id} • Restaurantes: {restaurants.length}
+                          ID Franquiciado: {franchisee.id} • Restaurantes: {restaurants?.length || 0}
                         </p>
                       </div>
                     </div>
