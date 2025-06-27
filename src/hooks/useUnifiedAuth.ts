@@ -56,7 +56,7 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
     console.log('loadRealUserData - Starting for user:', userId);
     
     try {
-      // Timeout helper
+      // Timeout helper corregido
       const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 8000): Promise<T> => {
         return Promise.race([
           promise,

@@ -18,6 +18,22 @@ interface SimpleValuationManagerProps {
   currentData: any;
 }
 
+// Definir el tipo correcto para los datos de restaurante que llegan
+interface FranchiseeRestaurant {
+  id: string;
+  monthly_rent?: number;
+  last_year_revenue?: number;
+  status: string;
+  base_restaurant: {
+    id: string;
+    site_number: string;
+    restaurant_name: string;
+    address: string;
+    city: string;
+    restaurant_type: string;
+  };
+}
+
 const SimpleValuationManager = ({ 
   onRestaurantSelected, 
   onValuationLoaded, 
@@ -48,7 +64,7 @@ const SimpleValuationManager = ({
   });
 
   // Mapear los restaurantes desde la estructura franchisee_restaurants con base_restaurant
-  const restaurantOptions = restaurants
+  const restaurantOptions = (restaurants as FranchiseeRestaurant[])
     .filter(r => r.base_restaurant) // Solo restaurantes que tienen base_restaurant
     .map(r => ({
       id: r.base_restaurant.id,
