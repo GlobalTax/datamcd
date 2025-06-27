@@ -27,7 +27,7 @@ export default function RestaurantDetailPage() {
     return r.id === id || 
            (r.base_restaurant && r.base_restaurant.id === id) ||
            (r.base_restaurant_id === id);
-  }) as FranchiseeRestaurant | undefined;
+  }) as unknown as FranchiseeRestaurant | undefined;
 
   if (!restaurantData) {
     return (
@@ -50,7 +50,8 @@ export default function RestaurantDetailPage() {
     site_number: 'N/A',
     address: 'Dirección no disponible',
     city: 'Ciudad no disponible',
-    restaurant_type: 'traditional'
+    restaurant_type: 'traditional',
+    square_meters: undefined
   };
   
   const financialData = restaurantData;
