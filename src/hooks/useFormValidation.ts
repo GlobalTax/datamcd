@@ -68,15 +68,18 @@ export const useFormValidation = <T extends Record<string, any>>(
     value: any
   ): Promise<boolean> => {
     try {
-      const fieldSchema = schema.shape?.[fieldName as string];
-      if (fieldSchema) {
-        fieldSchema.parse(value);
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors[fieldName];
-          return newErrors;
-        });
-        return true;
+      // Solo intentar validar campos individuales si el schema es un ZodObject
+      if (schema instanceof z.ZodObject) {
+        const fieldSchema = schema.shape[fieldName as string];
+        if (fieldSchema) {
+          fieldSchema.parse(value);
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors[fieldName];
+            return newErrors;
+          });
+          return true;
+        }
       }
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -64,8 +64,8 @@ export const useDashboardData = () => {
           isOwnedByMcD: false,
         };
       } else {
-        // Estructura simple de Restaurant o datos de fallback
-        const simpleRestaurant = restaurantData as Record<string, unknown>;
+        // Estructura simple de Restaurant o datos de fallback - convertir a unknown primero
+        const simpleRestaurant = (restaurantData as unknown) as Record<string, unknown>;
         return {
           id: (simpleRestaurant.id as string) || `restaurant-${Math.random()}`,
           name: (simpleRestaurant.restaurant_name as string) || (simpleRestaurant.name as string) || 'Restaurante',
