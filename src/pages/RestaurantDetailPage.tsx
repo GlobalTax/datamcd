@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, MapPin, Calendar, Euro, Building2, Hash, Shield, TrendingUp } from 'lucide-react';
+import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
 
 export default function RestaurantDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,11 +23,11 @@ export default function RestaurantDetailPage() {
   }
 
   // Buscar el restaurante por ID - puede ser el ID del franchisee_restaurant o del base_restaurant
-  const restaurantData = restaurants?.find(r => {
+  const restaurantData = restaurants?.find((r: any) => {
     return r.id === id || 
            (r.base_restaurant && r.base_restaurant.id === id) ||
            (r.base_restaurant_id === id);
-  });
+  }) as FranchiseeRestaurant | undefined;
 
   if (!restaurantData) {
     return (

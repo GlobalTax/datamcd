@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/AuthProvider';
+import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
 
 export default function RestaurantRedirectPage() {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ export default function RestaurantRedirectPage() {
     if (!loading) {
       if (restaurants && restaurants.length > 0) {
         // Redirigir al primer restaurante disponible
-        const firstRestaurant = restaurants[0];
+        const firstRestaurant = restaurants[0] as FranchiseeRestaurant;
         const restaurantId = firstRestaurant.base_restaurant?.id || firstRestaurant.base_restaurant_id || firstRestaurant.id;
         navigate(`/restaurant/${restaurantId}`, { replace: true });
       } else {
