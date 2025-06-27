@@ -22,11 +22,13 @@ type DisplayRestaurant = {
   currentValuation?: any;
 };
 
+type ConnectionStatus = 'connecting' | 'connected' | 'fallback';
+
 export const useDashboardData = () => {
   const { user, franchisee, restaurants, loading } = useAuth();
 
   // Determinar el estado de conexión basado en los datos
-  const connectionStatus = useMemo(() => {
+  const connectionStatus: ConnectionStatus = useMemo(() => {
     if (loading) return 'connecting';
     if (user && user.id !== 'fallback-user') return 'connected';
     return 'fallback';
