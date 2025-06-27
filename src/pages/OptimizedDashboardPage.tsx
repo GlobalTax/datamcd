@@ -1,38 +1,28 @@
 
 import React from 'react';
-import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Database, AlertTriangle, BarChart3, Building, TrendingUp, Zap, Users } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-
-type DisplayRestaurant = {
-  id: string;
-  name?: string;
-  restaurant_name?: string;
-  location?: string;
-  city?: string;
-  address?: string;
-  siteNumber?: string;
-  site_number?: string;
-  franchiseeName?: string;
-  opening_date?: string;
-  contractEndDate?: string;
-  restaurant_type?: string;
-  status?: string;
-  lastYearRevenue?: number;
-  baseRent?: number;
-  isOwnedByMcD?: boolean;
-  currentValuation?: any;
-};
+import { RefreshCw, BarChart3 } from 'lucide-react';
+import { ConnectionStatus } from '@/components/dashboard/ConnectionStatus';
+import { StatusAlerts } from '@/components/dashboard/StatusAlerts';
+import { DashboardMetricsCards } from '@/components/dashboard/DashboardMetricsCards';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
 const OptimizedDashboardPage = () => {
-  const { user, franchisee, restaurants, loading } = useAuth();
   const navigate = useNavigate();
+  const {
+    user,
+    franchisee,
+    restaurants,
+    loading,
+    connectionStatus,
+    displayRestaurants,
+    metrics,
+    formatCurrency
+  } = useDashboardData();
 
   console.log('OptimizedDashboardPage - Estado actual:', {
     user: user ? { id: user.id, role: user.role, email: user.email } : null,
@@ -40,117 +30,6 @@ const OptimizedDashboardPage = () => {
     restaurantsCount: restaurants?.length || 0,
     loading
   });
-
-  // Determinar el estado de conexión basado en los datos
-  const connectionStatus = (() => {
-    if (loading) return 'connecting';
-    if (user && user.id !== 'fallback-user') return 'connected';
-    return 'fallback';
-  })();
-
-  const isUsingCache = connectionStatus === 'fallback';
-
-  // Transformar datos para el componente - usando casting para propiedades dinámicas
-  const displayRestaurants: DisplayRestaurant[] = (restaurants || []).map(r => {
-    const restaurantData = r as any;
-    
-    // Los datos de useAuth pueden tener diferentes estructuras dependiendo de si vienen de Supabase o son fallback
-    if (restaurantData.base_restaurant) {
-      // Estructura de Supabase con relación base_restaurant
-      return {
-        id: restaurantData.id || `restaurant-${Math.random()}`,
-        name: restaurantData.base_restaurant?.restaurant_name || 'Restaurante',
-        restaurant_name: restaurantData.base_restaurant?.restaurant_name || 'Restaurante',
-        location: restaurantData.base_restaurant ? 
-          `${restaurantData.base_restaurant.city || 'Ciudad'}, ${restaurantData.base_restaurant.address || 'Dirección'}` : 
-          'Ubicación',
-        city: restaurantData.base_restaurant?.city || 'Ciudad',
-        address: restaurantData.base_restaurant?.address || 'Dirección',
-        siteNumber: restaurantData.base_restaurant?.site_number || 'N/A',
-        site_number: restaurantData.base_restaurant?.site_number || 'N/A',
-        franchiseeName: franchisee?.franchisee_name || 'Franquiciado',
-        franchise_start_date: restaurantData.franchise_start_date,
-        franchise_end_date: restaurantData.franchise_end_date,
-        restaurant_type: restaurantData.base_restaurant?.restaurant_type || 'traditional',
-        status: restaurantData.status || 'active',
-        lastYearRevenue: typeof restaurantData.last_year_revenue === 'number' ? restaurantData.last_year_revenue : 0,
-        baseRent: typeof restaurantData.monthly_rent === 'number' ? restaurantData.monthly_rent : 0,
-        isOwnedByMcD: false,
-      };
-    } else {
-      // Estructura simple de Restaurant o datos de fallback
-      return {
-        id: restaurantData.id || `restaurant-${Math.random()}`,
-        name: restaurantData.restaurant_name || restaurantData.name || 'Restaurante',
-        restaurant_name: restaurantData.restaurant_name || restaurantData.name || 'Restaurante',
-        location: `${restaurantData.city || 'Ciudad'}, ${restaurantData.address || 'Dirección'}`,
-        city: restaurantData.city || 'Ciudad',
-        address: restaurantData.address || 'Dirección',
-        siteNumber: restaurantData.site_number || 'N/A',
-        site_number: restaurantData.site_number || 'N/A',
-        franchiseeName: franchisee?.franchisee_name || 'Franquiciado',
-        restaurant_type: restaurantData.restaurant_type || 'traditional',
-        status: restaurantData.status || 'active',
-        lastYearRevenue: typeof restaurantData.lastYearRevenue === 'number' ? restaurantData.lastYearRevenue : 0,
-        baseRent: typeof restaurantData.baseRent === 'number' ? restaurantData.baseRent : 0,
-        isOwnedByMcD: false,
-      };
-    }
-  });
-
-  // Calcular métricas del dashboard
-  const calculateDashboardMetrics = () => {
-    const totalRevenue = displayRestaurants.reduce((sum, r) => sum + (r.lastYearRevenue || 0), 0);
-    const totalRent = displayRestaurants.reduce((sum, r) => sum + (r.baseRent || 0) * 12, 0);
-    const operatingMargin = totalRevenue > 0 ? ((totalRevenue - totalRent) / totalRevenue) * 100 : 0;
-    const averageROI = totalRevenue > 0 && totalRent > 0 ? ((totalRevenue - totalRent) / totalRent) * 100 : 0;
-
-    return {
-      totalRevenue,
-      operatingMargin,
-      averageROI,
-      totalRestaurants: displayRestaurants.length
-    };
-  };
-
-  const metrics = calculateDashboardMetrics();
-
-  const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
-  };
-
-  const getConnectionStatusDisplay = () => {
-    switch (connectionStatus) {
-      case 'connecting':
-        return {
-          icon: <RefreshCw className="w-4 h-4 animate-spin" />,
-          text: 'Conectando...',
-          color: 'text-blue-600',
-          bg: 'bg-blue-100'
-        };
-      case 'connected':
-        return {
-          icon: <Database className="w-4 h-4" />,
-          text: 'Datos Reales',
-          color: 'text-green-600',
-          bg: 'bg-green-100'
-        };
-      case 'fallback':
-        return {
-          icon: <AlertTriangle className="w-4 h-4" />,
-          text: 'Datos Temporales',
-          color: 'text-orange-600',
-          bg: 'bg-orange-100'
-        };
-    }
-  };
-
-  const statusDisplay = getConnectionStatusDisplay();
 
   // Loading solo durante la carga inicial
   if (loading) {
@@ -175,16 +54,7 @@ const OptimizedDashboardPage = () => {
             <div className="flex-1">
               <div className="flex items-center gap-3">
                 <h1 className="text-lg font-semibold text-gray-900">Dashboard Unificado</h1>
-                <div className={`flex items-center gap-2 px-3 py-1 ${statusDisplay.bg} ${statusDisplay.color} rounded-md text-sm font-medium`}>
-                  {statusDisplay.icon}
-                  <span>{statusDisplay.text}</span>
-                </div>
-                {connectionStatus === 'connected' && (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs">
-                    <Zap className="w-3 h-3" />
-                    <span>Supabase Live</span>
-                  </div>
-                )}
+                <ConnectionStatus connectionStatus={connectionStatus} />
               </div>
               <p className="text-sm text-gray-500">
                 {connectionStatus === 'connected' 
@@ -217,105 +87,18 @@ const OptimizedDashboardPage = () => {
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
-              {/* Estado de la cuenta y franquiciado */}
-              {user && franchisee && (
-                <Card className="border-blue-200 bg-blue-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      <Users className="h-8 w-8 text-blue-600" />
-                      <div>
-                        <h3 className="font-semibold text-blue-900">
-                          {franchisee.franchisee_name}
-                        </h3>
-                        <p className="text-sm text-blue-700">
-                          Usuario: {user.full_name} ({user.email}) • Rol: {user.role}
-                        </p>
-                        <p className="text-xs text-blue-600">
-                          ID Franquiciado: {franchisee.id} • Restaurantes: {restaurants?.length || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <StatusAlerts 
+                user={user}
+                franchisee={franchisee}
+                restaurants={restaurants}
+                connectionStatus={connectionStatus}
+              />
 
-              {/* Alerta si no hay franquiciado pero sí usuario */}
-              {user && !franchisee && connectionStatus === 'connected' && (
-                <Alert className="border-amber-200 bg-amber-50">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-800">
-                    Tu usuario ({user.email}) existe en Supabase pero no tiene un franquiciado asignado. 
-                    Contacta con tu asesor para que te asigne un franquiciado.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Alerta de estado de conexión */}
-              {connectionStatus === 'fallback' && (
-                <Alert className="border-red-200 bg-red-50">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-800">
-                    No se pudo conectar con Supabase. Mostrando datos temporales. 
-                    Verifica tu conexión a internet y la configuración de Supabase.
-                    <Button 
-                      onClick={() => window.location.reload()} 
-                      variant="link" 
-                      className="p-0 h-auto ml-2 text-red-800 underline"
-                    >
-                      Intentar reconectar
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Métricas principales */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Restaurantes</CardTitle>
-                    <Building className="h-4 w-4 text-blue-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{metrics.totalRestaurants}</div>
-                    <p className="text-xs text-muted-foreground">
-                      {connectionStatus === 'connected' ? 'Desde Supabase' : 'Datos temporales'}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{formatCurrency(metrics.totalRevenue)}</div>
-                    <p className="text-xs text-muted-foreground">Último año</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Margen Operativo</CardTitle>
-                    <BarChart3 className="h-4 w-4 text-purple-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{metrics.operatingMargin.toFixed(1)}%</div>
-                    <p className="text-xs text-muted-foreground">Estimado</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">ROI Promedio</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-emerald-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{metrics.averageROI.toFixed(1)}%</div>
-                    <p className="text-xs text-muted-foreground">Retorno anual</p>
-                  </CardContent>
-                </Card>
-              </div>
+              <DashboardMetricsCards 
+                metrics={metrics}
+                formatCurrency={formatCurrency}
+                connectionStatus={connectionStatus}
+              />
 
               {/* Dashboard principal */}
               <DashboardSummary 
