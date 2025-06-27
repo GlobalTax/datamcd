@@ -1,19 +1,14 @@
 
 import React from 'react';
 import { Building2, TrendingUp, Calculator, BarChart3 } from 'lucide-react';
-import { Franchisee } from '@/types/auth';
 
 interface DashboardMetricsProps {
-  restaurants: any[];
-  franchisee?: Franchisee | null;
+  totalRestaurants: number;
 }
 
 export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
-  restaurants,
-  franchisee
+  totalRestaurants
 }) => {
-  const totalRestaurants = restaurants?.length || 0;
-  
   const metrics = [
     {
       label: 'Restaurantes',

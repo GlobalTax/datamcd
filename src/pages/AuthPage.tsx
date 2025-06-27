@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/hooks/AuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Store } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -53,7 +53,6 @@ const AuthPage = () => {
     // Solo mostrar error si hay uno, el éxito se maneja en useAuth
     if (result?.error) {
       console.log('AuthPage - Sign in error:', result.error);
-      toast.error(result.error);
     }
     
     setIsLoading(false);
@@ -63,13 +62,7 @@ const AuthPage = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    const result = await signUp(email, password, fullName);
-    
-    if (result?.error) {
-      toast.error(result.error);
-    } else {
-      toast.success('Cuenta creada correctamente. Revisa tu email para confirmar tu cuenta.');
-    }
+    await signUp(email, password, fullName);
     
     setIsLoading(false);
   };

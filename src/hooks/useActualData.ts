@@ -1,140 +1,145 @@
 
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/AuthProvider';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { ActualData, ActualDataUpdateParams } from '@/types/actualDataTypes';
+import { 
+  getMonthKey, 
+  getMonthNumber, 
+  getFieldMapping, 
+  groupDataByCategories 
+} from '@/utils/actualDataMappers';
 
-export interface ActualData {
-  id: string;
-  restaurant_id: string;
-  year: number;
-  month: number;
-  sales: number;
-  food_cost: number;
-  labor_cost: number;
-  rent: number;
-  utilities: number;
-  other_expenses: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export const useActualData = (restaurantId?: string, year?: number) => {
+export const useActualData = () => {
   const { user } = useAuth();
   const [actualData, setActualData] = useState<ActualData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchActualData = async (): Promise<ActualData[]> => {
-    if (!user || !restaurantId) return [];
+  const fetchActualData = useCallback(async (restaurantId: string, year: number) => {
+    if (!user || !restaurantId) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      // Usar monthly_tracking como fuente de datos reales
-      let query = supabase
-        .from('monthly_tracking')
+      // Obtener datos reales de profit_loss_data agrupados por categoría/subcategoría
+      const { data, error: queryError } = await supabase
+        .from('profit_loss_data')
         .select('*')
-        .eq('franchisee_restaurant_id', restaurantId)
-        .order('year', { ascending: false })
-        .order('month', { ascending: false });
+        .eq('restaurant_id', restaurantId)
+        .eq('year', year);
 
-      if (year) {
-        query = query.eq('year', year);
+      if (queryError) {
+        console.error('Error fetching actual data:', queryError);
+        setError('Error al cargar los datos reales');
+        return;
       }
 
-      const { data, error } = await query;
-
-      if (error) {
-        throw error;
+      if (!data || data.length === 0) {
+        setActualData([]);
+        return;
       }
 
-      // Mapear monthly_tracking a ActualData
-      const mappedData: ActualData[] = (data || []).map(item => ({
-        id: item.id,
-        restaurant_id: item.franchisee_restaurant_id || '',
-        year: item.year,
-        month: item.month,
-        sales: item.actual_revenue || 0,
-        food_cost: item.actual_food_cost || 0,
-        labor_cost: item.actual_labor_cost || 0,
-        rent: item.actual_rent || 0,
-        utilities: item.actual_utilities || 0,
-        other_expenses: item.actual_other_expenses || 0,
-        created_at: item.created_at,
-        updated_at: item.updated_at
-      }));
+      // Agrupar datos por categorías similares al presupuesto
+      const groupedData = groupDataByCategories(data);
 
-      setActualData(mappedData);
-      return mappedData;
+      // Calcular totales
+      Object.values(groupedData).forEach(item => {
+        item.total = item.jan + item.feb + item.mar + item.apr + item.may + item.jun +
+                    item.jul + item.aug + item.sep + item.oct + item.nov + item.dec;
+      });
+
+      setActualData(Object.values(groupedData));
+
     } catch (err) {
-      console.error('Error fetching actual data:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setError(errorMessage);
-      return [];
+      console.error('Error in fetchActualData:', err);
+      setError('Error al cargar los datos reales');
+      toast.error('Error al cargar los datos reales');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const {
-    data: queryData,
-    isLoading: queryLoading,
-    error: queryError,
-    refetch
-  } = useQuery({
-    queryKey: ['actualData', restaurantId, year],
-    queryFn: fetchActualData,
-    enabled: !!user && !!restaurantId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  const updateActualData = useCallback(async (data: ActualDataUpdateParams) => {
+    if (!user) return;
 
-  useEffect(() => {
-    if (queryData) {
-      setActualData(queryData);
-    }
-  }, [queryData]);
-
-  const updateActualData = async (data: any) => {
     try {
-      const { data: updatedData, error } = await supabase
-        .from('monthly_tracking')
-        .update({
-          actual_revenue: data.sales,
-          actual_food_cost: data.food_cost,
-          actual_labor_cost: data.labor_cost,
-          actual_rent: data.rent,
-          actual_utilities: data.utilities,
-          actual_other_expenses: data.other_expenses,
-        })
-        .eq('franchisee_restaurant_id', data.restaurant_id)
-        .eq('year', data.year)
-        .eq('month', data.month)
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
+      // Convertir el campo de mes a número
+      const monthFields = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      const monthField = Object.keys(data).find(key => monthFields.includes(key));
+      
+      if (!monthField) {
+        throw new Error('No month field found');
       }
 
-      refetch();
-      return { success: true, data: updatedData };
+      const monthNumber = getMonthNumber(monthField);
+      if (!monthNumber) {
+        throw new Error('Invalid month field');
+      }
+
+      // Buscar registro existente
+      const { data: existingData, error: fetchError } = await supabase
+        .from('profit_loss_data')
+        .select('*')
+        .eq('restaurant_id', data.restaurant_id)
+        .eq('year', data.year)
+        .eq('month', monthNumber)
+        .maybeSingle();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      // Mapear la categoría y subcategoría a los campos de la base de datos
+      const fieldMapping = getFieldMapping(data.category, data.subcategory);
+      if (!fieldMapping) {
+        throw new Error(`No field mapping found for ${data.category} - ${data.subcategory}`);
+      }
+
+      const updateData = {
+        [fieldMapping]: data[monthField]
+      };
+
+      if (existingData) {
+        // Actualizar registro existente
+        const { error: updateError } = await supabase
+          .from('profit_loss_data')
+          .update(updateData)
+          .eq('id', existingData.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+      } else {
+        // Crear nuevo registro
+        const { error: insertError } = await supabase
+          .from('profit_loss_data')
+          .insert({
+            restaurant_id: data.restaurant_id,
+            year: data.year,
+            month: monthNumber,
+            ...updateData,
+            created_by: user.id
+          });
+
+        if (insertError) {
+          throw insertError;
+        }
+      }
+
     } catch (err) {
       console.error('Error updating actual data:', err);
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Error desconocido' 
-      };
+      throw err;
     }
-  };
+  }, [user]);
 
   return {
     actualData,
-    loading: loading || queryLoading,
-    error: error || (queryError instanceof Error ? queryError.message : null),
+    loading,
+    error,
     fetchActualData,
-    updateActualData,
-    refetch
+    updateActualData
   };
 };

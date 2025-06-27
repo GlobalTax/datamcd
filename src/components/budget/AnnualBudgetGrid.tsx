@@ -40,15 +40,15 @@ export const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({
     error: actualError,
     fetchActualData,
     updateActualData
-  } = useActualData(restaurantId, year);
+  } = useActualData();
 
   const selectedRestaurant = restaurants.find(r => r.id === restaurantId);
   const restaurantName = selectedRestaurant?.base_restaurant?.restaurant_name;
 
   // Cargar datos reales automáticamente
   useEffect(() => {
-    if (restaurantId && year && fetchActualData) {
-      fetchActualData();
+    if (restaurantId && year) {
+      fetchActualData(restaurantId, year);
     }
   }, [restaurantId, year, fetchActualData]);
 
@@ -76,9 +76,7 @@ export const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({
       });
 
       // Recargar datos reales
-      if (fetchActualData) {
-        fetchActualData();
-      }
+      fetchActualData(restaurantId, year);
       toast.success('Dato real actualizado correctamente');
     } catch (error) {
       console.error('Error updating actual data:', error);

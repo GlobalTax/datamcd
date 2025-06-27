@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -14,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/AuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 
 const menuItems = [
   {

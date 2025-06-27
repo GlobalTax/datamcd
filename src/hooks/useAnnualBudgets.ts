@@ -1,18 +1,15 @@
 
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/AuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { BudgetData } from '@/types/budgetTypes';
 
-// Interfaz que coincide con la tabla annual_budgets de la base de datos
-interface AnnualBudgetRow {
+export interface AnnualBudgetData {
   id: string;
   restaurant_id: string;
   year: number;
   category: string;
-  subcategory: string | null;
+  subcategory?: string;
   jan: number;
   feb: number;
   mar: number;
@@ -27,101 +24,163 @@ interface AnnualBudgetRow {
   dec: number;
   created_at: string;
   updated_at: string;
-  created_by: string | null;
+  created_by: string;
 }
 
-interface UseAnnualBudgetsResult {
-  budgets: AnnualBudgetRow[];
-  loading: boolean;
-  error: Error | null;
-  fetchBudgets: (restaurantId: string, year: number) => void;
-  saveBudgets: (restaurantId: string, year: number, data: BudgetData[]) => Promise<boolean>;
-}
-
-export const useAnnualBudgets = (): UseAnnualBudgetsResult => {
+export const useAnnualBudgets = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [budgets, setBudgets] = useState<AnnualBudgetRow[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<Error | null>(null);
+  const [budgets, setBudgets] = useState<AnnualBudgetData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchBudgets = async (restaurantId: string, year: number) => {
+  const fetchBudgets = useCallback(async (restaurantId: string, year: number) => {
+    console.log('useAnnualBudgets - fetchBudgets called with:', { restaurantId, year, userExists: !!user });
+    
     if (!user) {
-      throw new Error("User not authenticated");
+      console.log('useAnnualBudgets - No user found, cannot fetch budgets');
+      return;
     }
 
-    setLoading(true);
-    setError(null);
+    if (!restaurantId) {
+      console.log('useAnnualBudgets - No restaurantId provided');
+      return;
+    }
+
+    // Evitar llamadas duplicadas si ya estamos cargando
+    if (loading) {
+      console.log('useAnnualBudgets - Already loading, skipping duplicate call');
+      return;
+    }
 
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      setError(null);
+      
+      console.log('useAnnualBudgets - Starting fetch for:', { restaurantId, year });
+
+      // Primero verificar si el usuario tiene acceso a este restaurante
+      const { data: restaurantCheck, error: restaurantError } = await supabase
+        .from('franchisee_restaurants')
+        .select(`
+          id,
+          franchisee_id,
+          franchisees!inner(
+            user_id
+          )
+        `)
+        .eq('id', restaurantId)
+        .eq('franchisees.user_id', user.id)
+        .single();
+
+      if (restaurantError) {
+        console.error('useAnnualBudgets - Error checking restaurant access:', restaurantError);
+        setError('No tienes acceso a este restaurante');
+        return;
+      }
+
+      console.log('useAnnualBudgets - Restaurant access verified:', restaurantCheck);
+
+      const { data, error: budgetError } = await supabase
         .from('annual_budgets')
         .select('*')
         .eq('restaurant_id', restaurantId)
         .eq('year', year)
-        .order('category');
+        .order('category', { ascending: true })
+        .order('subcategory', { ascending: true });
 
-      if (error) {
-        throw error;
+      if (budgetError) {
+        console.error('useAnnualBudgets - Error fetching annual budgets:', budgetError);
+        setError(`Error al cargar los presupuestos: ${budgetError.message}`);
+        toast.error('Error al cargar los presupuestos: ' + budgetError.message);
+        return;
       }
 
+      console.log('useAnnualBudgets - Raw data from DB:', data);
       setBudgets(data || []);
-      return data || [];
-    } catch (err: any) {
-      setError(err);
-      throw err;
+      console.log(`useAnnualBudgets - Successfully loaded ${data?.length || 0} budget entries`);
+      
+    } catch (err) {
+      console.error('useAnnualBudgets - Unexpected error in fetchBudgets:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar los presupuestos';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, loading]);
 
-  const saveBudgets = async (restaurantId: string, year: number, data: BudgetData[]): Promise<boolean> => {
+  const saveBudgets = useCallback(async (restaurantId: string, year: number, budgetData: any[]): Promise<boolean> => {
+    if (!user) {
+      console.log('useAnnualBudgets - No user for saving budgets');
+      return false;
+    }
+
     try {
-      // Convertir BudgetData[] a formato de base de datos
-      const budgetRows = data.map(row => ({
-        restaurant_id: restaurantId,
-        year: year,
-        category: row.category,
-        subcategory: row.subcategory || null,
-        jan: row.jan || 0,
-        feb: row.feb || 0,
-        mar: row.mar || 0,
-        apr: row.apr || 0,
-        may: row.may || 0,
-        jun: row.jun || 0,
-        jul: row.jul || 0,
-        aug: row.aug || 0,
-        sep: row.sep || 0,
-        oct: row.oct || 0,
-        nov: row.nov || 0,
-        dec: row.dec || 0,
-        created_by: user?.id
-      }));
+      setLoading(true);
+      console.log('useAnnualBudgets - Saving budgets:', { restaurantId, year, budgetData });
 
-      // Primero eliminar datos existentes para este restaurante y año
-      await supabase
+      // Convertir los datos del grid al formato de la base de datos
+      const budgetEntries = budgetData
+        .filter(item => !item.isCategory) // Solo guardar elementos, no categorías
+        .map(item => ({
+          restaurant_id: restaurantId,
+          year: year,
+          category: item.category,
+          subcategory: item.subcategory,
+          jan: item.jan || 0,
+          feb: item.feb || 0,
+          mar: item.mar || 0,
+          apr: item.apr || 0,
+          may: item.may || 0,
+          jun: item.jun || 0,
+          jul: item.jul || 0,
+          aug: item.aug || 0,
+          sep: item.sep || 0,
+          oct: item.oct || 0,
+          nov: item.nov || 0,
+          dec: item.dec || 0,
+          created_by: user.id
+        }));
+
+      console.log('useAnnualBudgets - Budget entries to save:', budgetEntries);
+
+      // Primero eliminar los registros existentes para este restaurante y año
+      const { error: deleteError } = await supabase
         .from('annual_budgets')
         .delete()
         .eq('restaurant_id', restaurantId)
         .eq('year', year);
 
-      // Insertar nuevos datos
-      const { error } = await supabase
-        .from('annual_budgets')
-        .insert(budgetRows);
-
-      if (error) {
-        throw error;
+      if (deleteError) {
+        console.error('useAnnualBudgets - Error deleting existing budgets:', deleteError);
+        toast.error('Error al actualizar el presupuesto: ' + deleteError.message);
+        return false;
       }
 
-      toast.success('Presupuestos guardados correctamente');
+      // Insertar los nuevos registros
+      const { error: insertError } = await supabase
+        .from('annual_budgets')
+        .insert(budgetEntries);
+
+      if (insertError) {
+        console.error('useAnnualBudgets - Error inserting budgets:', insertError);
+        toast.error('Error al guardar el presupuesto: ' + insertError.message);
+        return false;
+      }
+
+      toast.success('Presupuesto guardado correctamente');
+      // Actualizar el estado local con los nuevos datos
+      await fetchBudgets(restaurantId, year);
       return true;
+
     } catch (err) {
-      console.error('Error saving budgets:', err);
-      toast.error('Error al guardar los presupuestos');
+      console.error('useAnnualBudgets - Error saving budgets:', err);
+      toast.error('Error al guardar el presupuesto');
       return false;
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [user, fetchBudgets]);
 
   return {
     budgets,

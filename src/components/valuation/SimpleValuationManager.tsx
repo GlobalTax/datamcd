@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/AuthProvider';
+import { useFastAuth } from '@/hooks/useFastAuth';
 import { useValuationManager } from '@/hooks/useValuationManager';
 import { Building2, RefreshCw, Zap } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,28 +18,12 @@ interface SimpleValuationManagerProps {
   currentData: any;
 }
 
-// Definir el tipo correcto para los datos de restaurante que llegan
-interface FranchiseeRestaurant {
-  id: string;
-  monthly_rent?: number;
-  last_year_revenue?: number;
-  status: string;
-  base_restaurant: {
-    id: string;
-    site_number: string;
-    restaurant_name: string;
-    address: string;
-    city: string;
-    restaurant_type: string;
-  };
-}
-
 const SimpleValuationManager = ({ 
   onRestaurantSelected, 
   onValuationLoaded, 
   currentData 
 }: SimpleValuationManagerProps) => {
-  const { user, franchisee, restaurants, loading } = useAuth();
+  const { user, franchisee, restaurants, loading, isUsingCache } = useFastAuth();
   const {
     selectedRestaurantId,
     setSelectedRestaurantId,
@@ -56,20 +40,20 @@ const SimpleValuationManager = ({
   const [isNewValuationOpen, setIsNewValuationOpen] = useState(false);
   const [isLoadValuationOpen, setIsLoadValuationOpen] = useState(false);
 
-  console.log('SimpleValuationManager - Auth data:', {
+  console.log('SimpleValuationManager - Fast auth data:', {
     user: user ? { id: user.id, role: user.role } : null,
     franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
     restaurantsCount: restaurants?.length || 0,
-    loading
+    loading,
+    isUsingCache
   });
 
-  // Mapear los restaurantes desde la estructura franchisee_restaurants con base_restaurant
   const restaurantOptions = restaurants
-    .filter((r: any) => r.base_restaurant) // Solo restaurantes que tienen base_restaurant
-    .map((r: any) => ({
-      id: r.base_restaurant.id,
-      name: r.base_restaurant.restaurant_name,
-      site_number: r.base_restaurant.site_number
+    .filter(r => r.base_restaurant)
+    .map(r => ({
+      id: r.base_restaurant!.id,
+      name: r.base_restaurant!.restaurant_name,
+      site_number: r.base_restaurant!.site_number
     }));
 
   const handleRestaurantChange = (restaurantId: string) => {
@@ -99,7 +83,7 @@ const SimpleValuationManager = ({
       <Card>
         <CardContent className="p-8 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p>Cargando datos...</p>
+          <p>Cargando datos rápidos...</p>
         </CardContent>
       </Card>
     );
@@ -114,7 +98,10 @@ const SimpleValuationManager = ({
             Datos predefinidos disponibles
           </h3>
           <p className="text-gray-600 mb-4">
-            Los restaurantes están disponibles para valoración con datos predefinidos.
+            {isUsingCache 
+              ? 'Usando datos predefinidos para carga rápida. Los restaurantes están disponibles para valoración.'
+              : 'No hay restaurantes asignados para realizar valoraciones.'
+            }
           </p>
           <Button onClick={() => window.location.reload()}>
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -132,12 +119,23 @@ const SimpleValuationManager = ({
           <CardTitle className="flex items-center gap-2">
             <Building2 className="w-5 h-5" />
             Gestión de Valoraciones
+            {isUsingCache && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                <Zap className="w-3 h-3" />
+                <span>Carga rápida</span>
+              </div>
+            )}
           </CardTitle>
           <Button onClick={() => window.location.reload()} variant="outline" size="sm">
             <RefreshCw className="w-4 h-4 mr-2" />
             Actualizar
           </Button>
         </div>
+        {isUsingCache && (
+          <p className="text-sm text-blue-600">
+            Usando datos predefinidos para experiencia rápida. Recarga para sincronizar.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <RestaurantSelectorCard

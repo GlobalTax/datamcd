@@ -1,17 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/AuthProvider';
-import { RestaurantQueryData } from '@/types/valuationData';
+import { useAuth } from '@/hooks/useAuth';
+import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
 import { toast } from 'sonner';
 
 export const useOptimizedFranchiseeRestaurants = () => {
   const { user, franchisee } = useAuth();
-  const [restaurants, setRestaurants] = useState<RestaurantQueryData[]>([]);
+  const [restaurants, setRestaurants] = useState<FranchiseeRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchOptimizedRestaurants = useCallback(async () => {
+  const fetchOptimizedRestaurants = async () => {
     console.log('useOptimizedFranchiseeRestaurants - Starting optimized fetch');
     console.log('useOptimizedFranchiseeRestaurants - User:', user ? { id: user.id, role: user.role } : null);
     console.log('useOptimizedFranchiseeRestaurants - Franchisee:', franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null);
@@ -131,7 +131,7 @@ export const useOptimizedFranchiseeRestaurants = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, franchisee]);
+  };
 
   useEffect(() => {
     console.log('useOptimizedFranchiseeRestaurants - useEffect triggered');

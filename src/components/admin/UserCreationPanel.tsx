@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/AuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { useUserCreation } from '@/hooks/useUserCreation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
