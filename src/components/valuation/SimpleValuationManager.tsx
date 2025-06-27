@@ -47,12 +47,13 @@ const SimpleValuationManager = ({
     loading
   });
 
+  // Mapear los restaurantes desde la estructura franchisee_restaurants con base_restaurant
   const restaurantOptions = restaurants
-    .filter(r => r.base_restaurant)
+    .filter(r => r.base_restaurant) // Solo restaurantes que tienen base_restaurant
     .map(r => ({
-      id: r.base_restaurant!.id,
-      name: r.base_restaurant!.restaurant_name,
-      site_number: r.base_restaurant!.site_number
+      id: r.base_restaurant.id,
+      name: r.base_restaurant.restaurant_name,
+      site_number: r.base_restaurant.site_number
     }));
 
   const handleRestaurantChange = (restaurantId: string) => {

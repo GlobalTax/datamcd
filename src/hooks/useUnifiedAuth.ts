@@ -67,13 +67,15 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
       };
 
       // Cargar perfil con timeout
-      const { data: profile, error: profileError } = await withTimeout(
+      const profileResult = await withTimeout(
         supabase
           .from('profiles')
           .select('id, email, full_name, role')
           .eq('id', userId)
           .maybeSingle()
       );
+
+      const { data: profile, error: profileError } = profileResult;
 
       if (profileError) {
         console.error('Profile error:', profileError);
@@ -96,7 +98,7 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
       // Si es franchisee, cargar datos adicionales
       if (profile.role === 'franchisee') {
         try {
-          const { data: franchiseeData, error: franchiseeError } = await withTimeout(
+          const franchiseeResult = await withTimeout(
             supabase
               .from('franchisees')
               .select('id, user_id, franchisee_name, company_name, total_restaurants, created_at, updated_at')
@@ -104,8 +106,10 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
               .maybeSingle()
           );
 
+          const { data: franchiseeData, error: franchiseeError } = franchiseeResult;
+
           if (!franchiseeError && franchiseeData) {
-            const { data: restaurantsData } = await withTimeout(
+            const restaurantsResult = await withTimeout(
               supabase
                 .from('franchisee_restaurants')
                 .select(`
@@ -126,6 +130,8 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
                 .eq('status', 'active')
                 .limit(20)
             );
+
+            const { data: restaurantsData } = restaurantsResult;
 
             console.log('Real data loaded successfully');
             return {
