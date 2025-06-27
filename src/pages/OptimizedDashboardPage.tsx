@@ -50,27 +50,51 @@ const OptimizedDashboardPage = () => {
 
   const isUsingCache = connectionStatus === 'fallback';
 
-  // Transformar datos para el componente
-  const displayRestaurants: DisplayRestaurant[] = (restaurants || []).map(r => ({
-    id: r.id || `restaurant-${Math.random()}`,
-    name: r.base_restaurant?.restaurant_name || 'Restaurante',
-    restaurant_name: r.base_restaurant?.restaurant_name || 'Restaurante',
-    location: r.base_restaurant ? 
-      `${r.base_restaurant.city || 'Ciudad'}, ${r.base_restaurant.address || 'Dirección'}` : 
-      'Ubicación',
-    city: r.base_restaurant?.city || 'Ciudad',
-    address: r.base_restaurant?.address || 'Dirección',
-    siteNumber: r.base_restaurant?.site_number || 'N/A',
-    site_number: r.base_restaurant?.site_number || 'N/A',
-    franchiseeName: franchisee?.franchisee_name || 'Franquiciado',
-    franchise_start_date: r.franchise_start_date,
-    franchise_end_date: r.franchise_end_date,
-    restaurant_type: r.base_restaurant?.restaurant_type || 'traditional',
-    status: r.status || 'active',
-    lastYearRevenue: typeof r.last_year_revenue === 'number' ? r.last_year_revenue : 0,
-    baseRent: typeof r.monthly_rent === 'number' ? r.monthly_rent : 0,
-    isOwnedByMcD: false,
-  }));
+  // Transformar datos para el componente - ajustado para la estructura real de useAuth
+  const displayRestaurants: DisplayRestaurant[] = (restaurants || []).map(r => {
+    // Los datos de useAuth pueden tener diferentes estructuras dependiendo de si vienen de Supabase o son fallback
+    if (r.base_restaurant) {
+      // Estructura de Supabase con relación base_restaurant
+      return {
+        id: r.id || `restaurant-${Math.random()}`,
+        name: r.base_restaurant?.restaurant_name || 'Restaurante',
+        restaurant_name: r.base_restaurant?.restaurant_name || 'Restaurante',
+        location: r.base_restaurant ? 
+          `${r.base_restaurant.city || 'Ciudad'}, ${r.base_restaurant.address || 'Dirección'}` : 
+          'Ubicación',
+        city: r.base_restaurant?.city || 'Ciudad',
+        address: r.base_restaurant?.address || 'Dirección',
+        siteNumber: r.base_restaurant?.site_number || 'N/A',
+        site_number: r.base_restaurant?.site_number || 'N/A',
+        franchiseeName: franchisee?.franchisee_name || 'Franquiciado',
+        franchise_start_date: r.franchise_start_date,
+        franchise_end_date: r.franchise_end_date,
+        restaurant_type: r.base_restaurant?.restaurant_type || 'traditional',
+        status: r.status || 'active',
+        lastYearRevenue: typeof r.last_year_revenue === 'number' ? r.last_year_revenue : 0,
+        baseRent: typeof r.monthly_rent === 'number' ? r.monthly_rent : 0,
+        isOwnedByMcD: false,
+      };
+    } else {
+      // Estructura simple de Restaurant o datos de fallback
+      return {
+        id: r.id || `restaurant-${Math.random()}`,
+        name: r.restaurant_name || r.name || 'Restaurante',
+        restaurant_name: r.restaurant_name || r.name || 'Restaurante',
+        location: `${r.city || 'Ciudad'}, ${r.address || 'Dirección'}`,
+        city: r.city || 'Ciudad',
+        address: r.address || 'Dirección',
+        siteNumber: r.site_number || 'N/A',
+        site_number: r.site_number || 'N/A',
+        franchiseeName: franchisee?.franchisee_name || 'Franquiciado',
+        restaurant_type: r.restaurant_type || 'traditional',
+        status: r.status || 'active',
+        lastYearRevenue: typeof r.lastYearRevenue === 'number' ? r.lastYearRevenue : 0,
+        baseRent: typeof r.baseRent === 'number' ? r.baseRent : 0,
+        isOwnedByMcD: false,
+      };
+    }
+  });
 
   // Calcular métricas del dashboard
   const calculateDashboardMetrics = () => {
