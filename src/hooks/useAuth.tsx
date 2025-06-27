@@ -25,10 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const { fetchUserData } = useUserDataFetcher();
 
-  const { signIn, signUp, signOut } = useAuthActions({
-    clearUserData,
-    setSession
-  });
+  const { signIn, signUp, signOut } = useAuthActions();
 
   // Use ref to prevent duplicate calls
   const authInitialized = useRef(false);
