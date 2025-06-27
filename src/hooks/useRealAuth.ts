@@ -28,10 +28,10 @@ export const useRealAuth = (): RealAuthState & RealAuthActions => {
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
 
-  // Cargar datos del usuario
-  const loadUserData = useCallback(async (userId: string) => {
+  // Cargar datos del usuario (separado de restaurantes)
+  const loadUserProfile = useCallback(async (userId: string): Promise<{ userData: User | null, franchiseeData: Franchisee | null }> => {
     try {
-      console.log('loadUserData - Loading real data for user:', userId);
+      console.log('loadUserProfile - Loading profile for user:', userId);
       
       // Cargar perfil del usuario
       const { data: profile, error: profileError } = await supabase
@@ -41,6 +41,7 @@ export const useRealAuth = (): RealAuthState & RealAuthActions => {
         .single();
 
       if (profileError) {
+        console.error('Profile error:', profileError);
         throw new Error(`Error cargando perfil: ${profileError.message}`);
       }
 
@@ -57,55 +58,88 @@ export const useRealAuth = (): RealAuthState & RealAuthActions => {
         updated_at: profile.updated_at
       };
 
-      setUser(userData);
+      let franchiseeData: Franchisee | null = null;
 
       // Si es franchisee, cargar datos del franquiciado
       if (userRole === 'franchisee') {
-        const { data: franchiseeData, error: franchiseeError } = await supabase
-          .from('franchisees')
-          .select('*')
-          .eq('user_id', userId)
-          .single();
+        try {
+          const { data: franchiseeResult, error: franchiseeError } = await supabase
+            .from('franchisees')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
 
-        if (franchiseeError) {
-          console.warn('No franchisee data found for user:', userId);
-          return;
-        }
-
-        setFranchisee(franchiseeData);
-
-        // Cargar restaurantes del franquiciado
-        const { data: restaurantsData, error: restaurantsError } = await supabase
-          .from('franchisee_restaurants')
-          .select(`
-            id,
-            monthly_rent,
-            last_year_revenue,
-            status,
-            base_restaurant:base_restaurants!inner(
-              id,
-              site_number,
-              restaurant_name,
-              address,
-              city,
-              restaurant_type
-            )
-          `)
-          .eq('franchisee_id', franchiseeData.id)
-          .eq('status', 'active');
-
-        if (restaurantsError) {
-          console.warn('Error loading restaurants:', restaurantsError);
-        } else {
-          setRestaurants(restaurantsData || []);
+          if (!franchiseeError && franchiseeResult) {
+            franchiseeData = franchiseeResult;
+            console.log('loadUserProfile - Franchisee data loaded:', franchiseeData.franchisee_name);
+          } else {
+            console.warn('No franchisee data found for user:', userId);
+          }
+        } catch (error) {
+          console.warn('Error loading franchisee data:', error);
         }
       }
 
-      console.log('loadUserData - Real data loaded successfully');
+      return { userData, franchiseeData };
     } catch (error) {
-      console.error('loadUserData - Error:', error);
-      setError(error instanceof Error ? error.message : 'Error desconocido');
+      console.error('loadUserProfile - Error:', error);
       throw error;
+    }
+  }, []);
+
+  // Cargar restaurantes (separado e independiente)
+  const loadRestaurants = useCallback(async (franchiseeId: string) => {
+    try {
+      console.log('loadRestaurants - Loading restaurants for franchisee:', franchiseeId);
+      
+      const { data: restaurantsData, error: restaurantsError } = await supabase
+        .from('franchisee_restaurants')
+        .select(`
+          id,
+          monthly_rent,
+          last_year_revenue,
+          status,
+          franchise_end_date,
+          lease_end_date,
+          base_restaurant_id
+        `)
+        .eq('franchisee_id', franchiseeId)
+        .eq('status', 'active');
+
+      if (restaurantsError) {
+        console.warn('Error loading restaurants:', restaurantsError);
+        return [];
+      }
+
+      // Para cada restaurante, cargar datos básicos del base_restaurant
+      const restaurantsWithDetails = await Promise.all(
+        (restaurantsData || []).map(async (restaurant) => {
+          if (restaurant.base_restaurant_id) {
+            try {
+              const { data: baseRestaurant } = await supabase
+                .from('base_restaurants')
+                .select('id, site_number, restaurant_name, address, city, restaurant_type')
+                .eq('id', restaurant.base_restaurant_id)
+                .single();
+
+              return {
+                ...restaurant,
+                base_restaurant: baseRestaurant
+              };
+            } catch (error) {
+              console.warn('Error loading base restaurant for:', restaurant.base_restaurant_id);
+              return restaurant;
+            }
+          }
+          return restaurant;
+        })
+      );
+
+      console.log('loadRestaurants - Loaded restaurants:', restaurantsWithDetails.length);
+      return restaurantsWithDetails;
+    } catch (error) {
+      console.error('loadRestaurants - Error:', error);
+      return [];
     }
   }, []);
 
@@ -118,22 +152,64 @@ export const useRealAuth = (): RealAuthState & RealAuthActions => {
     setError(null);
   }, []);
 
+  // Cargar todos los datos del usuario
+  const loadUserData = useCallback(async (userId: string) => {
+    try {
+      console.log('loadUserData - Starting for user:', userId);
+      setError(null);
+      
+      // Cargar perfil y franquiciado
+      const { userData, franchiseeData } = await loadUserProfile(userId);
+      
+      if (userData) {
+        setUser(userData);
+        console.log('loadUserData - User set:', userData.email);
+      }
+
+      if (franchiseeData) {
+        setFranchisee(franchiseeData);
+        console.log('loadUserData - Franchisee set:', franchiseeData.franchisee_name);
+        
+        // Cargar restaurantes de forma independiente
+        try {
+          const restaurantsData = await loadRestaurants(franchiseeData.id);
+          setRestaurants(restaurantsData);
+          console.log('loadUserData - Restaurants set:', restaurantsData.length);
+        } catch (error) {
+          console.warn('loadUserData - Failed to load restaurants, continuing without them:', error);
+          setRestaurants([]);
+        }
+      }
+
+      console.log('loadUserData - Completed successfully');
+    } catch (error) {
+      console.error('loadUserData - Error:', error);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
+      // No limpiar estado aquí, mantener lo que se pudo cargar
+    }
+  }, [loadUserProfile, loadRestaurants]);
+
   // Inicializar autenticación
   const initializeAuth = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
+      console.log('initializeAuth - Starting');
+      
       const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
 
       if (sessionError) {
-        throw new Error(`Error de sesión: ${sessionError.message}`);
+        console.warn('initializeAuth - Session error:', sessionError);
+        // No throw aquí, continuar sin sesión
       }
 
       if (currentSession?.user) {
+        console.log('initializeAuth - Session found for user:', currentSession.user.id);
         setSession(currentSession);
         await loadUserData(currentSession.user.id);
       } else {
+        console.log('initializeAuth - No session found');
         clearAuthState();
       }
     } catch (error) {
@@ -142,6 +218,7 @@ export const useRealAuth = (): RealAuthState & RealAuthActions => {
       clearAuthState();
     } finally {
       setLoading(false);
+      console.log('initializeAuth - Completed');
     }
   }, [loadUserData, clearAuthState]);
 
@@ -197,11 +274,12 @@ export const useRealAuth = (): RealAuthState & RealAuthActions => {
 
   // Efecto principal
   useEffect(() => {
+    console.log('useRealAuth - Initializing');
     initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        console.log('Auth state change:', event);
+        console.log('useRealAuth - Auth state change:', event);
         
         if (event === 'SIGNED_OUT') {
           clearAuthState();
