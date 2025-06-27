@@ -21,8 +21,12 @@ export default function RestaurantDetailPage() {
     );
   }
 
-  // Buscar el restaurante por ID
-  const restaurantData = restaurants?.find(r => r.id === id || r.base_restaurant?.id === id);
+  // Buscar el restaurante por ID - puede ser el ID del franchisee_restaurant o del base_restaurant
+  const restaurantData = restaurants?.find(r => {
+    return r.id === id || 
+           (r.base_restaurant && r.base_restaurant.id === id) ||
+           (r.base_restaurant_id === id);
+  });
 
   if (!restaurantData) {
     return (
@@ -39,7 +43,15 @@ export default function RestaurantDetailPage() {
     );
   }
 
-  const restaurant = restaurantData.base_restaurant || restaurantData;
+  // Extraer datos del restaurante base y datos financieros
+  const restaurant = restaurantData.base_restaurant || {
+    restaurant_name: 'Restaurante',
+    site_number: 'N/A',
+    address: 'Dirección no disponible',
+    city: 'Ciudad no disponible',
+    restaurant_type: 'traditional'
+  };
+  
   const financialData = restaurantData;
 
   const formatNumber = (value: number | undefined | null): string => {

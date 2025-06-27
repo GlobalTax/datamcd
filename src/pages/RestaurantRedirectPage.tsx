@@ -12,7 +12,7 @@ export default function RestaurantRedirectPage() {
       if (restaurants && restaurants.length > 0) {
         // Redirigir al primer restaurante disponible
         const firstRestaurant = restaurants[0];
-        const restaurantId = firstRestaurant.base_restaurant?.id || firstRestaurant.id;
+        const restaurantId = firstRestaurant.base_restaurant?.id || firstRestaurant.base_restaurant_id || firstRestaurant.id;
         navigate(`/restaurant/${restaurantId}`, { replace: true });
       } else {
         // Si no hay restaurantes, redirigir al dashboard
