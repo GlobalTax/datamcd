@@ -64,14 +64,12 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
     
     try {
       // Cargar perfil
-      const profilePromise = supabase
-        .from('profiles')
-        .select('id, email, full_name, role')
-        .eq('id', userId)
-        .maybeSingle();
-
       const { data: profile, error: profileError } = await withTimeout(
-        profilePromise,
+        supabase
+          .from('profiles')
+          .select('id, email, full_name, role')
+          .eq('id', userId)
+          .maybeSingle(),
         5000
       );
 
@@ -96,40 +94,36 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
       // Si es franchisee, cargar datos adicionales
       if (profile.role === 'franchisee') {
         try {
-          const franchiseePromise = supabase
-            .from('franchisees')
-            .select('id, user_id, franchisee_name, company_name, total_restaurants, created_at, updated_at')
-            .eq('user_id', userId)
-            .maybeSingle();
-
           const { data: franchiseeData, error: franchiseeError } = await withTimeout(
-            franchiseePromise,
+            supabase
+              .from('franchisees')
+              .select('id, user_id, franchisee_name, company_name, total_restaurants, created_at, updated_at')
+              .eq('user_id', userId)
+              .maybeSingle(),
             5000
           );
 
           if (!franchiseeError && franchiseeData) {
-            const restaurantsPromise = supabase
-              .from('franchisee_restaurants')
-              .select(`
-                id,
-                monthly_rent,
-                last_year_revenue,
-                status,
-                base_restaurant:base_restaurants!inner(
-                  id,
-                  site_number,
-                  restaurant_name,
-                  address,
-                  city,
-                  restaurant_type
-                )
-              `)
-              .eq('franchisee_id', franchiseeData.id)
-              .eq('status', 'active')
-              .limit(20);
-
             const { data: restaurantsData } = await withTimeout(
-              restaurantsPromise,
+              supabase
+                .from('franchisee_restaurants')
+                .select(`
+                  id,
+                  monthly_rent,
+                  last_year_revenue,
+                  status,
+                  base_restaurant:base_restaurants!inner(
+                    id,
+                    site_number,
+                    restaurant_name,
+                    address,
+                    city,
+                    restaurant_type
+                  )
+                `)
+                .eq('franchisee_id', franchiseeData.id)
+                .eq('status', 'active')
+                .limit(20),
               8000
             );
 
