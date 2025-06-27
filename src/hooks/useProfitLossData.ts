@@ -1,58 +1,95 @@
+
 import { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ProfitLossData } from '@/types/profitLoss';
+import { ProfitLossData, ProfitLossFormData } from '@/types/profitLoss';
 import { useAuth } from '@/hooks/AuthProvider';
 
-export const useProfitLossData = (restaurantId: string, year: number) => {
+export const useProfitLossData = (restaurantId?: string, year?: number) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [data, setData] = useState<ProfitLossData[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const fetchProfitLossData = async () => {
     if (!restaurantId || !year) {
-      setData([]);
-      setLoading(false);
-      return;
+      return [];
     }
 
-    setLoading(true);
+    const { data, error } = await supabase
+      .from('profit_loss_data')
+      .select('*')
+      .eq('restaurant_id', restaurantId)
+      .eq('year', year)
+      .order('month', { ascending: true });
 
-    try {
-      const { data: plData, error } = await supabase
-        .from<ProfitLossData>('profit_loss')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .eq('year', year)
-        .order('month', { ascending: true });
-
-      if (error) {
-        toast.error('Error al cargar datos de P&L');
-        setData([]);
-      } else {
-        setData(plData || []);
-      }
-    } catch (error) {
-      toast.error('Error inesperado al cargar datos de P&L');
-      setData([]);
-    } finally {
-      setLoading(false);
+    if (error) {
+      throw error;
     }
+
+    return data || [];
   };
 
-  useEffect(() => {
-    fetchProfitLossData();
-  }, [restaurantId, year]);
+  const {
+    data: profitLossData = [],
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['profit-loss-data', restaurantId, year],
+    queryFn: fetchProfitLossData,
+    enabled: !!user && !!restaurantId && !!year,
+  });
 
-  const refetch = () => {
-    fetchProfitLossData();
-  };
+  const createProfitLossData = useMutation({
+    mutationFn: async (data: ProfitLossFormData) => {
+      const { error } = await supabase
+        .from('profit_loss_data')
+        .insert([data]);
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profit-loss-data'] });
+      toast.success('Datos de P&L guardados correctamente');
+    },
+    onError: (error) => {
+      console.error('Error creating profit loss data:', error);
+      toast.error('Error al guardar los datos de P&L');
+    },
+  });
+
+  const updateProfitLossData = useMutation({
+    mutationFn: async (data: ProfitLossFormData & { id: string }) => {
+      const { error } = await supabase
+        .from('profit_loss_data')
+        .update(data)
+        .eq('id', data.id);
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profit-loss-data'] });
+      toast.success('Datos de P&L actualizados correctamente');
+    },
+    onError: (error) => {
+      console.error('Error updating profit loss data:', error);
+      toast.error('Error al actualizar los datos de P&L');
+    },
+  });
 
   return {
-    data,
-    loading,
+    data: profitLossData,
+    profitLossData,
+    loading: isLoading,
+    isLoading,
+    error: error?.message || null,
     refetch,
+    createProfitLossData,
+    updateProfitLossData
   };
 };
+
+// Exportar también el hook de cálculos
+export { useProfitLossCalculations } from './useProfitLossCalculations';

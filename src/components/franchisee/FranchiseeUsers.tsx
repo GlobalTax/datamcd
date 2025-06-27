@@ -1,263 +1,145 @@
-
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/hooks/AuthProvider';
+import { useFranchiseeUsers } from '@/hooks/useFranchiseeUsers';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Trash2, Users, RefreshCw } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useDeleteUser } from '@/hooks/useDeleteUser';
 import { toast } from 'sonner';
-import { User } from '@/types/auth';
+import { Edit, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface FranchiseeUsersProps {
   franchiseeId: string;
-  franchiseeName: string;
 }
 
-export interface FranchiseeUsersRef {
-  refresh: () => void;
+interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  avatar_url: string;
 }
 
-export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersProps>(({ 
-  franchiseeId, 
-  franchiseeName 
-}, ref) => {
+export const FranchiseeUsers = ({ franchiseeId }: FranchiseeUsersProps) => {
   const { user } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { users, loading, error, refetch } = useFranchiseeUsers(franchiseeId);
+  const { deleteUser, deleting } = useDeleteUser();
+  const navigate = useNavigate();
+  const [userToDelete, setUserToDelete] = useState<{ userId: string; userName: string } | null>(null);
 
-  const fetchFranchiseeUsers = async () => {
-    try {
-      setLoading(true);
-      
-      console.log('Fetching users for franchisee:', franchiseeId, franchiseeName);
-      
-      // Obtener el usuario directo del franquiciado
-      const { data: franchiseeData, error: franchiseeError } = await supabase
-        .from('franchisees')
-        .select('user_id')
-        .eq('id', franchiseeId)
-        .maybeSingle();
-
-      if (franchiseeError) {
-        console.error('Error fetching franchisee:', franchiseeError);
-        toast.error('Error al cargar el franquiciado');
-        return;
-      }
-
-      let userIds: string[] = [];
-      
-      // Incluir el usuario asociado directamente al franquiciado si existe
-      if (franchiseeData?.user_id) {
-        userIds.push(franchiseeData.user_id);
-      }
-
-      // Buscar usuarios que podrían estar relacionados con este franquiciado
-      // por nombre o email similar
-      const { data: relatedProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .or(`full_name.ilike.%${franchiseeName}%,email.ilike.%${franchiseeName.toLowerCase()}%`);
-
-      if (profilesError) {
-        console.error('Error fetching related profiles:', profilesError);
-      } else if (relatedProfiles) {
-        relatedProfiles.forEach(profile => {
-          if (!userIds.includes(profile.id)) {
-            userIds.push(profile.id);
-          }
-        });
-      }
-
-      // Obtener perfiles completos de todos los usuarios identificados
-      if (userIds.length > 0) {
-        const { data: userProfiles, error: usersError } = await supabase
-          .from('profiles')
-          .select('*')
-          .in('id', userIds)
-          .order('created_at', { ascending: false });
-
-        if (usersError) {
-          console.error('Error fetching user profiles:', usersError);
-          toast.error('Error al cargar los usuarios');
-          return;
-        }
-
-        const typedUsers = (userProfiles || []).map(userData => ({
-          ...userData,
-          role: userData.role as 'admin' | 'franchisee' | 'manager' | 'asesor' | 'asistente' | 'superadmin'
-        }));
-
-        console.log('Found users for franchisee:', typedUsers);
-        setUsers(typedUsers);
-      } else {
-        console.log('No users found for franchisee');
-        setUsers([]);
-      }
-    } catch (error) {
-      console.error('Error in fetchFranchiseeUsers:', error);
-      toast.error('Error al cargar los usuarios');
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteConfirmation = (userId: string, userName: string) => {
+    setUserToDelete({ userId, userName });
   };
 
-  useImperativeHandle(ref, () => ({
-    refresh: fetchFranchiseeUsers
-  }));
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
 
-  useEffect(() => {
-    fetchFranchiseeUsers();
-  }, [franchiseeId]);
-
-  const handleDeleteUser = async (userId: string, userName: string) => {
-    if (!confirm(`¿Estás seguro de que quieres eliminar a ${userName}?`)) {
-      return;
+    const success = await deleteUser(franchiseeId, userToDelete.userId, userToDelete.userName);
+    if (success) {
+      refetch(); // Recargar la lista de usuarios
     }
-
-    try {
-      // Eliminar perfil (esto también eliminará el usuario de auth por cascade)
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-      if (error) {
-        console.error('Error deleting user:', error);
-        toast.error('Error al eliminar usuario');
-        return;
-      }
-
-      toast.success('Usuario eliminado exitosamente');
-      fetchFranchiseeUsers();
-    } catch (error) {
-      console.error('Error in handleDeleteUser:', error);
-      toast.error('Error al eliminar usuario');
-    }
+    setUserToDelete(null); // Limpiar el estado
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800';
-      case 'superadmin':
-        return 'bg-red-100 text-red-800';
-      case 'manager':
-        return 'bg-blue-100 text-blue-800';
-      case 'franchisee':
-        return 'bg-green-100 text-green-800';
-      case 'asesor':
-        return 'bg-purple-100 text-purple-800';
-      case 'asistente':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const handleCancelDelete = () => {
+    setUserToDelete(null);
   };
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'Administrador';
-      case 'superadmin':
-        return 'Super Admin';
-      case 'manager':
-        return 'Gerente';
-      case 'franchisee':
-        return 'Franquiciado';
-      case 'asesor':
-        return 'Asesor';
-      case 'asistente':
-        return 'Asistente';
-      default:
-        return role;
-    }
-  };
+  if (loading) {
+    return (
+      <Card>
+        <CardContent>
+          <p>Cargando usuarios...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  // Solo admins pueden gestionar usuarios
-  if (!user || !['admin', 'asesor', 'superadmin'].includes(user.role)) {
-    return null;
+  if (error) {
+    return (
+      <Card>
+        <CardContent>
+          <p>Error al cargar usuarios: {error}</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Usuarios Asociados ({users.length})
-          </CardTitle>
-          <Button
-            onClick={fetchFranchiseeUsers}
-            disabled={loading}
-            variant="outline"
-            size="sm"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Actualizar
-          </Button>
-        </div>
+        <CardTitle>Usuarios del Franquiciado</CardTitle>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="text-center py-8">
-            <p>Cargando usuarios...</p>
-          </div>
-        ) : users.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuario</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Fecha de Creación</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((userItem) => (
-                <TableRow key={userItem.id}>
-                  <TableCell className="font-medium">
-                    {userItem.full_name || 'Sin nombre'}
-                  </TableCell>
-                  <TableCell>{userItem.email}</TableCell>
-                  <TableCell>
-                    <Badge className={getRoleBadgeColor(userItem.role)}>
-                      {getRoleLabel(userItem.role)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(userItem.created_at || '').toLocaleDateString('es-ES')}
-                  </TableCell>
-                  <TableCell>
-                    {userItem.id !== user?.id && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteUser(userItem.id, userItem.full_name || userItem.email)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
+        {users && users.length > 0 ? (
+          <div className="grid gap-4">
+            {users.map((user) => (
+              <div key={user.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-md">
+                <div className="flex items-center space-x-4">
+                  <Avatar>
+                    <AvatarImage src={user.avatar_url} />
+                    <AvatarFallback>{user.full_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{user.full_name || 'Usuario sin nombre'}</p>
+                    <p className="text-gray-500 text-sm">{user.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigate(`/users/${user.id}/edit`)}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="icon">
                         <Trash2 className="w-4 h-4" />
                       </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <div className="text-center py-8">
-            <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay usuarios asociados</h3>
-            <p className="text-gray-600">
-              Crea un nuevo usuario usando el panel de arriba para asociarlo a este franquiciado.
-            </p>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción eliminará el acceso del usuario al franquiciado.
+                          Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={handleCancelDelete}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          disabled={deleting}
+                          onClick={() => {
+                            handleDeleteConfirmation(user.id, user.full_name || user.email);
+                            handleConfirmDelete();
+                          }}
+                        >
+                          {deleting ? 'Eliminando...' : 'Eliminar'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))}
           </div>
+        ) : (
+          <p>No hay usuarios asignados a este franquiciado.</p>
         )}
       </CardContent>
     </Card>
   );
-});
-
-FranchiseeUsers.displayName = 'FranchiseeUsers';
+};
