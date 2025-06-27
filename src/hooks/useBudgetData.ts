@@ -110,7 +110,7 @@ export const useBudgetData = (restaurantId: string, year: number): BudgetDataHoo
     rowData,
     hasChanges,
     loading,
-    error,
+    error: error?.message || null,
     handleCellChange,
     handleSave,
     reloadData

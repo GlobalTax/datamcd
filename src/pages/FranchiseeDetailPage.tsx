@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import { FranchiseeRestaurantsTable } from '@/components/FranchiseeRestaurantsTa
 import { UserCreationPanel } from '@/components/admin/UserCreationPanel';
 import { FranchiseeAccessHistory } from '@/components/franchisee/FranchiseeAccessHistory';
 import { FranchiseeActivityHistory } from '@/components/franchisee/FranchiseeActivityHistory';
-import { FranchiseeUsers, FranchiseeUsersRef } from '@/components/franchisee/FranchiseeUsers';
+import { FranchiseeUsers } from '@/components/franchisee/FranchiseeUsers';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -19,7 +19,6 @@ export default function FranchiseeDetailPage() {
   const { franchiseeId } = useParams<{ franchiseeId: string }>();
   const navigate = useNavigate();
   const { franchisee, restaurants, loading, error, refetch } = useFranchiseeDetail(franchiseeId);
-  const franchiseeUsersRef = useRef<FranchiseeUsersRef>(null);
 
   // Mostrar mensaje de carga
   if (loading) {
@@ -85,8 +84,8 @@ export default function FranchiseeDetailPage() {
   };
 
   const handleUserCreated = () => {
-    // Refrescar la lista de usuarios cuando se crea uno nuevo
-    franchiseeUsersRef.current?.refresh();
+    // Refrescar cuando se crea un nuevo usuario
+    refetch();
   };
 
   return (
@@ -181,7 +180,6 @@ export default function FranchiseeDetailPage() {
 
       {/* Lista de usuarios asociados */}
       <FranchiseeUsers 
-        ref={franchiseeUsersRef}
         franchiseeId={franchisee.id} 
         franchiseeName={franchisee.franchisee_name}
       />

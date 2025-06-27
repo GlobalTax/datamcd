@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/AuthProvider';
@@ -22,6 +23,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface FranchiseeUsersProps {
   franchiseeId: string;
+  franchiseeName?: string;
 }
 
 interface User {
@@ -31,7 +33,7 @@ interface User {
   avatar_url: string;
 }
 
-export const FranchiseeUsers = ({ franchiseeId }: FranchiseeUsersProps) => {
+export const FranchiseeUsers = ({ franchiseeId, franchiseeName }: FranchiseeUsersProps) => {
   const { user } = useAuth();
   const { users, loading, error, refetch } = useFranchiseeUsers(franchiseeId);
   const { deleteUser, deleting } = useDeleteUser();
