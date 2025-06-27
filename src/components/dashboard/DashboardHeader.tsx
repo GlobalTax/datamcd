@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Settings, LogOut, User } from 'lucide-react';
+import { useAuth } from '@/hooks/AuthProvider';
 import { User as UserType, Franchisee } from '@/types/auth';
 
 interface DashboardHeaderProps {
@@ -13,14 +14,18 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   user,
   franchisee
 }) => {
-  const handleSignOut = () => {
-    // Esta función será manejada por el componente padre
-    console.log('Sign out clicked');
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const handleSettings = () => {
-    // Esta función será manejada por el componente padre
-    console.log('Settings clicked');
+    window.location.href = '/settings';
   };
 
   return (
@@ -31,7 +36,12 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             <div className="w-7 h-7 bg-red-500 rounded-md flex items-center justify-center">
               <span className="text-white font-medium text-sm">M</span>
             </div>
-            <h1 className="text-xl font-medium text-gray-900">McDonald's</h1>
+            <div>
+              <h1 className="text-xl font-medium text-gray-900">McDonald's</h1>
+              {franchisee && (
+                <p className="text-sm text-gray-600">{franchisee.franchisee_name}</p>
+              )}
+            </div>
           </div>
           
           <div className="flex items-center gap-4">

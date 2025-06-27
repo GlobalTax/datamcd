@@ -10,7 +10,8 @@ import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import OptimizedDashboardPage from "./pages/OptimizedDashboardPage";
-import RestaurantPage from "./pages/RestaurantPage";
+import RestaurantDetailPage from "./pages/RestaurantDetailPage";
+import RestaurantRedirectPage from "./pages/RestaurantRedirectPage";
 import AnalysisPage from "./pages/AnalysisPage";
 import ValuationApp from "./pages/ValuationApp";
 import AnnualBudgetPage from "./pages/AnnualBudgetPage";
@@ -57,10 +58,18 @@ function App() {
                   }
                 />
                 <Route
+                  path="/restaurant"
+                  element={
+                    <ProtectedRoute>
+                      <RestaurantRedirectPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/restaurant/:id"
                   element={
                     <ProtectedRoute>
-                      <RestaurantPage />
+                      <RestaurantDetailPage />
                     </ProtectedRoute>
                   }
                 />
@@ -115,7 +124,7 @@ function App() {
                 <Route
                   path="/advisor"
                   element={
-                    <ProtectedRoute allowedRoles={['advisor', 'admin', 'superadmin']}>
+                    <ProtectedRoute allowedRoles={['asesor', 'admin', 'superadmin']}>
                       <AdvisorPage />
                     </ProtectedRoute>
                   }
@@ -123,7 +132,7 @@ function App() {
                 <Route
                   path="/franchisee/:id"
                   element={
-                    <ProtectedRoute allowedRoles={['advisor', 'admin', 'superadmin']}>
+                    <ProtectedRoute allowedRoles={['asesor', 'admin', 'superadmin']}>
                       <FranchiseeDetailPage />
                     </ProtectedRoute>
                   }
@@ -131,7 +140,7 @@ function App() {
                 <Route
                   path="/restaurant-management"
                   element={
-                    <ProtectedRoute allowedRoles={['advisor', 'admin', 'superadmin']}>
+                    <ProtectedRoute allowedRoles={['asesor', 'admin', 'superadmin']}>
                       <RestaurantManagementPage />
                     </ProtectedRoute>
                   }
