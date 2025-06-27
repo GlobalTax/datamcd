@@ -50,47 +50,49 @@ const OptimizedDashboardPage = () => {
 
   const isUsingCache = connectionStatus === 'fallback';
 
-  // Transformar datos para el componente - ajustado para la estructura real de useAuth
+  // Transformar datos para el componente - usando casting para propiedades dinámicas
   const displayRestaurants: DisplayRestaurant[] = (restaurants || []).map(r => {
+    const restaurantData = r as any;
+    
     // Los datos de useAuth pueden tener diferentes estructuras dependiendo de si vienen de Supabase o son fallback
-    if (r.base_restaurant) {
+    if (restaurantData.base_restaurant) {
       // Estructura de Supabase con relación base_restaurant
       return {
-        id: r.id || `restaurant-${Math.random()}`,
-        name: r.base_restaurant?.restaurant_name || 'Restaurante',
-        restaurant_name: r.base_restaurant?.restaurant_name || 'Restaurante',
-        location: r.base_restaurant ? 
-          `${r.base_restaurant.city || 'Ciudad'}, ${r.base_restaurant.address || 'Dirección'}` : 
+        id: restaurantData.id || `restaurant-${Math.random()}`,
+        name: restaurantData.base_restaurant?.restaurant_name || 'Restaurante',
+        restaurant_name: restaurantData.base_restaurant?.restaurant_name || 'Restaurante',
+        location: restaurantData.base_restaurant ? 
+          `${restaurantData.base_restaurant.city || 'Ciudad'}, ${restaurantData.base_restaurant.address || 'Dirección'}` : 
           'Ubicación',
-        city: r.base_restaurant?.city || 'Ciudad',
-        address: r.base_restaurant?.address || 'Dirección',
-        siteNumber: r.base_restaurant?.site_number || 'N/A',
-        site_number: r.base_restaurant?.site_number || 'N/A',
+        city: restaurantData.base_restaurant?.city || 'Ciudad',
+        address: restaurantData.base_restaurant?.address || 'Dirección',
+        siteNumber: restaurantData.base_restaurant?.site_number || 'N/A',
+        site_number: restaurantData.base_restaurant?.site_number || 'N/A',
         franchiseeName: franchisee?.franchisee_name || 'Franquiciado',
-        franchise_start_date: r.franchise_start_date,
-        franchise_end_date: r.franchise_end_date,
-        restaurant_type: r.base_restaurant?.restaurant_type || 'traditional',
-        status: r.status || 'active',
-        lastYearRevenue: typeof r.last_year_revenue === 'number' ? r.last_year_revenue : 0,
-        baseRent: typeof r.monthly_rent === 'number' ? r.monthly_rent : 0,
+        franchise_start_date: restaurantData.franchise_start_date,
+        franchise_end_date: restaurantData.franchise_end_date,
+        restaurant_type: restaurantData.base_restaurant?.restaurant_type || 'traditional',
+        status: restaurantData.status || 'active',
+        lastYearRevenue: typeof restaurantData.last_year_revenue === 'number' ? restaurantData.last_year_revenue : 0,
+        baseRent: typeof restaurantData.monthly_rent === 'number' ? restaurantData.monthly_rent : 0,
         isOwnedByMcD: false,
       };
     } else {
       // Estructura simple de Restaurant o datos de fallback
       return {
-        id: r.id || `restaurant-${Math.random()}`,
-        name: r.restaurant_name || r.name || 'Restaurante',
-        restaurant_name: r.restaurant_name || r.name || 'Restaurante',
-        location: `${r.city || 'Ciudad'}, ${r.address || 'Dirección'}`,
-        city: r.city || 'Ciudad',
-        address: r.address || 'Dirección',
-        siteNumber: r.site_number || 'N/A',
-        site_number: r.site_number || 'N/A',
+        id: restaurantData.id || `restaurant-${Math.random()}`,
+        name: restaurantData.restaurant_name || restaurantData.name || 'Restaurante',
+        restaurant_name: restaurantData.restaurant_name || restaurantData.name || 'Restaurante',
+        location: `${restaurantData.city || 'Ciudad'}, ${restaurantData.address || 'Dirección'}`,
+        city: restaurantData.city || 'Ciudad',
+        address: restaurantData.address || 'Dirección',
+        siteNumber: restaurantData.site_number || 'N/A',
+        site_number: restaurantData.site_number || 'N/A',
         franchiseeName: franchisee?.franchisee_name || 'Franquiciado',
-        restaurant_type: r.restaurant_type || 'traditional',
-        status: r.status || 'active',
-        lastYearRevenue: typeof r.lastYearRevenue === 'number' ? r.lastYearRevenue : 0,
-        baseRent: typeof r.baseRent === 'number' ? r.baseRent : 0,
+        restaurant_type: restaurantData.restaurant_type || 'traditional',
+        status: restaurantData.status || 'active',
+        lastYearRevenue: typeof restaurantData.lastYearRevenue === 'number' ? restaurantData.lastYearRevenue : 0,
+        baseRent: typeof restaurantData.baseRent === 'number' ? restaurantData.baseRent : 0,
         isOwnedByMcD: false,
       };
     }
