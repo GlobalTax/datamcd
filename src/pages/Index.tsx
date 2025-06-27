@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/AuthProvider";
 import { useEffect } from "react";
@@ -9,10 +8,11 @@ import { FeatureCards } from "@/components/index/FeatureCards";
 import { FeatureHighlights } from "@/components/index/FeatureHighlights";
 import { IndexFooter } from "@/components/index/IndexFooter";
 import { LoadingSpinner } from "@/components/index/LoadingSpinner";
+import { RealDataStatus } from '@/components/index/RealDataStatus';
 
-const Index = () => {
-  const navigate = useNavigate();
+export default function Index() {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
   console.log('Index - Component rendered');
   console.log('Index - User:', user);
@@ -48,26 +48,36 @@ const Index = () => {
   console.log('Index - About to render, loading state:', loading);
 
   if (loading) {
-    console.log('Index - Rendering loading state');
     return <LoadingSpinner />;
   }
 
-  console.log('Index - Rendering main content');
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-yellow-50">
       <IndexHeader />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <HeroSection />
-        <DebugSection />
-        <FeatureCards />
-        <FeatureHighlights />
-      </div>
+      <main className="container mx-auto px-4 py-12">
+        {user && <RealDataStatus />}
+        
+        {!user ? (
+          <>
+            <HeroSection />
+            <DebugSection />
+            <FeatureCards />
+            <FeatureHighlights />
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              ¡Bienvenido de vuelta!
+            </h2>
+            <p className="text-xl text-gray-600 mb-8">
+              Tu aplicación está funcionando con datos reales de Supabase
+            </p>
+          </div>
+        )}
+      </main>
 
       <IndexFooter />
     </div>
   );
-};
-
-export default Index;
+}

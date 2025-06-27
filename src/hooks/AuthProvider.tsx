@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext } from 'react';
-import { useUnifiedAuth } from './useUnifiedAuth';
+import { useRealAuth } from './useRealAuth';
 import { AuthContextType } from '@/types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -10,23 +10,35 @@ export interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const authData = useUnifiedAuth();
+  const {
+    user,
+    franchisee,
+    restaurants,
+    loading,
+    error,
+    session,
+    signIn,
+    signUp,
+    signOut,
+    refreshData
+  } = useRealAuth();
 
-  console.log('AuthProvider - Current state:', { 
-    user: authData.user ? { id: authData.user.id, role: authData.user.role } : null, 
-    loading: authData.loading,
-    connectionStatus: authData.connectionStatus
+  console.log('AuthProvider - Real auth state:', { 
+    user: user ? { id: user.id, role: user.role, email: user.email } : null, 
+    loading,
+    error,
+    hasSession: !!session
   });
 
   const value: AuthContextType = {
-    user: authData.user,
-    session: undefined, // No necesitamos session en el nuevo sistema
-    franchisee: authData.franchisee,
-    restaurants: authData.restaurants,
-    loading: authData.loading,
-    signIn: authData.signIn,
-    signUp: authData.signUp,
-    signOut: authData.signOut
+    user,
+    session,
+    franchisee,
+    restaurants,
+    loading,
+    signIn,
+    signUp,
+    signOut
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

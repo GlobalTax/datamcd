@@ -1,52 +1,37 @@
 
 import React from 'react';
-import { RefreshCw, Database, AlertTriangle, Zap } from 'lucide-react';
+import { Database, CheckCircle, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/hooks/AuthProvider';
 
-interface ConnectionStatusProps {
-  connectionStatus: 'connecting' | 'connected' | 'fallback';
-}
+export const ConnectionStatus: React.FC = () => {
+  const { user, loading, error } = useAuth();
 
-export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ connectionStatus }) => {
-  const getConnectionStatusDisplay = () => {
-    switch (connectionStatus) {
-      case 'connecting':
-        return {
-          icon: <RefreshCw className="w-4 h-4 animate-spin" />,
-          text: 'Conectando...',
-          color: 'text-blue-600',
-          bg: 'bg-blue-100'
-        };
-      case 'connected':
-        return {
-          icon: <Database className="w-4 h-4" />,
-          text: 'Datos Reales',
-          color: 'text-green-600',
-          bg: 'bg-green-100'
-        };
-      case 'fallback':
-        return {
-          icon: <AlertTriangle className="w-4 h-4" />,
-          text: 'Datos Temporales',
-          color: 'text-orange-600',
-          bg: 'bg-orange-100'
-        };
-    }
-  };
-
-  const statusDisplay = getConnectionStatusDisplay();
-
-  return (
-    <div className="flex items-center gap-3">
-      <div className={`flex items-center gap-2 px-3 py-1 ${statusDisplay.bg} ${statusDisplay.color} rounded-md text-sm font-medium`}>
-        {statusDisplay.icon}
-        <span>{statusDisplay.text}</span>
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-600 rounded-md text-sm font-medium">
+        <Database className="w-4 h-4 animate-pulse" />
+        <span>Conectando...</span>
       </div>
-      {connectionStatus === 'connected' && (
-        <div className="flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs">
-          <Zap className="w-3 h-3" />
-          <span>Supabase Live</span>
-        </div>
-      )}
-    </div>
-  );
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-600 rounded-md text-sm font-medium">
+        <AlertCircle className="w-4 h-4" />
+        <span>Error de Conexión</span>
+      </div>
+    );
+  }
+
+  if (user) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-600 rounded-md text-sm font-medium">
+        <CheckCircle className="w-4 h-4" />
+        <span>Datos Reales - Supabase</span>
+      </div>
+    );
+  }
+
+  return null;
 };
