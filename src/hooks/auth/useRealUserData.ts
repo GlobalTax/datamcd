@@ -39,10 +39,14 @@ export const useRealUserData = () => {
         throw new Error('Profile not found');
       }
 
+      // Validar el rol antes de asignarlo
+      const validRoles = ['franchisee', 'asesor', 'admin', 'superadmin', 'manager', 'asistente'];
+      const userRole = validRoles.includes(profile.role) ? profile.role as User['role'] : 'franchisee';
+
       const userData: User = {
         id: profile.id,
         email: profile.email,
-        role: profile.role,
+        role: userRole,
         full_name: profile.full_name,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

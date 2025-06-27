@@ -12,7 +12,7 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
   const [franchisee, setFranchisee] = useState(null);
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'fallback'>('connecting');
   
   const { isUsingCache } = useStaticData();
   const { loadRealUserData } = useRealUserData();
