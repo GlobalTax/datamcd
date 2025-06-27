@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { useUnifiedAuth } from './useUnifiedAuth';
-import { User, Franchisee, AuthContextType } from '@/types/auth';
+import { AuthContextType } from '@/types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
