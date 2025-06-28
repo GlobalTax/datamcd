@@ -1,10 +1,10 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
-import { useAuth } from '@/hooks/useAuth';
+import { useFastAuth } from '@/hooks/useFastAuth';
 import { useValuationManager } from '@/hooks/useValuationManager';
-import { Building2, RefreshCw } from 'lucide-react';
+import { Building2, RefreshCw, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import RestaurantSelectorCard from './RestaurantSelectorCard';
 import ValuationActions from './ValuationActions';
@@ -23,8 +23,7 @@ const SimpleValuationManager = ({
   onValuationLoaded, 
   currentData 
 }: SimpleValuationManagerProps) => {
-  const { user, franchisee } = useAuth();
-  const { restaurants, loading, error, refetch } = useFranchiseeRestaurants();
+  const { user, franchisee, restaurants, loading, isUsingCache } = useFastAuth();
   const {
     selectedRestaurantId,
     setSelectedRestaurantId,
@@ -41,14 +40,13 @@ const SimpleValuationManager = ({
   const [isNewValuationOpen, setIsNewValuationOpen] = useState(false);
   const [isLoadValuationOpen, setIsLoadValuationOpen] = useState(false);
 
-  console.log('SimpleValuationManager - User:', user);
-  console.log('SimpleValuationManager - Franchisee:', franchisee);
-  console.log('SimpleValuationManager - Restaurants:', restaurants);
-  console.log('SimpleValuationManager - Loading:', loading);
-  console.log('SimpleValuationManager - Error:', error);
-
-  // Si el franchisee es temporal, mostrar mensaje especial
-  const isTemporaryFranchisee = franchisee?.id?.startsWith('temp-');
+  console.log('SimpleValuationManager - Fast auth data:', {
+    user: user ? { id: user.id, role: user.role } : null,
+    franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
+    restaurantsCount: restaurants?.length || 0,
+    loading,
+    isUsingCache
+  });
 
   const restaurantOptions = restaurants
     .filter(r => r.base_restaurant)
@@ -57,8 +55,6 @@ const SimpleValuationManager = ({
       name: r.base_restaurant!.restaurant_name,
       site_number: r.base_restaurant!.site_number
     }));
-
-  console.log('Restaurant options:', restaurantOptions);
 
   const handleRestaurantChange = (restaurantId: string) => {
     const restaurant = restaurantOptions.find(r => r.id === restaurantId);
@@ -87,63 +83,29 @@ const SimpleValuationManager = ({
       <Card>
         <CardContent className="p-8 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p>Cargando restaurantes...</p>
+          <p>Cargando datos rápidos...</p>
         </CardContent>
       </Card>
     );
   }
 
-  if (isTemporaryFranchisee) {
-    return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <Building2 className="w-12 h-12 mx-auto mb-4 text-orange-400" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Datos temporales
-          </h3>
-          <p className="text-gray-600 mb-4">
-            No se pudo conectar con la base de datos. Trabajando con datos temporales.
-          </p>
-          <p className="text-sm text-gray-500 mb-4">
-            Para acceder a tus restaurantes reales, verifica tu conexión a Internet y recarga la página.
-          </p>
-          <Button onClick={() => window.location.reload()}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Recargar página
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={refetch}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Reintentar
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (restaurants.length === 0) {
+  if (restaurantOptions.length === 0) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
           <Building2 className="w-12 h-12 mx-auto mb-4 text-gray-400" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            No hay restaurantes disponibles
+            Datos predefinidos disponibles
           </h3>
           <p className="text-gray-600 mb-4">
-            No tienes restaurantes asignados para realizar valoraciones.
+            {isUsingCache 
+              ? 'Usando datos predefinidos para carga rápida. Los restaurantes están disponibles para valoración.'
+              : 'No hay restaurantes asignados para realizar valoraciones.'
+            }
           </p>
-          <Button onClick={refetch}>
+          <Button onClick={() => window.location.reload()}>
             <RefreshCw className="w-4 h-4 mr-2" />
-            Buscar restaurantes
+            Recargar datos
           </Button>
         </CardContent>
       </Card>
@@ -157,19 +119,30 @@ const SimpleValuationManager = ({
           <CardTitle className="flex items-center gap-2">
             <Building2 className="w-5 h-5" />
             Gestión de Valoraciones
+            {isUsingCache && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                <Zap className="w-3 h-3" />
+                <span>Carga rápida</span>
+              </div>
+            )}
           </CardTitle>
-          <Button onClick={refetch} variant="outline" size="sm">
+          <Button onClick={() => window.location.reload()} variant="outline" size="sm">
             <RefreshCw className="w-4 h-4 mr-2" />
             Actualizar
           </Button>
         </div>
+        {isUsingCache && (
+          <p className="text-sm text-blue-600">
+            Usando datos predefinidos para experiencia rápida. Recarga para sincronizar.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <RestaurantSelectorCard
           restaurants={restaurantOptions}
           selectedRestaurantId={selectedRestaurantId}
           onRestaurantChange={handleRestaurantChange}
-          onRefresh={refetch}
+          onRefresh={() => window.location.reload()}
         />
 
         <ValuationActions

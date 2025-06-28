@@ -2,7 +2,7 @@
 import React from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
-import { AnalysisDashboard } from '@/components/analysis/AnalysisDashboard';
+import { AnalysisSpecificDashboard } from '@/components/analysis/AnalysisSpecificDashboard';
 
 const AnalysisPage = () => {
   return (
@@ -19,7 +19,7 @@ const AnalysisPage = () => {
           </header>
 
           <main className="flex-1 p-6">
-            <AnalysisDashboard />
+            <AnalysisSpecificDashboard />
           </main>
         </SidebarInset>
       </div>

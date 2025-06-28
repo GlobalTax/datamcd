@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BudgetData } from '@/types/budgetTypes';
-import { ActualData } from '@/hooks/useActualData';
+import { ActualData } from '@/types/actualDataTypes';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface BudgetComparisonProps {

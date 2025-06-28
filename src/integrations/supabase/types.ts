@@ -78,13 +78,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "annual_budgets_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "annual_budgets_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false

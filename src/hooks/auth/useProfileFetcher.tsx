@@ -1,97 +1,62 @@
 
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@/types/auth';
 
-interface ProfileFetcherProps {
-  setUser: (user: User | null) => void;
-  clearUserData: () => void;
-}
+export const useProfileFetcher = () => {
+  const [isLoading, setIsLoading] = useState(false);
 
-export const useProfileFetcher = ({ setUser, clearUserData }: ProfileFetcherProps) => {
-  
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = useCallback(async (userId: string) => {
+    console.log('fetchUserProfile - About to query profiles table');
+    setIsLoading(true);
+    
     try {
-      console.log('fetchUserProfile - About to query profiles table');
+      // Reducir timeout y añadir retry logic
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Query timeout after 5 seconds')), 5000)
+      );
       
-      // Aumentar timeout a 15 segundos para aprovechar el nuevo plan
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Query timeout after 15 seconds')), 15000);
-      });
-      
-      const profilePromise = supabase
+      const queryPromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
-      const { data: profile, error: profileError } = await Promise.race([
-        profilePromise,
-        timeoutPromise
-      ]) as any;
+      const { data: profile, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
-      console.log('fetchUserProfile - Profile query completed');
-
-      if (profileError && !profileError.message?.includes('timeout')) {
-        console.error('fetchUserProfile - Profile error details:', profileError);
-        
-        // Si no existe el perfil, crear uno básico
-        if (profileError.code === 'PGRST116') {
-          console.log('fetchUserProfile - Profile not found, creating basic user');
-          const basicUser = {
-            id: userId,
-            email: 'usuario@ejemplo.com',
-            role: 'franchisee',
-            full_name: 'Usuario'
-          } as User;
-          
-          setUser(basicUser);
-          return basicUser;
-        }
-        
-        clearUserData();
-        return null;
+      if (error) {
+        console.error('fetchUserProfile - Database error:', error);
+        throw error;
       }
 
       if (profile) {
-        console.log('fetchUserProfile - Profile fetched successfully:', profile);
-        
-        const userData = {
-          ...profile,
-          role: profile.role
-        } as User;
-
-        setUser(userData);
-        return userData;
+        console.log('fetchUserProfile - Profile found:', profile);
+        return profile;
+      } else {
+        console.log('fetchUserProfile - No profile found, creating basic profile');
+        // Si no hay perfil, crear uno básico
+        const basicProfile = {
+          id: userId,
+          email: 'user@example.com',
+          full_name: 'Usuario',
+          role: 'franchisee'
+        };
+        return basicProfile;
       }
-
-      // Si no hay perfil, crear uno básico
-      console.log('fetchUserProfile - No profile found, creating basic user');
-      const basicUser = {
-        id: userId,
-        email: 'usuario@ejemplo.com',
-        role: 'franchisee',
-        full_name: 'Usuario'
-      } as User;
-      
-      setUser(basicUser);
-      return basicUser;
-      
     } catch (error) {
-      console.error('fetchUserProfile - Query timeout or error:', error);
-      
-      // Crear un usuario básico en caso de timeout
-      const basicUser = {
-        id: userId,
-        email: 'usuario@ejemplo.com',
-        role: 'franchisee',
-        full_name: 'Usuario'
-      } as User;
-      
+      console.log('fetchUserProfile - Query timeout or error:', error);
       console.log('fetchUserProfile - Setting basic user due to timeout');
-      setUser(basicUser);
-      return basicUser;
+      
+      // En caso de error o timeout, devolver perfil básico
+      return {
+        id: userId,
+        email: 'user@example.com',
+        full_name: 'Usuario',
+        role: 'franchisee'
+      };
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, []);
 
-  return { fetchUserProfile };
+  return { fetchUserProfile, isLoading };
 };
