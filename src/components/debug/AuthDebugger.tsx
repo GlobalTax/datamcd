@@ -103,7 +103,7 @@ export const AuthDebugger: React.FC = () => {
                 <div>Total: {restaurants.length}</div>
                 <div className="text-gray-600">
                   {restaurants.slice(0, 2).map(r => 
-                    r.base_restaurant?.restaurant_name || 'Sin nombre'
+                    r.base_restaurant?.restaurant_name || r.restaurant_name || 'Sin nombre'
                   ).join(', ')}
                   {restaurants.length > 2 && ` y ${restaurants.length - 2} más`}
                 </div>
