@@ -54,29 +54,32 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
     ]);
   }, []);
 
-  // Cargar datos del usuario real
-  const loadRealUserData = useCallback(async (userId: string): Promise<{
+  // Cargar datos del usuario real con reintentos
+  const loadRealUserData = useCallback(async (userId: string, retries: number = 2): Promise<{
     user: User;
     franchisee?: Franchisee;
     restaurants?: any[];
   }> => {
-    console.log('loadRealUserData - Starting for user:', userId);
+    console.log('loadRealUserData - Starting for user:', userId, 'retries left:', retries);
     
     try {
-      // Cargar perfil
-      const profileQuery = supabase
-        .from('profiles')
-        .select('id, email, full_name, role')
-        .eq('id', userId)
-        .maybeSingle();
-
+      // Cargar perfil con Promise correcto
       const { data: profile, error: profileError } = await withTimeout(
-        profileQuery,
+        supabase
+          .from('profiles')
+          .select('id, email, full_name, role')
+          .eq('id', userId)
+          .maybeSingle(),
         5000
       );
 
       if (profileError) {
         console.error('Profile error:', profileError);
+        if (retries > 0) {
+          console.log('Retrying profile query...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return loadRealUserData(userId, retries - 1);
+        }
         throw profileError;
       }
 
@@ -96,40 +99,36 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
       // Si es franchisee, cargar datos adicionales
       if (profile.role === 'franchisee') {
         try {
-          const franchiseeQuery = supabase
-            .from('franchisees')
-            .select('id, user_id, franchisee_name, company_name, total_restaurants, created_at, updated_at')
-            .eq('user_id', userId)
-            .maybeSingle();
-
           const { data: franchiseeData, error: franchiseeError } = await withTimeout(
-            franchiseeQuery,
+            supabase
+              .from('franchisees')
+              .select('id, user_id, franchisee_name, company_name, total_restaurants, created_at, updated_at')
+              .eq('user_id', userId)
+              .maybeSingle(),
             5000
           );
 
           if (!franchiseeError && franchiseeData) {
-            const restaurantsQuery = supabase
-              .from('franchisee_restaurants')
-              .select(`
-                id,
-                monthly_rent,
-                last_year_revenue,
-                status,
-                base_restaurant:base_restaurants!inner(
-                  id,
-                  site_number,
-                  restaurant_name,
-                  address,
-                  city,
-                  restaurant_type
-                )
-              `)
-              .eq('franchisee_id', franchiseeData.id)
-              .eq('status', 'active')
-              .limit(20);
-
             const { data: restaurantsData } = await withTimeout(
-              restaurantsQuery,
+              supabase
+                .from('franchisee_restaurants')
+                .select(`
+                  id,
+                  monthly_rent,
+                  last_year_revenue,
+                  status,
+                  base_restaurant:base_restaurants!inner(
+                    id,
+                    site_number,
+                    restaurant_name,
+                    address,
+                    city,
+                    restaurant_type
+                  )
+                `)
+                .eq('franchisee_id', franchiseeData.id)
+                .eq('status', 'active')
+                .limit(20),
               8000
             );
 
@@ -139,6 +138,32 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
               franchisee: franchiseeData,
               restaurants: restaurantsData || []
             };
+          } else if (franchiseeError) {
+            console.log('Franchisee data error:', franchiseeError);
+            // Crear datos de franquiciado si no existen
+            try {
+              const { data: newFranchisee, error: createError } = await supabase
+                .from('franchisees')
+                .insert({
+                  user_id: userId,
+                  franchisee_name: profile.full_name || profile.email,
+                  company_name: `Empresa de ${profile.full_name || profile.email}`,
+                  total_restaurants: 0
+                })
+                .select()
+                .single();
+
+              if (!createError && newFranchisee) {
+                console.log('Created new franchisee data');
+                return {
+                  user: userData,
+                  franchisee: newFranchisee,
+                  restaurants: []
+                };
+              }
+            } catch (createErr) {
+              console.log('Could not create franchisee data:', createErr);
+            }
           }
         } catch (error) {
           console.log('Franchisee data not available:', error);
@@ -148,6 +173,11 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
       return { user: userData };
     } catch (error) {
       console.error('Error loading real user data:', error);
+      if (retries > 0) {
+        console.log('Retrying loadRealUserData...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return loadRealUserData(userId, retries - 1);
+      }
       throw error;
     }
   }, [withTimeout]);
@@ -183,7 +213,7 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
     currentUserIdRef.current = null;
   }, []);
 
-  // Inicializar autenticación - memoizada para evitar bucles
+  // Inicializar autenticación mejorada
   const initializeAuth = useCallback(async () => {
     if (initializingRef.current || !mountedRef.current) {
       return;
@@ -203,6 +233,7 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
       if (!mountedRef.current) return;
 
       if (sessionError) {
+        console.error('Session error:', sessionError);
         throw sessionError;
       }
 
@@ -221,7 +252,7 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
           setConnectionStatus('connected');
           
         } catch (error) {
-          console.log('Real data loading failed, using fallback');
+          console.log('Real data loading failed, using fallback:', error);
           if (!mountedRef.current) return;
           
           const fallbackData = await loadFallbackData();
@@ -257,15 +288,17 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
     }
   }, [withTimeout, loadRealUserData, loadFallbackData, clearAuthState]);
 
-  // Acciones de autenticación
+  // Acciones de autenticación mejoradas
   const signIn = useCallback(async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
+        console.error('Sign in error:', error);
         return { error: error.message };
       }
       return {};
     } catch (error) {
+      console.error('Sign in network error:', error);
       return { error: 'Error de conexión' };
     }
   }, []);
@@ -282,10 +315,12 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
         }
       });
       if (error) {
+        console.error('Sign up error:', error);
         return { error: error.message };
       }
       return {};
     } catch (error) {
+      console.error('Sign up network error:', error);
       return { error: 'Error de conexión' };
     }
   }, []);
@@ -307,7 +342,7 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
     }
   }, [initializeAuth]);
 
-  // Efecto principal - se ejecuta solo una vez
+  // Efecto principal optimizado
   useEffect(() => {
     let mounted = true;
     mountedRef.current = true;
@@ -326,20 +361,17 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
         
         console.log('Auth state change:', event, session?.user?.id);
         
-        // Solo limpiar estado en SIGNED_OUT, no reinicializar todo
         if (event === 'SIGNED_OUT') {
           clearAuthState();
           setConnectionStatus('connecting');
         } else if (event === 'SIGNED_IN' && session?.user) {
-          // Solo reinicializar si es un usuario diferente
           if (currentUserIdRef.current !== session.user.id) {
             setLoading(true);
-            // Usar setTimeout para evitar llamadas síncronas en el callback
             setTimeout(() => {
               if (mounted) {
                 initializeAuth();
               }
-            }, 0);
+            }, 100);
           }
         }
       }
@@ -350,7 +382,7 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
       mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, []); // Dependencias vacías para ejecutar solo una vez
+  }, [initializeAuth, clearAuthState]);
 
   return {
     user,
