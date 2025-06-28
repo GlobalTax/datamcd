@@ -62,14 +62,14 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
     console.log('loadRealUserData - Starting for user:', userId, 'retries left:', retries);
     
     try {
-      // Cargar perfil correctamente
-      const profilePromise = supabase
+      // Cargar perfil correctamente - ejecutar la consulta primero
+      const profileQuery = supabase
         .from('profiles')
         .select('id, email, full_name, role')
         .eq('id', userId)
         .maybeSingle();
 
-      const { data: profile, error: profileError } = await withTimeout(profilePromise, 5000);
+      const { data: profile, error: profileError } = await withTimeout(profileQuery, 5000);
 
       if (profileError) {
         console.error('Profile error:', profileError);
@@ -101,16 +101,16 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
       // Si es franchisee, cargar datos adicionales
       if (profile.role === 'franchisee') {
         try {
-          const franchiseePromise = supabase
+          const franchiseeQuery = supabase
             .from('franchisees')
             .select('id, user_id, franchisee_name, company_name, total_restaurants, created_at, updated_at')
             .eq('user_id', userId)
             .maybeSingle();
 
-          const { data: franchiseeData, error: franchiseeError } = await withTimeout(franchiseePromise, 5000);
+          const { data: franchiseeData, error: franchiseeError } = await withTimeout(franchiseeQuery, 5000);
 
           if (!franchiseeError && franchiseeData) {
-            const restaurantsPromise = supabase
+            const restaurantsQuery = supabase
               .from('franchisee_restaurants')
               .select(`
                 id,
@@ -130,7 +130,7 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
               .eq('status', 'active')
               .limit(20);
 
-            const { data: restaurantsData } = await withTimeout(restaurantsPromise, 8000);
+            const { data: restaurantsData } = await withTimeout(restaurantsQuery, 8000);
 
             console.log('Real data loaded successfully');
             return {
