@@ -62,17 +62,14 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
     console.log('loadRealUserData - Starting for user:', userId, 'retries left:', retries);
     
     try {
-      // Cargar perfil correctamente - ejecutar la consulta
-      const profileResult = await withTimeout(
-        supabase
-          .from('profiles')
-          .select('id, email, full_name, role')
-          .eq('id', userId)
-          .maybeSingle(),
-        5000
-      );
+      // Cargar perfil correctamente - crear Promise y ejecutarla
+      const profileQuery = supabase
+        .from('profiles')
+        .select('id, email, full_name, role')
+        .eq('id', userId)
+        .maybeSingle();
 
-      const { data: profile, error: profileError } = profileResult;
+      const { data: profile, error: profileError } = await withTimeout(profileQuery, 5000);
 
       if (profileError) {
         console.error('Profile error:', profileError);
@@ -104,42 +101,36 @@ export const useUnifiedAuth = (): AuthState & AuthActions => {
       // Si es franchisee, cargar datos adicionales
       if (profile.role === 'franchisee') {
         try {
-          const franchiseeResult = await withTimeout(
-            supabase
-              .from('franchisees')
-              .select('id, user_id, franchisee_name, company_name, total_restaurants, created_at, updated_at')
-              .eq('user_id', userId)
-              .maybeSingle(),
-            5000
-          );
+          const franchiseeQuery = supabase
+            .from('franchisees')
+            .select('id, user_id, franchisee_name, company_name, total_restaurants, created_at, updated_at')
+            .eq('user_id', userId)
+            .maybeSingle();
 
-          const { data: franchiseeData, error: franchiseeError } = franchiseeResult;
+          const { data: franchiseeData, error: franchiseeError } = await withTimeout(franchiseeQuery, 5000);
 
           if (!franchiseeError && franchiseeData) {
-            const restaurantsResult = await withTimeout(
-              supabase
-                .from('franchisee_restaurants')
-                .select(`
+            const restaurantsQuery = supabase
+              .from('franchisee_restaurants')
+              .select(`
+                id,
+                monthly_rent,
+                last_year_revenue,
+                status,
+                base_restaurant:base_restaurants!inner(
                   id,
-                  monthly_rent,
-                  last_year_revenue,
-                  status,
-                  base_restaurant:base_restaurants!inner(
-                    id,
-                    site_number,
-                    restaurant_name,
-                    address,
-                    city,
-                    restaurant_type
-                  )
-                `)
-                .eq('franchisee_id', franchiseeData.id)
-                .eq('status', 'active')
-                .limit(20),
-              8000
-            );
+                  site_number,
+                  restaurant_name,
+                  address,
+                  city,
+                  restaurant_type
+                )
+              `)
+              .eq('franchisee_id', franchiseeData.id)
+              .eq('status', 'active')
+              .limit(20);
 
-            const { data: restaurantsData } = restaurantsResult;
+            const { data: restaurantsData } = await withTimeout(restaurantsQuery, 8000);
 
             console.log('Real data loaded successfully');
             return {
