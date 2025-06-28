@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { AuthDebugger } from '@/components/debug/AuthDebugger';
 
@@ -18,12 +18,11 @@ const ProtectedRoute = ({
   requiredRole,
   showDebugger = process.env.NODE_ENV === 'development'
 }: ProtectedRouteProps) => {
-  const { user, loading, connectionStatus } = useUnifiedAuth();
+  const { user, loading } = useAuth();
 
   console.log('ProtectedRoute - Auth state:', { 
     user: user ? { id: user.id, role: user.role } : null, 
-    loading, 
-    connectionStatus 
+    loading 
   });
 
   if (loading) {
@@ -32,7 +31,6 @@ const ProtectedRoute = ({
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
           <p className="text-gray-600">Cargando autenticación...</p>
-          <p className="text-xs text-gray-500 mt-1">Estado: {connectionStatus}</p>
         </div>
       </div>
     );

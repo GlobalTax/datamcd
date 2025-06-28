@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useAuthActions = () => {
-  // Acciones de autenticación mejoradas
+  // Acciones de autenticación simplificadas
   const signIn = useCallback(async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });

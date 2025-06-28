@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthContext } from './auth/AuthContext';
@@ -23,7 +24,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   } = useAuthState();
 
   const { fetchUserData } = useUserDataFetcher();
-
   const { signIn, signUp, signOut } = useAuthActions();
 
   // Use ref to prevent duplicate calls
