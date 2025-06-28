@@ -36,10 +36,14 @@ export const useAuthCore = (): UseAuthCoreReturn => {
         return null;
       }
 
+      // Asegurar que el rol es válido
+      const validRoles = ['franchisee', 'asesor', 'admin', 'superadmin', 'manager', 'asistente'];
+      const userRole = validRoles.includes(profile.role) ? profile.role : 'franchisee';
+
       return {
         id: profile.id,
         email: profile.email,
-        role: profile.role,
+        role: userRole as User['role'],
         full_name: profile.full_name,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
