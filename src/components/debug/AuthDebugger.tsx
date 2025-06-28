@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,16 +11,21 @@ export const AuthDebugger: React.FC = () => {
     user, 
     franchisee, 
     restaurants, 
-    loading, 
-    connectionStatus, 
-    isUsingCache,
-    refreshData 
-  } = useUnifiedAuth();
+    loading
+  } = useAuth();
+
+  // Función simplificada para refrescar datos
+  const refreshData = () => {
+    window.location.reload();
+  };
+
+  // Estado de conexión simulado basado en los datos disponibles
+  const connectionStatus = user ? 'connected' : 'disconnected';
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'connected': return 'bg-green-100 text-green-800';
-      case 'fallback': return 'bg-orange-100 text-orange-800';
+      case 'disconnected': return 'bg-red-100 text-red-800';
       case 'connecting': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -29,7 +34,7 @@ export const AuthDebugger: React.FC = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'connected': return <Wifi className="w-4 h-4" />;
-      case 'fallback': return <WifiOff className="w-4 h-4" />;
+      case 'disconnected': return <WifiOff className="w-4 h-4" />;
       case 'connecting': return <RefreshCw className="w-4 h-4 animate-spin" />;
       default: return <AlertCircle className="w-4 h-4" />;
     }
@@ -93,7 +98,7 @@ export const AuthDebugger: React.FC = () => {
         <div>
           <strong>Restaurantes:</strong>
           <div className="mt-1">
-            {restaurants.length > 0 ? (
+            {restaurants && restaurants.length > 0 ? (
               <div>
                 <div>Total: {restaurants.length}</div>
                 <div className="text-gray-600">
@@ -115,8 +120,8 @@ export const AuthDebugger: React.FC = () => {
             <span>Cargando: {loading ? 'Sí' : 'No'}</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className={`w-2 h-2 rounded-full ${isUsingCache ? 'bg-orange-500' : 'bg-green-500'}`} />
-            <span>Cache: {isUsingCache ? 'Activo' : 'Desactivado'}</span>
+            <div className={`w-2 h-2 rounded-full ${user ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span>Autenticado: {user ? 'Sí' : 'No'}</span>
           </div>
         </div>
       </CardContent>
