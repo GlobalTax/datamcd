@@ -23,8 +23,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearUserData
   } = useAuthState();
 
-  const { fetchUserData } = useUserDataFetcher();
-  const { signIn, signUp, signOut } = useAuthActions();
+  const { fetchUserData } = useUserDataFetcher({
+    setUser,
+    setFranchisee,
+    setRestaurants,
+    clearUserData
+  });
+
+  const { signIn, signUp, signOut } = useAuthActions({
+    clearUserData,
+    setSession
+  });
 
   // Use ref to prevent duplicate calls
   const authInitialized = useRef(false);
@@ -46,10 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('useAuth - User found in session, fetching user data');
           currentUserId.current = session.user.id;
           try {
-            const userData = await fetchUserData(session.user.id);
-            setUser(userData);
-            setFranchisee(userData.franchisee);
-            setRestaurants(userData.restaurants);
+            await fetchUserData(session.user.id);
             console.log('useAuth - User data fetch completed');
           } catch (error) {
             console.error('useAuth - Error fetching user data:', error);
@@ -70,10 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user && currentUserId.current !== session.user.id) {
         currentUserId.current = session.user.id;
         try {
-          const userData = await fetchUserData(session.user.id);
-          setUser(userData);
-          setFranchisee(userData.franchisee);
-          setRestaurants(userData.restaurants);
+          await fetchUserData(session.user.id);
           console.log('useAuth - Initial user data fetch completed');
         } catch (error) {
           console.error('useAuth - Error in initial user data fetch:', error);

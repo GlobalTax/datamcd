@@ -3,12 +3,11 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Plus, Download, TrendingUp, TrendingDown, Eye, EyeOff, Database } from 'lucide-react';
+import { Plus, Download, TrendingUp, TrendingDown, Eye, EyeOff } from 'lucide-react';
 import { useProfitLossData, useProfitLossCalculations } from '@/hooks/useProfitLossData';
 import { ProfitLossTable } from './ProfitLossTable';
 import { ProfitLossCharts } from './ProfitLossCharts';
 import { ProfitLossForm } from './ProfitLossForm';
-import { HistoricalDataDialog } from './HistoricalDataDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface ProfitLossDashboardProps {
@@ -79,8 +78,6 @@ const ProfitLossDashboard = ({ restaurantId }: ProfitLossDashboardProps) => {
               ))}
             </SelectContent>
           </Select>
-          
-          <HistoricalDataDialog restaurantId={restaurantId} />
           
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>

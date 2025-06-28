@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ValuationBudgetFormData } from '@/types/budget';
-import { BasicInfoSection } from './BasicInfoSection';
-import { ValuationParametersSection } from './ValuationParametersSection';
-import { CostPercentagesSection } from './CostPercentagesSection';
-import { FixedCostsSection } from './FixedCostsSection';
-import { NotesSection } from './NotesSection';
 
 interface BudgetFormProps {
   restaurants: any[];
@@ -63,31 +63,229 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <BasicInfoSection
-          formData={formData}
-          restaurants={restaurants}
-          onInputChange={handleInputChange}
-        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Información Básica</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="budget_name">Nombre del Presupuesto</Label>
+              <Input
+                id="budget_name"
+                value={formData.budget_name}
+                onChange={(e) => handleInputChange('budget_name', e.target.value)}
+                placeholder="Ej: Presupuesto 2024 - Restaurante Centro"
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="budget_year">Año del Presupuesto</Label>
+              <Input
+                id="budget_year"
+                type="number"
+                value={formData.budget_year}
+                onChange={(e) => handleInputChange('budget_year', parseInt(e.target.value))}
+                required
+              />
+            </div>
 
-        <ValuationParametersSection
-          formData={formData}
-          onInputChange={handleInputChange}
-        />
+            <div className="md:col-span-2">
+              <Label htmlFor="restaurant">Restaurante</Label>
+              <Select
+                value={formData.franchisee_restaurant_id}
+                onValueChange={(value) => handleInputChange('franchisee_restaurant_id', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar restaurante" />
+                </SelectTrigger>
+                <SelectContent>
+                  {restaurants.map((restaurant) => (
+                    <SelectItem key={restaurant.id} value={restaurant.id}>
+                      {restaurant.base_restaurants?.restaurant_name || 'Sin nombre'} - 
+                      {restaurant.base_restaurants?.site_number || 'Sin número'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
-        <CostPercentagesSection
-          formData={formData}
-          onInputChange={handleInputChange}
-        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Parámetros de Valoración</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="initial_sales">Ventas Iniciales (€)</Label>
+              <Input
+                id="initial_sales"
+                type="number"
+                value={formData.initial_sales}
+                onChange={(e) => handleInputChange('initial_sales', parseFloat(e.target.value) || 0)}
+                required
+              />
+            </div>
 
-        <FixedCostsSection
-          formData={formData}
-          onInputChange={handleInputChange}
-        />
+            <div>
+              <Label htmlFor="sales_growth_rate">Tasa de Crecimiento de Ventas (%)</Label>
+              <Input
+                id="sales_growth_rate"
+                type="number"
+                step="0.1"
+                value={formData.sales_growth_rate}
+                onChange={(e) => handleInputChange('sales_growth_rate', parseFloat(e.target.value) || 0)}
+              />
+            </div>
 
-        <NotesSection
-          formData={formData}
-          onInputChange={handleInputChange}
-        />
+            <div>
+              <Label htmlFor="inflation_rate">Tasa de Inflación (%)</Label>
+              <Input
+                id="inflation_rate"
+                type="number"
+                step="0.1"
+                value={formData.inflation_rate}
+                onChange={(e) => handleInputChange('inflation_rate', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="discount_rate">Tasa de Descuento (%)</Label>
+              <Input
+                id="discount_rate"
+                type="number"
+                step="0.1"
+                value={formData.discount_rate}
+                onChange={(e) => handleInputChange('discount_rate', parseFloat(e.target.value) || 0)}
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="years_projection">Años de Proyección</Label>
+              <Input
+                id="years_projection"
+                type="number"
+                value={formData.years_projection}
+                onChange={(e) => handleInputChange('years_projection', parseInt(e.target.value) || 5)}
+                min="1"
+                max="20"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Costos como Porcentaje de Ventas</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="pac_percentage">PAC (%)</Label>
+              <Input
+                id="pac_percentage"
+                type="number"
+                step="0.1"
+                value={formData.pac_percentage}
+                onChange={(e) => handleInputChange('pac_percentage', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="rent_percentage">Alquiler (%)</Label>
+              <Input
+                id="rent_percentage"
+                type="number"
+                step="0.1"
+                value={formData.rent_percentage}
+                onChange={(e) => handleInputChange('rent_percentage', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="service_fees_percentage">Tarifas de Servicio (%)</Label>
+              <Input
+                id="service_fees_percentage"
+                type="number"
+                step="0.1"
+                value={formData.service_fees_percentage}
+                onChange={(e) => handleInputChange('service_fees_percentage', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Costos Fijos Anuales (€)</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="depreciation">Depreciación</Label>
+              <Input
+                id="depreciation"
+                type="number"
+                value={formData.depreciation}
+                onChange={(e) => handleInputChange('depreciation', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="interest">Intereses</Label>
+              <Input
+                id="interest"
+                type="number"
+                value={formData.interest}
+                onChange={(e) => handleInputChange('interest', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="loan_payment">Pago de Préstamo</Label>
+              <Input
+                id="loan_payment"
+                type="number"
+                value={formData.loan_payment}
+                onChange={(e) => handleInputChange('loan_payment', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="rent_index">Índice de Alquiler</Label>
+              <Input
+                id="rent_index"
+                type="number"
+                value={formData.rent_index}
+                onChange={(e) => handleInputChange('rent_index', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="miscellaneous">Misceláneos</Label>
+              <Input
+                id="miscellaneous"
+                type="number"
+                value={formData.miscellaneous}
+                onChange={(e) => handleInputChange('miscellaneous', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Notas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={formData.notes || ''}
+              onChange={(e) => handleInputChange('notes', e.target.value)}
+              placeholder="Añade cualquier nota o comentario adicional..."
+              rows={3}
+            />
+          </CardContent>
+        </Card>
 
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" onClick={onCancel}>

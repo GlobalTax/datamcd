@@ -6,7 +6,7 @@ import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
 import { toast } from 'sonner';
 
 export const useFranchiseeRestaurants = () => {
-  const { user, franchisee, restaurants: authRestaurants } = useAuth();
+  const { user, franchisee } = useAuth();
   const [restaurants, setRestaurants] = useState<FranchiseeRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,27 +41,26 @@ export const useFranchiseeRestaurants = () => {
         return;
       }
 
-      // Si es un franquiciado temporal, usar datos del contexto de autenticación
-      if (franchisee.id.startsWith('temp-')) {
+      // Si es un franchisee temporal (creado por timeout), no hacer consultas
+      if (franchisee.id?.startsWith('temp-')) {
         console.log('useFranchiseeRestaurants - Temporary franchisee detected, skipping database query');
-        
-        // Para franquiciados temporales, crear un array vacío ya que no tienen restaurantes reales
-        console.log('useFranchiseeRestaurants - No restaurants for temporary franchisee');
         setRestaurants([]);
-        toast.info('No se encontraron restaurantes asignados');
-        
         setError(null);
         setLoading(false);
         return;
       }
 
-      // Para franquiciados reales, consultar la base de datos
       setLoading(true);
       setError(null);
 
-      console.log('useFranchiseeRestaurants - Fetching restaurants for real franchisee:', franchisee.id);
+      console.log('useFranchiseeRestaurants - Fetching restaurants for franchisee:', franchisee.id);
 
-      const { data, error } = await supabase
+      // Aumentar timeout a 12 segundos para aprovechar el nuevo plan
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Restaurants query timeout after 12 seconds')), 12000);
+      });
+
+      const restaurantsPromise = supabase
         .from('franchisee_restaurants')
         .select(`
           *,
@@ -88,8 +87,12 @@ export const useFranchiseeRestaurants = () => {
             created_by
           )
         `)
-        .eq('franchisee_id', franchisee.id)
-        .eq('status', 'active');
+        .eq('franchisee_id', franchisee.id);
+
+      const { data, error } = await Promise.race([
+        restaurantsPromise,
+        timeoutPromise
+      ]) as any;
 
       console.log('useFranchiseeRestaurants - Query result:', { data: data?.length || 0, error });
 

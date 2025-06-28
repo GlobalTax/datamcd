@@ -1,57 +1,59 @@
 
-import { useCallback } from 'react';
 import { useProfileFetcher } from './useProfileFetcher';
 import { useFranchiseeFetcher } from './useFranchiseeFetcher';
 import { useRestaurantsFetcher } from './useRestaurantsFetcher';
+import { User, Franchisee, Restaurant } from '@/types/auth';
 
-export const useUserDataFetcher = () => {
-  const { fetchUserProfile } = useProfileFetcher();
-  const { fetchFranchiseeData } = useFranchiseeFetcher();
-  const { fetchRestaurantsData } = useRestaurantsFetcher();
+interface UserDataFetcherProps {
+  setUser: (user: User | null) => void;
+  setFranchisee: (franchisee: Franchisee | null) => void;
+  setRestaurants: (restaurants: Restaurant[]) => void;
+  clearUserData: () => void;
+}
 
-  const fetchUserData = useCallback(async (userId: string) => {
-    console.log('fetchUserData - Starting fetch for user:', userId);
-    
+export const useUserDataFetcher = ({
+  setUser,
+  setFranchisee,
+  setRestaurants,
+  clearUserData
+}: UserDataFetcherProps) => {
+  
+  const { fetchUserProfile } = useProfileFetcher({ setUser, clearUserData });
+  const { fetchFranchiseeData } = useFranchiseeFetcher({ setFranchisee });
+  const { fetchRestaurantsData } = useRestaurantsFetcher({ setRestaurants });
+  
+  const fetchUserData = async (userId: string) => {
     try {
-      // 1. Obtener perfil del usuario
+      console.log('fetchUserData - Starting fetch for user:', userId);
+      
       const profile = await fetchUserProfile(userId);
       
-      let franchisee = null;
-      let restaurants = [];
-
-      // 2. Si es franchisee, obtener datos del franquiciado
-      if (profile.role === 'franchisee') {
-        console.log('fetchUserData - User is franchisee, fetching franchisee data');
-        franchisee = await fetchFranchiseeData(userId);
-        
-        if (franchisee) {
-          console.log('fetchUserData - About to fetch restaurants for franchisee:', franchisee.id);
-          restaurants = await fetchRestaurantsData(franchisee.id);
-        }
+      if (!profile) {
+        return;
       }
 
-      const userData = {
-        ...profile,
-        franchisee,
-        restaurants
-      };
-
-      console.log('fetchUserData - User data fetch completed successfully');
-      return userData;
-    } catch (error) {
-      console.error('fetchUserData - Error fetching user data:', error);
+      // Only fetch franchisee data if user is a franchisee
+      if (profile.role === 'franchisee') {
+        console.log('fetchUserData - User is franchisee, fetching franchisee data');
+        const franchiseeData = await fetchFranchiseeData(userId, profile);
+        
+        if (franchiseeData) {
+          console.log('fetchUserData - About to fetch restaurants for franchisee:', franchiseeData.id);
+          await fetchRestaurantsData(franchiseeData.id);
+        }
+      } else {
+        console.log('fetchUserData - User is not franchisee, role:', profile.role);
+        // Clear franchisee data for non-franchisee users
+        setFranchisee(null);
+        setRestaurants([]);
+      }
       
-      // Devolver datos básicos en caso de error completo
-      return {
-        id: userId,
-        email: 'user@example.com',
-        full_name: 'Usuario',
-        role: 'franchisee',
-        franchisee: null,
-        restaurants: []
-      };
+      console.log('fetchUserData - User data fetch completed successfully');
+    } catch (error) {
+      console.error('fetchUserData - Unexpected error in fetchUserData:', error);
+      clearUserData();
     }
-  }, [fetchUserProfile, fetchFranchiseeData, fetchRestaurantsData]);
+  };
 
   return { fetchUserData };
 };
