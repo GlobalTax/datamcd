@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { render, RenderOptions } from '@testing-library/react';
+import { render, RenderOptions, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '@/hooks/useAuth';
 
@@ -19,7 +19,9 @@ const customRender = (
   options?: Omit<RenderOptions, 'wrapper'>
 ) => render(ui, { wrapper: AllTheProviders, ...options });
 
-// Re-export everything from testing-library/react
-export * from '@testing-library/react';
-// Override render with our custom version
+// Export specific testing utilities we need
+export { screen, fireEvent, waitFor };
+// Export our custom render
 export { customRender as render };
+// Re-export everything else from testing-library/react except render
+export * from '@testing-library/react';
