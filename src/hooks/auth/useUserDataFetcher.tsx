@@ -18,13 +18,14 @@ export const useUserDataFetcher = () => {
         ]);
       };
 
-      // Fetch user profile with timeout - ejecutar la consulta correctamente
+      // Fetch user profile with timeout - ejecutar la consulta inmediatamente y usar la promesa
       const { data: profileData, error: profileError } = await withTimeout(
         supabase
           .from('profiles')
           .select('*')
           .eq('id', userId)
-          .single(),
+          .single()
+          .then(result => result), // Esto asegura que tenemos una promesa
         8000
       );
 
@@ -58,7 +59,8 @@ export const useUserDataFetcher = () => {
               .from('franchisees')
               .select('*')
               .eq('user_id', userId)
-              .single(),
+              .single()
+              .then(result => result), // Convertir a promesa
             8000
           );
 
@@ -101,7 +103,8 @@ export const useUserDataFetcher = () => {
                     base_restaurant:base_restaurants(*)
                   `)
                   .eq('franchisee_id', franchisee.id)
-                  .eq('status', 'active'),
+                  .eq('status', 'active')
+                  .then(result => result), // Convertir a promesa
                 10000
               );
 
