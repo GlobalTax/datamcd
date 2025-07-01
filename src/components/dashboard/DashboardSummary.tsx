@@ -4,17 +4,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building2, TrendingUp, AlertTriangle } from 'lucide-react';
 
-interface Restaurant {
+interface DisplayRestaurant {
   id: string;
-  name: string;
-  location: string;
-  status: string;
+  name?: string;
+  restaurant_name?: string;
+  location?: string;
+  city?: string;
+  address?: string;
+  siteNumber?: string;
+  site_number?: string;
+  franchiseeName?: string;
+  opening_date?: string;
+  contractEndDate?: string;
+  restaurant_type?: string;
+  status?: string;
   lastYearRevenue?: number;
+  baseRent?: number;
+  isOwnedByMcD?: boolean;
+  currentValuation?: any;
 }
 
 interface DashboardSummaryProps {
   totalRestaurants: number;
-  displayRestaurants: Restaurant[];
+  displayRestaurants: DisplayRestaurant[];
   isTemporaryData: boolean;
 }
 
