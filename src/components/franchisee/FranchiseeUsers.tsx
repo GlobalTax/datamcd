@@ -23,7 +23,7 @@ const FranchiseeUsers = ({ franchiseeId }: { franchiseeId: string }) => {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, email, full_name, role, created_at')
         .eq('franchisee_id', franchiseeId);
 
       if (error) throw error;
@@ -42,12 +42,21 @@ const FranchiseeUsers = ({ franchiseeId }: { franchiseeId: string }) => {
       if (action === 'delete') {
         const { error } = await supabase
           .from('profiles')
-          .delete()
+          .update({ role: 'inactive' })
           .eq('id', userId);
 
         if (error) throw error;
         
-        showSuccess('Usuario eliminado correctamente');
+        showSuccess('Usuario desactivado correctamente');
+      } else if (action === 'activate') {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ role: 'franchisee' })
+          .eq('id', userId);
+
+        if (error) throw error;
+        
+        showSuccess('Usuario activado correctamente');
       } else {
         showError('Acción no válida');
         return;
@@ -104,13 +113,23 @@ const FranchiseeUsers = ({ franchiseeId }: { franchiseeId: string }) => {
                       {user.role}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleUserAction(user.id, 'delete')}
-                      >
-                        Eliminar
-                      </Button>
+                      {user.role === 'inactive' ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUserAction(user.id, 'activate')}
+                        >
+                          Activar
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleUserAction(user.id, 'delete')}
+                        >
+                          Desactivar
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}

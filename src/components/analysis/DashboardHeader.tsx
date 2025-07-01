@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
@@ -25,6 +26,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onImportComplete,
   onExport
 }) => {
+  const [showImportDialog, setShowImportDialog] = useState(false);
+
   // Generar años disponibles
   const generateYears = () => {
     const currentYear = new Date().getFullYear();
@@ -68,7 +71,14 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </SelectContent>
         </Select>
 
-        <DataImportDialog onImportComplete={onImportComplete} />
+        <DataImportDialog 
+          isOpen={showImportDialog}
+          onOpenChange={setShowImportDialog}
+          onImportComplete={() => {
+            onImportComplete();
+            setShowImportDialog(false);
+          }}
+        />
 
         <Button variant="outline" onClick={onExport}>
           <Download className="w-4 h-4 mr-2" />

@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, TrendingUp, TrendingDown, Eye, EyeOff, Database } from 'lucide-react';
-import { useProfitLossData, useProfitLossCalculations } from '@/hooks/useProfitLossData';
+import { useProfitLossData } from '@/hooks/useProfitLossData';
+import { useProfitLossCalculations } from '@/hooks/useProfitLossCalculations';
 import { ProfitLossTable } from './ProfitLossTable';
 import { ProfitLossCharts } from './ProfitLossCharts';
 import { ProfitLossForm } from './ProfitLossForm';
@@ -21,15 +22,18 @@ const ProfitLossDashboard = ({ restaurantId }: ProfitLossDashboardProps) => {
   const [viewMode, setViewMode] = useState<'table' | 'charts'>('table');
   const [showOnlyTotals, setShowOnlyTotals] = useState(false);
 
-  const { profitLossData, isLoading, error } = useProfitLossData(restaurantId, selectedYear);
-  const { calculateMetrics, formatCurrency, formatPercentage } = useProfitLossCalculations();
+  const { data: profitLossData, loading: isLoading } = useProfitLossData(restaurantId);
+  const { formatCurrency, formatPercentage } = useProfitLossCalculations();
+
+  // Filtrar datos por año seleccionado
+  const filteredData = profitLossData.filter(item => item.year === selectedYear);
 
   // Generar años disponibles (último 5 años + próximo año)
   const currentYear = new Date().getFullYear();
   const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - 4 + i);
 
   // Calcular métricas del año actual
-  const yearTotals = profitLossData.reduce((acc, month) => ({
+  const yearTotals = filteredData.reduce((acc, month) => ({
     totalRevenue: acc.totalRevenue + month.total_revenue,
     totalExpenses: acc.totalExpenses + (month.total_cost_of_sales + month.total_labor + month.total_operating_expenses + month.total_mcdonalds_fees),
     operatingIncome: acc.operatingIncome + month.operating_income,
@@ -47,15 +51,6 @@ const ProfitLossDashboard = ({ restaurantId }: ProfitLossDashboardProps) => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Cargando datos de P&L...</p>
         </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-600 mb-4">Error al cargar los datos de P&L</p>
-        <Button onClick={() => window.location.reload()}>Reintentar</Button>
       </div>
     );
   }
@@ -143,7 +138,7 @@ const ProfitLossDashboard = ({ restaurantId }: ProfitLossDashboardProps) => {
             <span className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{profitLossData.length}</div>
+            <div className="text-2xl font-bold">{filteredData.length}</div>
             <p className="text-xs text-muted-foreground">meses registrados</p>
           </CardContent>
         </Card>
@@ -185,9 +180,9 @@ const ProfitLossDashboard = ({ restaurantId }: ProfitLossDashboardProps) => {
 
       {/* Contenido principal */}
       {viewMode === 'table' ? (
-        <ProfitLossTable data={profitLossData} showOnlyTotals={showOnlyTotals} />
+        <ProfitLossTable data={filteredData} showOnlyTotals={showOnlyTotals} />
       ) : (
-        <ProfitLossCharts data={profitLossData} />
+        <ProfitLossCharts data={filteredData} />
       )}
     </div>
   );

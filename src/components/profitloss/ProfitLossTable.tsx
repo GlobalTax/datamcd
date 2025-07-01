@@ -1,14 +1,14 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProfitLossData } from '@/types/profitLoss';
-import { useProfitLossCalculations } from '@/hooks/useProfitLossData';
+import { useProfitLossCalculations } from '@/hooks/useProfitLossCalculations';
 
 interface ProfitLossTableProps {
   data: ProfitLossData[];
   showOnlyTotals?: boolean;
 }
 
-export const ProfitLossTable =  ({ data, showOnlyTotals = false }: ProfitLossTableProps) => {
+export const ProfitLossTable = ({ data, showOnlyTotals = false }: ProfitLossTableProps) => {
   const { formatCurrency, formatPercentage, calculateMetrics } = useProfitLossCalculations();
 
   const monthNames = [

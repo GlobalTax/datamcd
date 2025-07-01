@@ -13,6 +13,7 @@ import { LaborCostsSection } from './form/LaborCostsSection';
 import { OperatingExpensesSection } from './form/OperatingExpensesSection';
 import { McDonaldsFeesSection } from './form/McDonaldsFeesSection';
 import { FormSummary } from './form/FormSummary';
+import { showSuccess, showError } from '@/utils/notifications';
 
 interface ProfitLossFormProps {
   restaurantId: string;
@@ -21,7 +22,7 @@ interface ProfitLossFormProps {
 }
 
 export const ProfitLossForm = ({ restaurantId, onClose, editData }: ProfitLossFormProps) => {
-  const { createProfitLossData, updateProfitLossData } = useProfitLossData();
+  const { saveData } = useProfitLossData(restaurantId);
   
   const [formData, setFormData] = useState<ProfitLossFormData>({
     restaurant_id: restaurantId,
@@ -61,14 +62,57 @@ export const ProfitLossForm = ({ restaurantId, onClose, editData }: ProfitLossFo
     setIsSubmitting(true);
 
     try {
-      if (editData) {
-        await updateProfitLossData.mutateAsync({ ...formData, id: editData.id });
-      } else {
-        await createProfitLossData.mutateAsync(formData);
-      }
+      // Calcular campos derivados
+      const totalRevenue = formData.net_sales + formData.other_revenue;
+      const totalCostOfSales = formData.food_cost + formData.paper_cost;
+      const totalLabor = formData.management_labor + formData.crew_labor + formData.benefits;
+      const totalOperatingExpenses = formData.rent + formData.utilities + formData.maintenance + 
+                                     formData.advertising + formData.insurance + formData.supplies + formData.other_expenses;
+      const totalMcDonaldsFees = formData.franchise_fee + formData.advertising_fee + formData.rent_percentage;
+      const grossProfit = totalRevenue - totalCostOfSales;
+      const operatingIncome = totalRevenue - totalCostOfSales - totalLabor - totalOperatingExpenses - totalMcDonaldsFees;
+
+      const dataToSave = {
+        id: editData?.id || crypto.randomUUID(),
+        restaurant_id: formData.restaurant_id,
+        year: formData.year,
+        month: formData.month,
+        net_sales: formData.net_sales,
+        other_revenue: formData.other_revenue,
+        total_revenue: totalRevenue,
+        food_cost: formData.food_cost,
+        paper_cost: formData.paper_cost,
+        total_cost_of_sales: totalCostOfSales,
+        management_labor: formData.management_labor,
+        crew_labor: formData.crew_labor,
+        benefits: formData.benefits,
+        total_labor: totalLabor,
+        rent: formData.rent,
+        utilities: formData.utilities,
+        maintenance: formData.maintenance,
+        advertising: formData.advertising,
+        insurance: formData.insurance,
+        supplies: formData.supplies,
+        other_expenses: formData.other_expenses,
+        total_operating_expenses: totalOperatingExpenses,
+        franchise_fee: formData.franchise_fee,
+        advertising_fee: formData.advertising_fee,
+        rent_percentage: formData.rent_percentage,
+        total_mcdonalds_fees: totalMcDonaldsFees,
+        gross_profit: grossProfit,
+        operating_income: operatingIncome,
+        notes: formData.notes,
+        created_at: editData?.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        created_by: null
+      };
+
+      await saveData([dataToSave]);
+      showSuccess('Datos guardados correctamente');
       onClose();
     } catch (error) {
       console.error('Error saving P&L data:', error);
+      showError('Error al guardar los datos');
     } finally {
       setIsSubmitting(false);
     }
