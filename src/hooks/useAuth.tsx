@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (session?.user) {
       try {
         const userData = await fetchUserData(session.user.id);
-        setUser(userData);
+        setUser(userData.user);
         setFranchisee(userData.franchisee);
         setRestaurants(userData.restaurants);
       } catch (error) {
@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           currentUserId.current = session.user.id;
           try {
             const userData = await fetchUserData(session.user.id);
-            setUser(userData);
+            setUser(userData.user);
             setFranchisee(userData.franchisee);
             setRestaurants(userData.restaurants);
             console.log('useAuth - User data fetch completed');
@@ -89,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         currentUserId.current = session.user.id;
         try {
           const userData = await fetchUserData(session.user.id);
-          setUser(userData);
+          setUser(userData.user);
           setFranchisee(userData.franchisee);
           setRestaurants(userData.restaurants);
           console.log('useAuth - Initial user data fetch completed');
