@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useProfitLossCalculations } from '@/hooks/useProfitLossData';
+import { useProfitLossCalculations } from '@/hooks/useProfitLossCalculations';
 
 export const CostChart = () => {
   const { formatCurrency } = useProfitLossCalculations();

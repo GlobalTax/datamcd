@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAnnualBudgets } from '@/hooks/useAnnualBudgets';
 import { showSuccess, showError } from '@/utils/notifications';
+import { useAuth } from '@/hooks/useAuth';
 
 interface BudgetEntry {
   month: string;
@@ -16,6 +18,7 @@ interface AnnualBudgetGridProps {
 
 const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({ year, restaurantId }) => {
   const { budgets, loading, saveBudget } = useAnnualBudgets();
+  const { user } = useAuth();
   const [budgetData, setBudgetData] = useState<any>({});
   const [saving, setSaving] = useState(false);
 
@@ -55,7 +58,8 @@ const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({ year, restaurantId 
       await saveBudget({
         year,
         restaurant_id: restaurantId,
-        budget_data: budgetData
+        budget_data: budgetData,
+        user_id: user?.id
       });
       
       showSuccess('Presupuesto guardado correctamente');

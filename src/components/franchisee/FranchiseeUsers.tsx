@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { showSuccess, showError } from '@/utils/notifications';
 
 interface User {
   id: string;
-  email: string;
+  email: string;  
   full_name: string;
   role: string;
   created_at: string;
@@ -47,24 +48,6 @@ const FranchiseeUsers = ({ franchiseeId }: { franchiseeId: string }) => {
         if (error) throw error;
         
         showSuccess('Usuario eliminado correctamente');
-      } else if (action === 'disable') {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ is_active: false })
-          .eq('id', userId);
-
-        if (error) throw error;
-        
-        showSuccess('Usuario desactivado correctamente');
-      } else if (action === 'enable') {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ is_active: true })
-          .eq('id', userId);
-
-        if (error) throw error;
-        
-        showSuccess('Usuario activado correctamente');
       } else {
         showError('Acción no válida');
         return;
@@ -103,9 +86,6 @@ const FranchiseeUsers = ({ franchiseeId }: { franchiseeId: string }) => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Rol
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
-                  </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Acciones
                   </th>
@@ -123,37 +103,14 @@ const FranchiseeUsers = ({ franchiseeId }: { franchiseeId: string }) => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {user.role}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.is_active ? 'Activo' : 'Inactivo'}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      {user.is_active ? (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleUserAction(user.id, 'disable')}
-                            className="mr-2"
-                          >
-                            Desactivar
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleUserAction(user.id, 'delete')}
-                          >
-                            Eliminar
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleUserAction(user.id, 'enable')}
-                        >
-                          Activar
-                        </Button>
-                      )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleUserAction(user.id, 'delete')}
+                      >
+                        Eliminar
+                      </Button>
                     </td>
                   </tr>
                 ))}

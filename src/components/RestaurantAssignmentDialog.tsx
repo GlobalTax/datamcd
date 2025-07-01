@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/utils/notifications';
@@ -60,7 +62,7 @@ const RestaurantAssignmentDialog: React.FC<RestaurantAssignmentDialogProps> = ({
         .from('franchisee_restaurants')
         .insert({
           franchisee_id: franchiseeId,
-          restaurant_id: selectedRestaurantId
+          base_restaurant_id: selectedRestaurantId
         });
 
       if (error) throw error;

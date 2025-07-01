@@ -14,7 +14,7 @@ interface FranchiseeAccessHistoryProps {
 export const FranchiseeAccessHistory: React.FC<FranchiseeAccessHistoryProps> = ({
   franchiseeId
 }) => {
-  const { accessLogs, loading } = useFranchiseeActivity(franchiseeId);
+  const { activities, loading } = useFranchiseeActivity(franchiseeId);
 
   const formatDuration = (minutes?: number) => {
     if (!minutes) return 'N/A';
@@ -30,6 +30,11 @@ export const FranchiseeAccessHistory: React.FC<FranchiseeAccessHistoryProps> = (
     }
     return <Badge variant="outline" className="text-green-600">Activo</Badge>;
   };
+
+  // Filter activities to show only access-related ones
+  const accessLogs = activities.filter(activity => 
+    activity.activity_type === 'login' || activity.activity_type === 'logout'
+  );
 
   return (
     <Card>
@@ -50,31 +55,15 @@ export const FranchiseeAccessHistory: React.FC<FranchiseeAccessHistoryProps> = (
                   <div className="flex items-center text-sm">
                     <User className="w-4 h-4 mr-2 text-gray-500" />
                     <span className="font-medium">
-                      {format(new Date(log.login_time), 'dd/MM/yyyy HH:mm', { locale: es })}
+                      {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
                     </span>
                   </div>
                   {getStatusBadge(log)}
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                  <div className="flex items-center">
-                    <Clock className="w-3 h-3 mr-1" />
-                    Duración: {formatDuration(log.session_duration)}
-                  </div>
-                  {log.ip_address && (
-                    <div className="flex items-center">
-                      <Globe className="w-3 h-3 mr-1" />
-                      IP: {log.ip_address}
-                    </div>
-                  )}
+                <div className="text-xs text-gray-600">
+                  <span>{log.activity_type === 'login' ? 'Inicio de sesión' : 'Cierre de sesión'}</span>
                 </div>
-                
-                {log.user_agent && (
-                  <div className="flex items-center text-xs text-gray-600">
-                    <Monitor className="w-3 h-3 mr-1" />
-                    <span className="truncate">{log.user_agent}</span>
-                  </div>
-                )}
               </div>
             ))}
           </div>

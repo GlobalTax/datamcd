@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { showSuccess, showError } from '@/utils/notifications';
 interface RestaurantAssignment {
   id: string;
   franchisee_id: string;
-  restaurant_id: string;
+  base_restaurant_id: string;
   base_restaurant: {
     id: string;
     restaurant_name: string;

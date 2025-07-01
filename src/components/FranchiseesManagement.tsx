@@ -1,32 +1,19 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useFranchisees } from '@/hooks/useFranchisees';
+import { useFranchisees, Franchisee } from '@/hooks/useFranchisees';
 import { showSuccess, showError } from '@/utils/notifications';
 import { CreateFranchiseeDialog } from './CreateFranchiseeDialog';
 import { EditFranchiseeDialog } from './EditFranchiseeDialog';
-
-interface Franchisee {
-  id: string;
-  franchisee_name: string;
-  contact_name: string;
-  contact_email: string;
-  contact_phone: string;
-  created_at: string;
-  updated_at: string;
-}
 
 const FranchiseesManagement = () => {
   const { franchisees, loading, createFranchisee, updateFranchisee } = useFranchisees();
@@ -73,9 +60,9 @@ const FranchiseesManagement = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[200px]">Nombre</TableHead>
-                  <TableHead>Contacto</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Teléfono</TableHead>
+                  <TableHead>Ciudad</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -83,9 +70,9 @@ const FranchiseesManagement = () => {
                 {franchisees.map((franchisee) => (
                   <TableRow key={franchisee.id}>
                     <TableCell className="font-medium">{franchisee.franchisee_name}</TableCell>
-                    <TableCell>{franchisee.contact_name}</TableCell>
                     <TableCell>{franchisee.contact_email}</TableCell>
                     <TableCell>{franchisee.contact_phone}</TableCell>
+                    <TableCell>{franchisee.city}</TableCell>
                     <TableCell className="text-right">
                       <Button 
                         variant="outline"
