@@ -1,7 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { screen } from '@testing-library/react';
-import { render } from './test-utils';
+import { screen, render } from './test-utils';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
 
 describe('DashboardSummary', () => {
