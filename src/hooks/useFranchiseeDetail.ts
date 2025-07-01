@@ -15,14 +15,43 @@ interface BaseRestaurant {
   id: string;
   restaurant_name: string;
   site_number: string;
+  address: string;
+  city: string;
+  state?: string;
+  postal_code?: string;
+  country: string;
+  restaurant_type: string;
+  property_type?: string;
+  autonomous_community?: string;
+  franchisee_name?: string;
+  franchisee_email?: string;
+  company_tax_id?: string;
+  square_meters?: number;
+  seating_capacity?: number;
+  opening_date?: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
 }
 
 interface FranchiseeRestaurant {
   id: string;
   franchisee_id: string;
+  base_restaurant_id?: string;
+  franchise_start_date?: string;
+  franchise_end_date?: string;
+  lease_start_date?: string;
+  lease_end_date?: string;
+  monthly_rent?: number;
+  franchise_fee_percentage?: number;
+  advertising_fee_percentage?: number;
+  last_year_revenue?: number;
+  average_monthly_sales?: number;
+  status?: string;
+  notes?: string;
   assigned_at: string;
   updated_at: string;
-  base_restaurant: BaseRestaurant | null;
+  base_restaurant?: BaseRestaurant | null;
 }
 
 export interface FranchiseeDetail {
@@ -60,6 +89,18 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
           franchisee_restaurants (
             id,
             franchisee_id,
+            base_restaurant_id,
+            franchise_start_date,
+            franchise_end_date,
+            lease_start_date,
+            lease_end_date,
+            monthly_rent,
+            franchise_fee_percentage,
+            advertising_fee_percentage,
+            last_year_revenue,
+            average_monthly_sales,
+            status,
+            notes,
             assigned_at,
             updated_at,
             base_restaurant:base_restaurants (*)

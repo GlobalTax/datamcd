@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RestaurantValuation, ValuationScenario } from '@/types/restaurantValuation';
+import { RestaurantValuation, ValuationScenario, YearlyValuationData } from '@/types/restaurantValuation';
 import { showSuccess, showError } from '@/utils/notifications';
 
 export const fetchValuationsFromDB = async (): Promise<RestaurantValuation[]> => {
@@ -15,7 +15,22 @@ export const fetchValuationsFromDB = async (): Promise<RestaurantValuation[]> =>
     // Transform the data to handle Json types correctly
     const transformedData = (data || []).map(item => ({
       ...item,
-      yearly_data: Array.isArray(item.yearly_data) ? item.yearly_data : [],
+      yearly_data: Array.isArray(item.yearly_data) 
+        ? item.yearly_data.map((yearData: any): YearlyValuationData => ({
+            sales: yearData.sales || 0,
+            pac: yearData.pac || 0,
+            pacPercentage: yearData.pacPercentage || 0,
+            rent: yearData.rent || 0,
+            rentPercentage: yearData.rentPercentage || 0,
+            serviceFees: yearData.serviceFees || 0,
+            depreciation: yearData.depreciation || 0,
+            interest: yearData.interest || 0,
+            rentIndex: yearData.rentIndex || 0,
+            miscell: yearData.miscell || 0,
+            loanPayment: yearData.loanPayment || 0,
+            reinversion: yearData.reinversion || 0,
+          }))
+        : [],
       projections: typeof item.projections === 'object' ? item.projections : null
     }));
     
@@ -79,7 +94,22 @@ export const saveValuationToDB = async (
     
     return {
       ...data,
-      yearly_data: Array.isArray(data.yearly_data) ? data.yearly_data : [],
+      yearly_data: Array.isArray(data.yearly_data) 
+        ? data.yearly_data.map((yearData: any): YearlyValuationData => ({
+            sales: yearData.sales || 0,
+            pac: yearData.pac || 0,
+            pacPercentage: yearData.pacPercentage || 0,
+            rent: yearData.rent || 0,
+            rentPercentage: yearData.rentPercentage || 0,
+            serviceFees: yearData.serviceFees || 0,
+            depreciation: yearData.depreciation || 0,
+            interest: yearData.interest || 0,
+            rentIndex: yearData.rentIndex || 0,
+            miscell: yearData.miscell || 0,
+            loanPayment: yearData.loanPayment || 0,
+            reinversion: yearData.reinversion || 0,
+          }))
+        : [],
       projections: typeof data.projections === 'object' ? data.projections : null
     };
   } catch (error) {
