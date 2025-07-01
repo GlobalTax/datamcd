@@ -5,6 +5,7 @@ import { AuthContext } from './auth/AuthContext';
 import { useAuthState } from './auth/useAuthState';
 import { useUserDataFetcher } from './auth/useUserDataFetcher';
 import { useAuthActions } from './auth/useAuthActions';
+import { showError } from '@/utils/notifications';
 
 export { useAuth } from './auth/AuthContext';
 
@@ -29,12 +30,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession
   });
 
-  // Control flags to prevent multiple initializations and concurrent calls
+  // Control flags mejorados
   const isInitialized = useRef(false);
   const isInitializing = useRef(false);
   const isFetchingUserData = useRef(false);
   const currentUserId = useRef<string | null>(null);
   const subscriptionRef = useRef<any>(null);
+  const lastErrorTime = useRef<number>(0);
 
   const refreshData = useCallback(async () => {
     if (isFetchingUserData.current) {
@@ -47,22 +49,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         console.log('AuthProvider - Refreshing data for user:', session.user.id);
         isFetchingUserData.current = true;
+        setLoading(true);
+        
         const userData = await fetchUserData(session.user.id);
         setUser(userData.user);
         setFranchisee(userData.franchisee);
         setRestaurants(userData.restaurants);
         currentUserId.current = session.user.id;
+        
+        console.log('AuthProvider - Data refresh successful');
       } catch (error) {
         console.error('AuthProvider - Error refreshing data:', error);
-        clearUserData();
-        currentUserId.current = null;
+        
+        // Implementar modo de recuperación: permitir acceso básico
+        const basicUser = {
+          id: session.user.id,
+          email: session.user.email || 'usuario@ejemplo.com',
+          role: 'franchisee' as const,
+          full_name: session.user.user_metadata?.full_name || 'Usuario',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        setUser(basicUser);
+        setFranchisee(null);
+        setRestaurants([]);
+        currentUserId.current = session.user.id;
+        
+        // Mostrar error solo si han pasado más de 30 segundos del último error
+        const now = Date.now();
+        if (now - lastErrorTime.current > 30000) {
+          showError('Modo limitado: Algunos datos no se pudieron cargar. Las funcionalidades pueden estar limitadas.');
+          lastErrorTime.current = now;
+        }
+        
+        console.log('AuthProvider - Using recovery mode with basic user data');
       } finally {
+        setLoading(false);
         isFetchingUserData.current = false;
       }
     }
-  }, [fetchUserData, setUser, setFranchisee, setRestaurants, clearUserData]);
+  }, [fetchUserData, setUser, setFranchisee, setRestaurants, setLoading]);
 
-  // Optimized auth change handler with concurrency control
+  // Manejo optimizado de cambios de autenticación
   const handleAuthChange = useCallback(async (event: string, session: any) => {
     if (isFetchingUserData.current) {
       console.log('AuthProvider - Auth change ignored, fetch in progress');
@@ -86,9 +115,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setRestaurants(userData.restaurants);
         console.log('AuthProvider - User data loaded successfully');
       } catch (error) {
-        console.error('AuthProvider - Error loading user data:', error);
-        clearUserData();
-        currentUserId.current = null;
+        console.error('AuthProvider - Error loading user data, using recovery mode:', error);
+        
+        // Modo de recuperación mejorado
+        const recoveryUser = {
+          id: session.user.id,
+          email: session.user.email || 'usuario@ejemplo.com',
+          role: 'franchisee' as const,
+          full_name: session.user.user_metadata?.full_name || 'Usuario',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        setUser(recoveryUser);
+        setFranchisee(null);
+        setRestaurants([]);
+        
+        // Intentar cargar los datos en segundo plano
+        setTimeout(() => {
+          console.log('AuthProvider - Background retry for full data loading');
+          refreshData();
+        }, 5000);
+        
+        console.log('AuthProvider - Recovery mode activated, background retry scheduled');
       } finally {
         setLoading(false);
         isFetchingUserData.current = false;
@@ -100,29 +149,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       isFetchingUserData.current = false;
     }
-  }, [fetchUserData, setUser, setFranchisee, setRestaurants, setSession, setLoading, clearUserData]);
+  }, [fetchUserData, setUser, setFranchisee, setRestaurants, setSession, setLoading, clearUserData, refreshData]);
 
   useEffect(() => {
-    // Prevent multiple initializations
+    // Prevenir múltiples inicializaciones
     if (isInitialized.current || isInitializing.current) {
       console.log('AuthProvider - Already initialized or initializing, skipping');
       return;
     }
     
-    console.log('AuthProvider - Initializing auth system');
+    console.log('AuthProvider - Initializing enhanced auth system');
     isInitializing.current = true;
     setLoading(true);
     
-    // Set up auth state change listener
+    // Configurar listener de cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
     subscriptionRef.current = subscription;
     
-    // Check initial session with timeout
+    // Verificar sesión inicial con timeout
     const initializeAuth = async () => {
       try {
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 5000)
+          setTimeout(() => reject(new Error('Session check timeout')), 3000)
         );
         
         const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
@@ -136,6 +185,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('AuthProvider - Error in initial auth check:', error);
         setLoading(false);
+        
+        // Si falla la verificación inicial, intentar de nuevo en 3 segundos
+        setTimeout(() => {
+          console.log('AuthProvider - Retrying initial session check');
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+              handleAuthChange('SIGNED_IN', session);
+            }
+          }).catch(console.error);
+        }, 3000);
       } finally {
         isInitializing.current = false;
         isInitialized.current = true;
@@ -153,7 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isInitializing.current = false;
       isFetchingUserData.current = false;
     };
-  }, []); // Empty dependency array to run only once
+  }, []); // Empty dependency array
 
   console.log('AuthProvider - Current state:', { 
     user: user ? { id: user.id, role: user.role } : null, 

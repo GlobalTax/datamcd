@@ -4,12 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Franchisee, Restaurant } from '@/types/auth';
 
 export const useUserDataFetcher = () => {
-  const fetchUserData = useCallback(async (userId: string) => {
+  const fetchUserData = useCallback(async (userId: string, retryCount = 0) => {
+    const maxRetries = 2;
+    
     try {
-      console.log('useUserDataFetcher - Fetching user data for:', userId);
+      console.log(`useUserDataFetcher - Fetching user data for: ${userId} (attempt ${retryCount + 1})`);
 
-      // Función helper para manejar timeouts
-      const withTimeout = (promise: Promise<any>, timeoutMs: number = 10000): Promise<any> => {
+      // Función helper para manejar timeouts más agresivos
+      const withTimeout = (promise: Promise<any>, timeoutMs: number = 5000): Promise<any> => {
         return Promise.race([
           promise,
           new Promise((_, reject) => 
@@ -18,7 +20,7 @@ export const useUserDataFetcher = () => {
         ]);
       };
 
-      // Fetch user profile with timeout - crear promesa verdadera
+      // Fetch user profile con timeout reducido
       const profilePromise = supabase
         .from('profiles')
         .select('*')
@@ -27,11 +29,19 @@ export const useUserDataFetcher = () => {
 
       const { data: profileData, error: profileError } = await withTimeout(
         Promise.resolve(profilePromise),
-        8000
+        4000
       );
 
       if (profileError) {
         console.error('useUserDataFetcher - Error fetching profile:', profileError);
+        
+        // Si falla por primera vez, intentar de nuevo
+        if (retryCount < maxRetries) {
+          console.log(`useUserDataFetcher - Retrying profile fetch (${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
+          return this.fetchUserData(userId, retryCount + 1);
+        }
+        
         throw new Error(`Error al cargar perfil: ${profileError.message}`);
       }
 
@@ -52,7 +62,7 @@ export const useUserDataFetcher = () => {
       let franchisee: Franchisee | null = null;
       let restaurants: Restaurant[] = [];
 
-      // If user is franchisee, fetch franchisee data and restaurants
+      // Si es franchisee, cargar datos con fallback
       if (user.role === 'franchisee') {
         try {
           const franchiseePromise = supabase
@@ -63,12 +73,12 @@ export const useUserDataFetcher = () => {
 
           const { data: franchiseeData, error: franchiseeError } = await withTimeout(
             Promise.resolve(franchiseePromise),
-            8000
+            4000
           );
 
           if (franchiseeError) {
-            console.error('useUserDataFetcher - Error fetching franchisee:', franchiseeError);
-            // No lanzar error aquí, solo log. El usuario puede no tener datos de franquiciado aún
+            console.log('useUserDataFetcher - Franchisee data not found, creating basic user access');
+            // No lanzar error, permitir acceso básico
           } else if (franchiseeData) {
             franchisee = {
               id: franchiseeData.id,
@@ -84,7 +94,6 @@ export const useUserDataFetcher = () => {
               created_at: franchiseeData.created_at,
               updated_at: franchiseeData.updated_at,
               total_restaurants: franchiseeData.total_restaurants,
-              // Propiedades adicionales para compatibilidad - usar datos del perfil
               profiles: {
                 email: profileData.email,
                 phone: profileData.phone,
@@ -95,7 +104,7 @@ export const useUserDataFetcher = () => {
               lastAccess: new Date().toISOString()
             };
 
-            // Fetch restaurants only if franchisee exists
+            // Cargar restaurantes con timeout más corto
             try {
               const restaurantsPromise = supabase
                 .from('franchisee_restaurants')
@@ -104,21 +113,20 @@ export const useUserDataFetcher = () => {
                   base_restaurant:base_restaurants(*)
                 `)
                 .eq('franchisee_id', franchisee.id)
-                .eq('status', 'active');
+                .eq('status', 'active')
+                .limit(10); // Limitar resultados para mejorar velocidad
 
               const { data: restaurantData, error: restaurantError } = await withTimeout(
                 Promise.resolve(restaurantsPromise),
-                10000
+                3000
               );
 
               if (restaurantError) {
-                console.error('useUserDataFetcher - Error fetching restaurants:', restaurantError);
-                // No lanzar error, restaurantes pueden estar vacíos
+                console.log('useUserDataFetcher - Restaurants data timeout, continuing without restaurants');
               } else if (restaurantData && restaurantData.length > 0) {
                 restaurants = restaurantData
                   .filter(item => item.base_restaurant)
                   .map(item => {
-                    // Asegurar que el status sea uno de los valores permitidos
                     const validStatus = ['active', 'inactive', 'pending', 'closed'];
                     const status = validStatus.includes(item.status) ? item.status : 'active';
                     
@@ -143,13 +151,11 @@ export const useUserDataFetcher = () => {
                   });
               }
             } catch (restaurantError) {
-              console.error('useUserDataFetcher - Restaurant fetch timeout:', restaurantError);
-              // Continuar sin restaurantes
+              console.log('useUserDataFetcher - Restaurant fetch failed, continuing without restaurants');
             }
           }
         } catch (franchiseeError) {
-          console.error('useUserDataFetcher - Franchisee fetch timeout:', franchiseeError);
-          // Continuar sin datos de franquiciado
+          console.log('useUserDataFetcher - Franchisee fetch failed, allowing basic access');
         }
       }
 
@@ -161,7 +167,17 @@ export const useUserDataFetcher = () => {
 
       return { user, franchisee, restaurants };
     } catch (error) {
-      console.error('useUserDataFetcher - Critical error:', error);
+      console.error('useUserDataFetcher - Error in attempt', retryCount + 1, ':', error);
+      
+      // Si aún tenemos reintentos disponibles, intentar de nuevo
+      if (retryCount < maxRetries) {
+        console.log(`useUserDataFetcher - Retrying full fetch (${retryCount + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Esperar más tiempo entre reintentos
+        return this.fetchUserData(userId, retryCount + 1);
+      }
+      
+      // Si se agotaron los reintentos, lanzar el error
+      console.error('useUserDataFetcher - All retries failed');
       throw error;
     }
   }, []);

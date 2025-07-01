@@ -2,7 +2,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
+import EnhancedLoadingScreen from './EnhancedLoadingScreen';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,27 +11,27 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading, refreshData } = useAuth();
 
-  // Show loading with timeout protection
+  // Mostrar pantalla de carga mejorada con timeout
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Cargando...</p>
-        </div>
-      </div>
+      <EnhancedLoadingScreen
+        message="Iniciando sesión..."
+        showRetry={true}
+        onRetry={refreshData}
+        timeout={8000}
+      />
     );
   }
 
-  // Redirect to auth if no user
+  // Redirigir a auth si no hay usuario
   if (!user) {
     console.log('ProtectedRoute - No user, redirecting to auth');
     return <Navigate to="/auth" replace />;
   }
 
-  // Check role permissions
+  // Verificar permisos de rol
   if (allowedRoles && allowedRoles.length > 0) {
     if (!allowedRoles.includes(user.role)) {
       console.log('ProtectedRoute - Role not allowed:', user.role, 'Required:', allowedRoles);
@@ -40,6 +40,9 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
           <div className="text-center">
             <h1 className="text-2xl font-bold text-red-600">Acceso Denegado</h1>
             <p className="text-gray-600 mt-2">No tienes permisos para acceder a esta página.</p>
+            <p className="text-sm text-gray-500 mt-4">
+              Tu rol actual: <strong>{user.role}</strong>
+            </p>
           </div>
         </div>
       );
@@ -55,6 +58,9 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
             <div className="text-center">
               <h1 className="text-2xl font-bold text-red-600">Acceso Denegado</h1>
               <p className="text-gray-600 mt-2">No tienes permisos para acceder a esta página.</p>
+              <p className="text-sm text-gray-500 mt-4">
+                Rol requerido: <strong>Asesor</strong> | Tu rol: <strong>{user.role}</strong>
+              </p>
             </div>
           </div>
         );
@@ -66,6 +72,9 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
           <div className="text-center">
             <h1 className="text-2xl font-bold text-red-600">Acceso Denegado</h1>
             <p className="text-gray-600 mt-2">No tienes permisos para acceder a esta página.</p>
+            <p className="text-sm text-gray-500 mt-4">
+              Rol requerido: <strong>{requiredRole}</strong> | Tu rol: <strong>{user.role}</strong>
+            </p>
           </div>
         </div>
       );
