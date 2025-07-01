@@ -18,15 +18,13 @@ export const useUserDataFetcher = () => {
         ]);
       };
 
-      // Fetch user profile with timeout - ejecutar la consulta y pasar la promesa
-      const profileQuery = supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
+      // Fetch user profile with timeout - ejecutar la consulta correctamente
       const { data: profileData, error: profileError } = await withTimeout(
-        profileQuery,
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single(),
         8000
       );
 
@@ -55,14 +53,12 @@ export const useUserDataFetcher = () => {
       // If user is franchisee, fetch franchisee data and restaurants
       if (user.role === 'franchisee') {
         try {
-          const franchiseeQuery = supabase
-            .from('franchisees')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
-
           const { data: franchiseeData, error: franchiseeError } = await withTimeout(
-            franchiseeQuery,
+            supabase
+              .from('franchisees')
+              .select('*')
+              .eq('user_id', userId)
+              .single(),
             8000
           );
 
@@ -84,7 +80,7 @@ export const useUserDataFetcher = () => {
               created_at: franchiseeData.created_at,
               updated_at: franchiseeData.updated_at,
               total_restaurants: franchiseeData.total_restaurants,
-              // Propiedades adicionales para compatibilidad
+              // Propiedades adicionales para compatibilidad - usar datos del perfil
               profiles: {
                 email: profileData.email,
                 phone: profileData.phone,
@@ -97,17 +93,15 @@ export const useUserDataFetcher = () => {
 
             // Fetch restaurants only if franchisee exists
             try {
-              const restaurantQuery = supabase
-                .from('franchisee_restaurants')
-                .select(`
-                  *,
-                  base_restaurant:base_restaurants(*)
-                `)
-                .eq('franchisee_id', franchisee.id)
-                .eq('status', 'active');
-
               const { data: restaurantData, error: restaurantError } = await withTimeout(
-                restaurantQuery,
+                supabase
+                  .from('franchisee_restaurants')
+                  .select(`
+                    *,
+                    base_restaurant:base_restaurants(*)
+                  `)
+                  .eq('franchisee_id', franchisee.id)
+                  .eq('status', 'active'),
                 10000
               );
 

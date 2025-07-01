@@ -66,7 +66,7 @@ export const useSimpleAuth = () => {
     };
   }, []);
 
-  const fetchFranchiseeData = useCallback(async (userId: string): Promise<Franchisee | null> => {
+  const fetchFranchiseeData = useCallback(async (userId: string, userProfile: User): Promise<Franchisee | null> => {
     console.log('useSimpleAuth - Fetching franchisee data for:', userId);
     
     const { data, error } = await supabase
@@ -100,9 +100,9 @@ export const useSimpleAuth = () => {
       updated_at: data.updated_at,
       total_restaurants: data.total_restaurants,
       profiles: {
-        email: data.email || '',
-        phone: data.phone || '',
-        full_name: data.franchisee_name || ''
+        email: userProfile.email || '',
+        phone: userProfile.phone || '',
+        full_name: userProfile.full_name || data.franchisee_name || ''
       },
       hasAccount: true,
       isOnline: false,
@@ -167,7 +167,7 @@ export const useSimpleAuth = () => {
       let restaurants: Restaurant[] = [];
 
       if (user.role === 'franchisee') {
-        franchisee = await fetchFranchiseeData(userId);
+        franchisee = await fetchFranchiseeData(userId, user);
         
         if (franchisee) {
           restaurants = await fetchRestaurants(franchisee.id);
