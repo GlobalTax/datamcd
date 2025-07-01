@@ -1,127 +1,109 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { useBudgetData } from '@/hooks/useBudgetData';
-import { useActualData } from '@/hooks/useActualData';
-import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
-import { BudgetTable } from './BudgetTable';
-import { BudgetGridHeader } from './BudgetGridHeader';
-import { BudgetGridStatus } from './BudgetGridStatus';
-import { BudgetChangesBanner } from './BudgetChangesBanner';
-import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useAnnualBudgets } from '@/hooks/useAnnualBudgets';
+import { showSuccess, showError } from '@/utils/notifications';
 
-interface AnnualBudgetGridProps {
-  restaurantId: string;
-  year: number;
+interface BudgetEntry {
+  month: string;
+  value: number | string;
 }
 
-export const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({
-  restaurantId,
-  year
-}) => {
-  const [viewMode, setViewMode] = useState<'budget' | 'comparison' | 'actuals'>('budget');
-  const [showOnlySummary, setShowOnlySummary] = useState(false);
-  
-  const { restaurants } = useFranchiseeRestaurants();
-  
-  const {
-    rowData,
-    hasChanges,
-    loading,
-    error,
-    handleCellChange,
-    handleSave,
-    reloadData
-  } = useBudgetData(restaurantId, year);
+interface AnnualBudgetGridProps {
+  year: number;
+  restaurantId: string;
+}
 
-  const {
-    actualData,
-    loading: actualLoading,
-    error: actualError,
-    fetchActualData,
-    updateActualData
-  } = useActualData();
+const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({ year, restaurantId }) => {
+  const { budgets, loading, saveBudget } = useAnnualBudgets();
+  const [budgetData, setBudgetData] = useState<any>({});
+  const [saving, setSaving] = useState(false);
 
-  const selectedRestaurant = restaurants.find(r => r.id === restaurantId);
-  const restaurantName = selectedRestaurant?.base_restaurant?.restaurant_name;
-
-  // Cargar datos reales automáticamente
   useEffect(() => {
-    if (restaurantId && year) {
-      fetchActualData(restaurantId, year);
-    }
-  }, [restaurantId, year, fetchActualData]);
-
-  const handleToggleViewMode = (mode: 'budget' | 'comparison' | 'actuals') => {
-    setViewMode(mode);
-  };
-
-  const handleToggleSummary = () => {
-    setShowOnlySummary(!showOnlySummary);
-  };
-
-  // Nueva función para manejar cambios en datos reales
-  const handleActualChange = async (rowId: string, field: string, value: number) => {
-    try {
-      // Buscar la fila correspondiente para obtener categoría y subcategoría
-      const row = rowData.find(r => r.id === rowId);
-      if (!row) return;
-
-      await updateActualData({
-        restaurant_id: restaurantId,
-        year,
-        category: row.category,
-        subcategory: row.subcategory || '',
-        [field]: value
-      });
-
-      // Recargar datos reales
-      fetchActualData(restaurantId, year);
-      toast.success('Dato real actualizado correctamente');
-    } catch (error) {
-      console.error('Error updating actual data:', error);
-      toast.error('Error al actualizar el dato real');
-    }
-  };
-
-  // Mostrar estados de carga o error
-  if (loading || error) {
-    return (
-      <BudgetGridStatus 
-        loading={loading}
-        error={error}
-        onReload={reloadData}
-      />
+    // Find the budget for the current year and restaurant
+    const budget = budgets.find(
+      (b) => b.year === year && b.restaurant_id === restaurantId
     );
-  }
+
+    // If a budget exists, load its data into the state
+    if (budget) {
+      setBudgetData(budget.budget_data || {});
+    } else {
+      // Initialize with empty data for all months
+      const initialData: { [key: string]: string } = {};
+      [
+        'january', 'february', 'march', 'april', 'may', 'june',
+        'july', 'august', 'september', 'october', 'november', 'december'
+      ].forEach(month => {
+        initialData[month] = '';
+      });
+      setBudgetData(initialData);
+    }
+  }, [budgets, year, restaurantId]);
+
+  const handleChange = (month: string, value: string) => {
+    setBudgetData((prevData: any) => ({
+      ...prevData,
+      [month]: value,
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      
+      await saveBudget({
+        year,
+        restaurant_id: restaurantId,
+        budget_data: budgetData
+      });
+      
+      showSuccess('Presupuesto guardado correctamente');
+    } catch (error) {
+      console.error('Error saving budget:', error);
+      showError('Error al guardar el presupuesto');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const months = [
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december'
+  ];
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-4">
-        <BudgetGridHeader
-          year={year}
-          hasChanges={hasChanges}
-          loading={loading}
-          budgetData={rowData}
-          restaurantName={restaurantName}
-          onSave={handleSave}
-          viewMode={viewMode}
-          onToggleViewMode={handleToggleViewMode}
-          showOnlySummary={showOnlySummary}
-          onToggleSummary={handleToggleSummary}
-        />
-        <BudgetChangesBanner hasChanges={hasChanges} />
+    <Card>
+      <CardHeader>
+        <CardTitle>Presupuesto Anual {year}</CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
-        <BudgetTable 
-          data={rowData} 
-          actualData={actualData}
-          onCellChange={handleCellChange}
-          onActualChange={handleActualChange}
-          viewMode={viewMode}
-          showOnlySummary={showOnlySummary}
-        />
+      <CardContent>
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {months.map((month) => (
+            <div key={month} className="space-y-2">
+              <label
+                htmlFor={month}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {month.charAt(0).toUpperCase() + month.slice(1)}
+              </label>
+              <input
+                type="number"
+                id={month}
+                placeholder={`Presupuesto para ${month}`}
+                className="flex h-10 w-full rounded-md border border-gray-200 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={(budgetData as any)[month] || ''}
+                onChange={(e) => handleChange(month, e.target.value)}
+              />
+            </div>
+          ))}
+        </div>
+        <Button onClick={handleSave} disabled={saving || loading}>
+          {saving ? 'Guardando...' : 'Guardar Presupuesto'}
+        </Button>
       </CardContent>
     </Card>
   );
 };
+
+export default AnnualBudgetGrid;

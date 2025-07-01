@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { FileSpreadsheet, Upload, Info } from 'lucide-react';
 import { parseDetailedDataFromText } from './detailedUtils';
 import { YearlyData, ImportMethod } from './types';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/notifications';
 
 interface DetailedCopyPasteCardProps {
   onDataParsed: (data: YearlyData[], method: ImportMethod) => void;
@@ -25,10 +25,10 @@ export const DetailedCopyPasteCard: React.FC<DetailedCopyPasteCardProps> = ({ on
       console.log('Parsed detailed data successfully:', data.length, 'years');
       console.log('Sample data:', data[0]);
       onDataParsed(data, 'detailed');
-      toast.success(`${data.length} años de datos detallados procesados correctamente`);
+      showSuccess(`${data.length} años de datos detallados procesados correctamente`);
     } catch (error) {
       console.error('Error parsing detailed data:', error);
-      toast.error('Error al procesar los datos: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      showError('Error al procesar los datos: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     }
   };
 

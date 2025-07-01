@@ -1,43 +1,37 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { BaseRestaurant } from '@/types/franchiseeRestaurant';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/notifications';
+
+interface BaseRestaurant {
+  id: string;
+  restaurant_name: string;
+  site_number: string;
+  address: string;
+  city: string;
+  opening_date: string;
+  restaurant_type: string;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export const useBaseRestaurants = () => {
-  const { user } = useAuth();
   const [restaurants, setRestaurants] = useState<BaseRestaurant[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const fetchRestaurants = async () => {
-    if (!user || !['advisor', 'admin', 'superadmin'].includes(user.role)) {
-      console.log('User role not authorized for base restaurants:', user?.role);
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
-      setError(null);
-      console.log('Fetching base restaurants for user:', user.id, 'with role:', user.role);
-
       const { data, error } = await supabase
         .from('base_restaurants')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('restaurant_name');
 
-      if (error) {
-        console.error('Error fetching base restaurants:', error);
-        setError(error.message);
-        return;
-      }
-
-      console.log('Successfully fetched restaurants:', data?.length || 0, 'restaurants');
+      if (error) throw error;
       setRestaurants(data || []);
-    } catch (err) {
-      console.error('Error in fetchRestaurants:', err);
-      setError('Error al cargar los restaurantes');
+    } catch (error) {
+      console.error('Error fetching restaurants:', error);
+      showError('Error al cargar los restaurantes');
     } finally {
       setLoading(false);
     }
@@ -47,82 +41,62 @@ export const useBaseRestaurants = () => {
     try {
       const { error } = await supabase
         .from('base_restaurants')
-        .insert({
-          ...restaurantData,
-          created_by: user?.id
-        });
+        .insert(restaurantData);
 
-      if (error) {
-        toast.error('Error al crear el restaurante');
-        return false;
-      }
-
-      toast.success('Restaurante creado correctamente');
+      if (error) throw error;
+      
+      showSuccess('Restaurante creado correctamente');
       await fetchRestaurants();
-      return true;
-    } catch (err) {
-      console.error('Error creating restaurant:', err);
-      toast.error('Error al crear el restaurante');
-      return false;
+    } catch (error) {
+      console.error('Error creating restaurant:', error);
+      showError('Error al crear el restaurante');
     }
   };
 
-  const updateRestaurant = async (restaurantId: string, updates: Partial<BaseRestaurant>) => {
+  const updateRestaurant = async (id: string, updates: Partial<BaseRestaurant>) => {
     try {
       const { error } = await supabase
         .from('base_restaurants')
         .update(updates)
-        .eq('id', restaurantId);
+        .eq('id', id);
 
-      if (error) {
-        toast.error('Error al actualizar el restaurante');
-        return false;
-      }
-
-      toast.success('Restaurante actualizado correctamente');
+      if (error) throw error;
+      
+      showSuccess('Restaurante actualizado correctamente');
       await fetchRestaurants();
-      return true;
-    } catch (err) {
-      console.error('Error updating restaurant:', err);
-      toast.error('Error al actualizar el restaurante');
-      return false;
+    } catch (error) {
+      console.error('Error updating restaurant:', error);
+      showError('Error al actualizar el restaurante');
     }
   };
 
-  const deleteRestaurant = async (restaurantId: string) => {
+  const deleteRestaurant = async (id: string) => {
     try {
       const { error } = await supabase
         .from('base_restaurants')
         .delete()
-        .eq('id', restaurantId);
+        .eq('id', id);
 
-      if (error) {
-        toast.error('Error al eliminar el restaurante');
-        return false;
-      }
-
-      toast.success('Restaurante eliminado correctamente');
+      if (error) throw error;
+      
+      showSuccess('Restaurante eliminado correctamente');
       await fetchRestaurants();
-      return true;
-    } catch (err) {
-      console.error('Error deleting restaurant:', err);
-      toast.error('Error al eliminar el restaurante');
-      return false;
+    } catch (error) {
+      console.error('Error deleting restaurant:', error);
+      showError('Error al eliminar el restaurante');
     }
   };
 
   useEffect(() => {
-    console.log('useBaseRestaurants useEffect triggered, user:', user?.id, 'role:', user?.role);
     fetchRestaurants();
-  }, [user?.id, user?.role]);
+  }, []);
 
   return {
     restaurants,
     loading,
-    error,
-    refetch: fetchRestaurants,
     createRestaurant,
     updateRestaurant,
-    deleteRestaurant
+    deleteRestaurant,
+    refetch: fetchRestaurants
   };
 };

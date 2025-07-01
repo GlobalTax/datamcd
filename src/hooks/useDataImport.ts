@@ -1,124 +1,116 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/notifications';
 
-interface RestaurantData {
-  site: string;
-  nombre: string;
-  estado: string;
-  tipoInmueble: string;
-  direccion: string;
-  telRestaurante: string;
-  municipio: string;
-  provincia: string;
-  comAutonoma: string;
-  franquiciado: string;
-  telfFranquiciado: string;
-  fechaApertura: string;
-  mailFranquiciado: string;
-  nifSociedad: string;
+interface ImportData {
+  year: number;
+  month: number;
+  net_sales: number;
+  food_cost: number;
+  paper_cost: number;
+  crew_labor: number;
+  management_salary: number;
+  rent: number;
+  royalties: number;
+  advertising: number;
+  other_expenses: number;
 }
 
 export const useDataImport = () => {
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
-  const { user } = useAuth();
 
-  const importRestaurantsData = async (data: RestaurantData[]) => {
-    if (!user?.id) {
-      toast.error('Usuario no autenticado');
-      return;
-    }
-
-    setImporting(true);
-    setProgress(0);
-
+  const importData = async (data: ImportData[], siteNumber: string) => {
     try {
-      const total = data.length;
-      let processed = 0;
+      setImporting(true);
+      setProgress(0);
 
-      for (const restaurant of data) {
-        await createBaseRestaurant(restaurant);
-        processed++;
-        setProgress((processed / total) * 100);
+      const totalRecords = data.length;
+      
+      for (let i = 0; i < data.length; i++) {
+        const record = data[i];
+        
+        const { error } = await supabase
+          .from('historical_data')
+          .upsert({
+            ...record,
+            site_number: siteNumber,
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) throw error;
+        
+        setProgress(((i + 1) / totalRecords) * 100);
       }
 
-      toast.success(`Se importaron ${total} restaurantes correctamente`);
+      showSuccess(`${totalRecords} registros importados correctamente`);
+      return true;
     } catch (error) {
       console.error('Error importing data:', error);
-      toast.error('Error al importar los datos');
+      showError('Error al importar los datos');
+      return false;
     } finally {
       setImporting(false);
       setProgress(0);
     }
   };
 
-  const createBaseRestaurant = async (restaurant: RestaurantData) => {
-    if (!user?.id) return;
-
+  const validateData = (data: any[]): ImportData[] => {
     try {
-      // Verificar si el restaurante ya existe
-      const { data: existingRestaurant } = await supabase
-        .from('base_restaurants')
-        .select('id')
-        .eq('site_number', restaurant.site)
-        .maybeSingle();
-
-      if (existingRestaurant) {
-        console.log(`Restaurant ${restaurant.site} already exists, skipping...`);
-        return;
-      }
-
-      // Mapear tipo de restaurante
-      const restaurantTypeMap: { [key: string]: string } = {
-        'Instore': 'traditional',
-        'Mall': 'mall',
-        'Free-Standing': 'drive_thru'
-      };
-
-      // Formatear fecha de apertura
-      let openingDate = null;
-      if (restaurant.fechaApertura && restaurant.fechaApertura.trim()) {
-        // Asumiendo formato DD/MM/YYYY o similar
-        const dateStr = restaurant.fechaApertura.trim();
-        if (dateStr.includes('/')) {
-          const [day, month, year] = dateStr.split('/');
-          openingDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        } else if (dateStr.includes('-')) {
-          openingDate = dateStr; // Ya está en formato correcto
+      const validatedData = data.map(record => {
+        // Validar que los campos requeridos existan
+        if (
+          !record.year ||
+          !record.month ||
+          !record.net_sales ||
+          !record.food_cost ||
+          !record.paper_cost ||
+          !record.crew_labor ||
+          !record.management_salary ||
+          !record.rent ||
+          !record.royalties ||
+          !record.advertising ||
+          !record.other_expenses
+        ) {
+          throw new Error('Faltan campos requeridos en el registro');
         }
-      }
+  
+        // Convertir los campos numéricos a números
+        record.year = parseInt(record.year, 10);
+        record.month = parseInt(record.month, 10);
+        record.net_sales = parseFloat(record.net_sales);
+        record.food_cost = parseFloat(record.food_cost);
+        record.paper_cost = parseFloat(record.paper_cost);
+        record.crew_labor = parseFloat(record.crew_labor);
+        record.management_salary = parseFloat(record.management_salary);
+        record.rent = parseFloat(record.rent);
+        record.royalties = parseFloat(record.royalties);
+        record.advertising = parseFloat(record.advertising);
+        record.other_expenses = parseFloat(record.other_expenses);
+  
+        // Validar que los campos numéricos sean números válidos
+        if (
+          isNaN(record.year) ||
+          isNaN(record.month) ||
+          isNaN(record.net_sales) ||
+          isNaN(record.food_cost) ||
+          isNaN(record.paper_cost) ||
+          isNaN(record.crew_labor) ||
+          isNaN(record.management_salary) ||
+          isNaN(record.rent) ||
+          isNaN(record.royalties) ||
+          isNaN(record.advertising) ||
+          isNaN(record.other_expenses)
+        ) {
+          throw new Error('Los campos numéricos deben ser números válidos');
+        }
+        return record;
+      });
 
-      // Crear restaurante base con todos los campos nuevos
-      const { error: restaurantError } = await supabase
-        .from('base_restaurants')
-        .insert({
-          site_number: restaurant.site,
-          restaurant_name: restaurant.nombre,
-          address: restaurant.direccion,
-          city: restaurant.municipio,
-          state: restaurant.provincia,
-          country: 'España',
-          restaurant_type: restaurantTypeMap[restaurant.tipoInmueble] || 'traditional',
-          property_type: restaurant.tipoInmueble,
-          autonomous_community: restaurant.comAutonoma,
-          franchisee_name: restaurant.franquiciado,
-          franchisee_email: restaurant.mailFranquiciado,
-          company_tax_id: restaurant.nifSociedad,
-          opening_date: openingDate,
-          created_by: user.id
-        });
-
-      if (restaurantError) {
-        console.error('Error creating base restaurant:', restaurantError);
-        throw restaurantError;
-      }
-
-      console.log(`Successfully created restaurant: ${restaurant.nombre} (${restaurant.site})`);
+      return validatedData;
     } catch (error) {
-      console.error('Error creating base restaurant:', error);
+      console.error('Error validating data:', error);
+      showError('Error al validar los datos de importación');
       throw error;
     }
   };
@@ -126,6 +118,7 @@ export const useDataImport = () => {
   return {
     importing,
     progress,
-    importRestaurantsData
+    importData,
+    validateData
   };
 };

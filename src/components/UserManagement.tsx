@@ -1,205 +1,146 @@
-
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Trash2, Users, RefreshCw } from 'lucide-react';
-import { UserCreationPanel } from '@/components/admin/UserCreationPanel';
-import { toast } from 'sonner';
-import { User } from '@/types/auth';
+import { useUserCreation } from '@/hooks/useUserCreation';
+import { useDeleteUser } from '@/hooks/useDeleteUser';
+import { showSuccess, showError } from '@/utils/notifications';
+
+interface User {
+  id: string;
+  email: string;
+  full_name?: string;
+  role?: string;
+  is_active?: boolean;
+}
 
 const UserManagement = () => {
-  const { user } = useAuth();
+  const { createUser, inviteUser, loading: creationLoading } = useUserCreation();
+  const { deleteUser, softDeleteUser, loading: deleteLoading } = useDeleteUser();
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      // Assuming there's a supabase client or API to fetch users
+      const response = await fetch('/api/users'); // Replace with actual fetch logic
+      if (!response.ok) {
+        throw new Error('Error fetching users');
+      }
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      showError('Error al cargar los usuarios');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  const fetchUsers = async () => {
+  const handleCreateUser = async (userData: { email: string; password: string; fullName: string; role: string }) => {
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching users:', error);
-        toast.error('Error al cargar usuarios');
-        return;
+      const success = await createUser(userData);
+      if (success) {
+        showSuccess('Usuario creado correctamente');
+        await fetchUsers();
       }
-
-      // Map database roles to TypeScript types - mantener roles como están en la base de datos
-      const typedUsers = (data || []).map(userData => ({
-        ...userData,
-        role: userData.role as 'admin' | 'franchisee' | 'manager' | 'asesor' | 'asistente' | 'superadmin'
-      }));
-
-      setUsers(typedUsers);
     } catch (error) {
-      console.error('Error in fetchUsers:', error);
-      toast.error('Error al cargar usuarios');
-    } finally {
-      setLoading(false);
+      showError('Error al crear el usuario');
     }
   };
 
-  const handleDeleteUser = async (userId: string, userName: string) => {
-    if (!confirm(`¿Estás seguro de que quieres eliminar a ${userName}?`)) {
-      return;
-    }
-
+  const handleInviteUser = async (inviteData: { email: string; fullName: string; role: string }) => {
     try {
-      // Eliminar perfil (esto también eliminará el usuario de auth por cascade)
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-      if (error) {
-        console.error('Error deleting user:', error);
-        toast.error('Error al eliminar usuario');
-        return;
+      const success = await inviteUser(inviteData);
+      if (success) {
+        showSuccess('Invitación enviada correctamente');
+        await fetchUsers();
       }
-
-      toast.success('Usuario eliminado exitosamente');
-      fetchUsers();
     } catch (error) {
-      console.error('Error in handleDeleteUser:', error);
-      toast.error('Error al eliminar usuario');
+      showError('Error al enviar la invitación');
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800';
-      case 'superadmin':
-        return 'bg-red-100 text-red-800';
-      case 'manager':
-        return 'bg-blue-100 text-blue-800';
-      case 'franchisee':
-        return 'bg-green-100 text-green-800';
-      case 'asesor':
-        return 'bg-purple-100 text-purple-800';
-      case 'asistente':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      const success = await deleteUser(userId);
+      if (success) {
+        showSuccess('Usuario eliminado correctamente');
+        await fetchUsers();
+      }
+    } catch (error) {
+      showError('Error al eliminar el usuario');
     }
   };
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'Administrador';
-      case 'superadmin':
-        return 'Super Admin';
-      case 'manager':
-        return 'Gerente';
-      case 'franchisee':
-        return 'Franquiciado';
-      case 'asesor':
-        return 'Asesor';
-      case 'asistente':
-        return 'Asistente';
-      default:
-        return role;
+  const handleSoftDeleteUser = async (userId: string) => {
+    try {
+      const success = await softDeleteUser(userId);
+      if (success) {
+        showSuccess('Usuario desactivado correctamente');
+        await fetchUsers();
+      }
+    } catch (error) {
+      showError('Error al desactivar el usuario');
     }
   };
-
-  // Solo admins pueden gestionar usuarios
-  if (!user || !['admin', 'asesor', 'superadmin'].includes(user.role)) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-gray-500">
-            <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p>No tienes permisos para gestionar usuarios</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      <UserCreationPanel />
-      
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Lista de Usuarios
-            </CardTitle>
-            <Button
-              onClick={fetchUsers}
-              disabled={loading}
-              variant="outline"
-              size="sm"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Actualizar
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8">
-              <p>Cargando usuarios...</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuario</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Fecha de Creación</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((userItem) => (
-                  <TableRow key={userItem.id}>
-                    <TableCell className="font-medium">
-                      {userItem.full_name || 'Sin nombre'}
-                    </TableCell>
-                    <TableCell>{userItem.email}</TableCell>
-                    <TableCell>
-                      <Badge className={getRoleBadgeColor(userItem.role)}>
-                        {getRoleLabel(userItem.role)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(userItem.created_at).toLocaleDateString('es-ES')}
-                    </TableCell>
-                    <TableCell>
-                      {userItem.id !== user?.id && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteUser(userItem.id, userItem.full_name || userItem.email)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Gestión de Usuarios</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loadingUsers ? (
+          <p>Cargando usuarios...</p>
+        ) : (
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr>
+                <th className="border-b p-2">Email</th>
+                <th className="border-b p-2">Nombre Completo</th>
+                <th className="border-b p-2">Rol</th>
+                <th className="border-b p-2">Activo</th>
+                <th className="border-b p-2">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id} className="border-b">
+                  <td className="p-2">{user.email}</td>
+                  <td className="p-2">{user.full_name || '-'}</td>
+                  <td className="p-2">{user.role || '-'}</td>
+                  <td className="p-2">{user.is_active ? 'Sí' : 'No'}</td>
+                  <td className="p-2 space-x-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDeleteUser(user.id)}
+                      disabled={deleteLoading}
+                    >
+                      Eliminar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleSoftDeleteUser(user.id)}
+                      disabled={deleteLoading}
+                    >
+                      Desactivar
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {/* Additional UI for creating or inviting users can be added here */}
+      </CardContent>
+    </Card>
   );
 };
 

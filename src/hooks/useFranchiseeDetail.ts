@@ -1,93 +1,108 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Franchisee } from '@/types/auth';
-import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/notifications';
 
-export const useFranchiseeDetail = (franchiseeId?: string) => {
-  const [franchisee, setFranchisee] = useState<Franchisee | null>(null);
-  const [restaurants, setRestaurants] = useState<FranchiseeRestaurant[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface Profile {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+}
+
+interface BaseRestaurant {
+  id: string;
+  restaurant_name: string;
+  site_number: string;
+}
+
+interface FranchiseeRestaurant {
+  id: string;
+  base_restaurant: BaseRestaurant | null;
+}
+
+export interface FranchiseeDetail {
+  id: string;
+  franchisee_name: string;
+  contact_email: string;
+  contact_phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  franchisee_restaurants: FranchiseeRestaurant[];
+  profiles: Profile | null;
+}
+
+export const useFranchiseeDetail = (franchiseeId: string) => {
+  const [franchisee, setFranchisee] = useState<FranchiseeDetail | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const fetchFranchiseeDetail = async () => {
-    if (!franchiseeId) {
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
-      setError(null);
-
-      console.log('Fetching franchisee detail for ID:', franchiseeId);
-
-      // Obtener el franquiciado con información del perfil del usuario
-      const { data: franchiseeData, error: franchiseeError } = await supabase
+      
+      const { data, error } = await supabase
         .from('franchisees')
         .select(`
           *,
-          profiles:user_id(
-            email,
+          franchisee_restaurants (
+            id,
+            base_restaurant:base_restaurants (*)
+          ),
+          profiles (
+            id,
             full_name,
-            phone
+            email,
+            role
           )
         `)
         .eq('id', franchiseeId)
-        .maybeSingle();
+        .single();
 
-      if (franchiseeError) {
-        console.error('Error fetching franchisee:', franchiseeError);
-        setError(`Error al cargar el franquiciado: ${franchiseeError.message}`);
-        return;
-      }
-
-      if (!franchiseeData) {
-        console.error('Franchisee not found for ID:', franchiseeId);
-        setError('Franquiciado no encontrado');
-        return;
-      }
-
-      // Obtener los restaurantes vinculados
-      const { data: restaurantsData, error: restaurantsError } = await supabase
-        .from('franchisee_restaurants')
-        .select(`
-          *,
-          base_restaurant:base_restaurants(*)
-        `)
-        .eq('franchisee_id', franchiseeId)
-        .order('assigned_at', { ascending: false });
-
-      if (restaurantsError) {
-        console.error('Error fetching restaurants:', restaurantsError);
-        setError(`Error al cargar los restaurantes: ${restaurantsError.message}`);
-        return;
-      }
-
-      console.log('Franchisee data loaded:', franchiseeData);
-      console.log('Restaurants data loaded:', restaurantsData);
-
-      setFranchisee(franchiseeData);
-      setRestaurants(restaurantsData || []);
-
+      if (error) throw error;
+      
+      setFranchisee(data);
     } catch (error) {
-      console.error('Error in fetchFranchiseeDetail:', error);
-      setError('Error inesperado al cargar los datos');
+      console.error('Error fetching franchisee detail:', error);
+      showError('Error al cargar los detalles del franquiciado');
     } finally {
       setLoading(false);
     }
   };
 
+  const updateFranchisee = async (updates: Partial<FranchiseeDetail>) => {
+    try {
+      const { error } = await supabase
+        .from('franchisees')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', franchiseeId);
+
+      if (error) throw error;
+      
+      showSuccess('Franquiciado actualizado correctamente');
+      await fetchFranchiseeDetail();
+    } catch (error) {
+      console.error('Error updating franchisee:', error);
+      showError('Error al actualizar el franquiciado');
+    }
+  };
+
   useEffect(() => {
-    fetchFranchiseeDetail();
+    if (franchiseeId) {
+      fetchFranchiseeDetail();
+    }
   }, [franchiseeId]);
 
   return {
     franchisee,
-    restaurants,
     loading,
-    error,
+    updateFranchisee,
     refetch: fetchFranchiseeDetail
   };
 };

@@ -1,118 +1,87 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileSpreadsheet } from 'lucide-react';
 import { useDataImport } from '@/hooks/useDataImport';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/notifications';
 
 interface DataImportDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
   onImportComplete: () => void;
 }
 
-export const DataImportDialog: React.FC<DataImportDialogProps> = ({ onImportComplete }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const DataImportDialog: React.FC<DataImportDialogProps> = ({
+  isOpen,
+  onOpenChange,
+  onImportComplete
+}) => {
+  const { importing, progress, importData, validateData } = useDataImport();
   const [csvData, setCsvData] = useState('');
-  const { importing, progress, importRestaurantsData } = useDataImport();
 
   const handleImport = async () => {
-    if (!csvData.trim()) {
-      toast.error('Por favor, ingresa los datos para importar');
-      return;
-    }
-
     try {
-      // Parsear datos CSV (asumiendo que están separados por tabulaciones)
-      const lines = csvData.trim().split('\n');
-      const data = lines.map(line => {
-        const columns = line.split('\t');
+      if (!csvData.trim()) {
+        showError('Por favor ingresa los datos a importar');
+        return;
+      }
+
+      const parsedData = csvData.split('\n').map(line => {
+        const values = line.split(',');
         return {
-          site: columns[0] || '',
-          nombre: columns[1] || '',
-          estado: columns[2] || '',
-          tipoInmueble: columns[3] || '',
-          direccion: columns[4] || '',
-          telRestaurante: columns[5] || '',
-          municipio: columns[6] || '',
-          provincia: columns[7] || '',
-          comAutonoma: columns[8] || '',
-          franquiciado: columns[9] || '',
-          telfFranquiciado: columns[10] || '',
-          fechaApertura: columns[11] || '',
-          mailFranquiciado: columns[12] || '',
-          nifSociedad: columns[13] || ''
+          year: parseInt(values[0]),
+          month: parseInt(values[1]),
+          net_sales: parseFloat(values[2]),
+          food_cost: parseFloat(values[3]),
+          paper_cost: parseFloat(values[4]),
+          crew_labor: parseFloat(values[5]),
+          management_labor: parseFloat(values[6]),
+          other_expenses: parseFloat(values[7] || '0')
         };
       });
 
-      await importRestaurantsData(data);
-      setIsOpen(false);
-      setCsvData('');
-      onImportComplete();
+      const validatedData = validateData(parsedData);
+      const success = await importData(validatedData, 'default');
+
+      if (success) {
+        showSuccess('Datos importados correctamente');
+        onImportComplete();
+        onOpenChange(false);
+      }
     } catch (error) {
-      console.error('Error parsing data:', error);
-      toast.error('Error al procesar los datos');
+      console.error('Import error:', error);
+      showError('Error durante la importación');
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
-          <Upload className="w-4 h-4" />
-          Importar Datos
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5" />
-            Importar Datos de Restaurantes
-          </DialogTitle>
+          <DialogTitle>Importar Datos</DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Pega los datos de Excel/CSV aquí (separados por tabulaciones):
-            </label>
-            <Textarea
-              value={csvData}
-              onChange={(e) => setCsvData(e.target.value)}
-              placeholder="SITE	NOMBRE	ESTADO	TIPO INMUEBLE	DIRECCIÓN	TEL RESTAURANTE	MUNICIPIO	PROVINCIA	COM. AUTONOMA	FRANQUICIADO	TELF. FRANQUICIADO	FECHA APERTURA	MAIL FRANQUICIADO	NIF SOCIEDAD"
-              className="min-h-[200px] font-mono text-xs"
-              disabled={importing}
-            />
-          </div>
-
-          {importing && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Importando datos...</span>
-                <span>{Math.round(progress)}%</span>
-              </div>
-              <Progress value={progress} className="w-full" />
+        <Textarea
+          value={csvData}
+          onChange={(e) => setCsvData(e.target.value)}
+          placeholder="Pega aquí los datos en formato CSV..."
+          className="min-h-[200px]"
+        />
+        {importing && (
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Importando datos...</span>
+              <span>{Math.round(progress)}%</span>
             </div>
-          )}
-
-          <div className="flex justify-end space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsOpen(false)}
-              disabled={importing}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleImport} 
-              disabled={importing || !csvData.trim()}
-            >
-              {importing ? 'Importando...' : 'Importar Datos'}
-            </Button>
+            <Progress value={progress} className="w-full" />
           </div>
-        </div>
+        )}
+        <Button onClick={handleImport} disabled={importing}>
+          {importing ? 'Importando...' : 'Importar'}
+        </Button>
       </DialogContent>
     </Dialog>
   );
 };
+
+export default DataImportDialog;
