@@ -26,6 +26,26 @@ export interface ValuationBudget {
   updated_at: string;
 }
 
+export interface ValuationBudgetFormData {
+  budget_name: string;
+  budget_year: number;
+  franchisee_restaurant_id: string;
+  initial_sales: number;
+  sales_growth_rate: number;
+  inflation_rate: number;
+  discount_rate: number;
+  years_projection: number;
+  pac_percentage: number;
+  rent_percentage: number;
+  service_fees_percentage: number;
+  depreciation: number;
+  interest: number;
+  loan_payment: number;
+  rent_index: number;
+  miscellaneous: number;
+  notes?: string;
+}
+
 export interface BudgetData {
   id: string;
   category: string;

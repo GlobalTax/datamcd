@@ -67,8 +67,8 @@ export const saveValuationToDB = async (
         discount_rate: valuation.discount_rate,
         growth_rate: valuation.growth_rate,
         inflation_rate: valuation.inflation_rate,
-        yearly_data: valuation.yearly_data,
-        projections: valuation.projections,
+        yearly_data: valuation.yearly_data as any,
+        projections: valuation.projections as any,
         total_present_value: valuation.total_present_value,
         created_by: userId
       })
@@ -98,6 +98,8 @@ export const updateValuationInDB = async (
       .from('restaurant_valuations')
       .update({
         ...updates,
+        yearly_data: updates.yearly_data as any,
+        projections: updates.projections as any,
         updated_at: new Date().toISOString()
       })
       .eq('id', id);
@@ -138,8 +140,8 @@ export const saveScenarioToDB = async (
         inflation_rate_modifier: scenario.inflation_rate_modifier,
         discount_rate_modifier: scenario.discount_rate_modifier,
         growth_rate_modifier: scenario.growth_rate_modifier,
-        yearly_modifications: scenario.yearly_modifications,
-        projections: scenario.projections,
+        yearly_modifications: scenario.yearly_modifications as any,
+        projections: scenario.projections as any,
         total_present_value: scenario.total_present_value,
         variance_from_base: scenario.variance_from_base,
         variance_percentage: scenario.variance_percentage

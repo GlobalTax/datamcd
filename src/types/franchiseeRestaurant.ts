@@ -39,7 +39,7 @@ export interface FranchiseeRestaurant {
   notes?: string;
   assigned_at: string;
   updated_at: string;
-  base_restaurant?: BaseRestaurant;
+  base_restaurant?: BaseRestaurant | null;
 }
 
 export interface RestaurantBudget {

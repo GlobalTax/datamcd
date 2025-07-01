@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useBaseRestaurants } from '@/hooks/useBaseRestaurants';
 import { AdvisorDashboard } from '@/components/AdvisorDashboard';
-import { FranchiseesManagement } from '@/components/FranchiseesManagement';
-import { BaseRestaurantsTable } from '@/components/BaseRestaurantsTable';
-import { UserManagement } from '@/components/UserManagement';
+import FranchiseesManagement from '@/components/FranchiseesManagement';
+import BaseRestaurantsTable from '@/components/BaseRestaurantsTable';
+import UserManagement from '@/components/UserManagement';
 import { AdvisorReports } from '@/components/advisor/AdvisorReports';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -33,7 +33,7 @@ export default function AdvisorPage() {
     );
   }
 
-  if (!user || user.role !== 'advisor') {
+  if (!user || user.role !== 'asesor') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card>

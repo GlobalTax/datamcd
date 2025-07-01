@@ -174,7 +174,7 @@ export default function FranchiseeDetailPage() {
       </Card>
 
       {/* Panel de gestión de usuarios */}
-      <UserCreationPanel />
+      <UserCreationPanel onUserCreated={handleUserCreated} />
 
       {/* Lista de usuarios asociados */}
       <FranchiseeUsers
@@ -200,12 +200,7 @@ export default function FranchiseeDetailPage() {
           {restaurants.length > 0 ? (
             <FranchiseeRestaurantsTable 
               franchiseeId={franchisee.id} 
-              restaurants={restaurants.map(r => ({
-                ...r,
-                franchisee_id: r.franchisee_id || franchisee.id,
-                assigned_at: r.assigned_at || new Date().toISOString(),
-                updated_at: r.updated_at || new Date().toISOString()
-              }))} 
+              restaurants={restaurants}
             />
           ) : (
             <p className="text-gray-500 text-center py-8">No hay restaurantes asignados</p>

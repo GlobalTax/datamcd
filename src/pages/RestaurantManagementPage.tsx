@@ -8,7 +8,7 @@ export default function RestaurantManagementPage() {
   
   return (
     <div className="container mx-auto p-6">
-      <RestaurantManager userId={user?.id || ''} />
+      <RestaurantManager />
     </div>
   );
 }
