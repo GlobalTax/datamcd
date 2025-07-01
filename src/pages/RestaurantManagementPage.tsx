@@ -52,6 +52,8 @@ export default function RestaurantManagementPage() {
         franchisee={{
           id: franchisee.id,
           name: franchisee.franchisee_name,
+          email: franchisee.profiles?.email || user?.email || 'Sin email',
+          createdAt: new Date(franchisee.created_at),
           restaurants: convertedRestaurants
         }}
         onAddRestaurant={handleAddRestaurant}
