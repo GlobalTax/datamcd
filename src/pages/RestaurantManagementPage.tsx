@@ -31,7 +31,8 @@ export default function RestaurantManagementPage() {
     isOwnedByMcD: false,
     franchiseeId: fr.franchisee_id || '',
     valuationHistory: [],
-    currentValuation: null
+    currentValuation: null,
+    createdAt: new Date(fr.assigned_at)
   }));
 
   if (!franchisee) {
