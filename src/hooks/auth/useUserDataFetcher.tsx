@@ -18,14 +18,15 @@ export const useUserDataFetcher = () => {
         ]);
       };
 
-      // Fetch user profile with timeout - ejecutar la consulta inmediatamente y usar la promesa
+      // Fetch user profile with timeout - crear promesa verdadera
+      const profilePromise = supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
       const { data: profileData, error: profileError } = await withTimeout(
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single()
-          .then(result => result), // Esto asegura que tenemos una promesa
+        Promise.resolve(profilePromise),
         8000
       );
 
@@ -54,13 +55,14 @@ export const useUserDataFetcher = () => {
       // If user is franchisee, fetch franchisee data and restaurants
       if (user.role === 'franchisee') {
         try {
+          const franchiseePromise = supabase
+            .from('franchisees')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+
           const { data: franchiseeData, error: franchiseeError } = await withTimeout(
-            supabase
-              .from('franchisees')
-              .select('*')
-              .eq('user_id', userId)
-              .single()
-              .then(result => result), // Convertir a promesa
+            Promise.resolve(franchiseePromise),
             8000
           );
 
@@ -95,16 +97,17 @@ export const useUserDataFetcher = () => {
 
             // Fetch restaurants only if franchisee exists
             try {
+              const restaurantsPromise = supabase
+                .from('franchisee_restaurants')
+                .select(`
+                  *,
+                  base_restaurant:base_restaurants(*)
+                `)
+                .eq('franchisee_id', franchisee.id)
+                .eq('status', 'active');
+
               const { data: restaurantData, error: restaurantError } = await withTimeout(
-                supabase
-                  .from('franchisee_restaurants')
-                  .select(`
-                    *,
-                    base_restaurant:base_restaurants(*)
-                  `)
-                  .eq('franchisee_id', franchisee.id)
-                  .eq('status', 'active')
-                  .then(result => result), // Convertir a promesa
+                Promise.resolve(restaurantsPromise),
                 10000
               );
 
