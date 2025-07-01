@@ -166,12 +166,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
     subscriptionRef.current = subscription;
     
-    // Verificar sesión inicial con timeout
+    // Verificar sesión inicial con timeout aumentado
     const initializeAuth = async () => {
       try {
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 3000)
+          setTimeout(() => reject(new Error('Session check timeout')), 8000) // Aumentado de 3s a 8s
         );
         
         const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;

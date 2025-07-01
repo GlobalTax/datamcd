@@ -39,7 +39,7 @@ export const useUserDataFetcher = () => {
         if (retryCount < maxRetries) {
           console.log(`useUserDataFetcher - Retrying profile fetch (${retryCount + 1}/${maxRetries})`);
           await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
-          return this.fetchUserData(userId, retryCount + 1);
+          return fetchUserData(userId, retryCount + 1);
         }
         
         throw new Error(`Error al cargar perfil: ${profileError.message}`);
@@ -96,8 +96,8 @@ export const useUserDataFetcher = () => {
               total_restaurants: franchiseeData.total_restaurants,
               profiles: {
                 email: profileData.email,
-                phone: profileData.phone,
-                full_name: profileData.full_name
+                phone: profileData.phone || '',
+                full_name: profileData.full_name || ''
               },
               hasAccount: true,
               isOnline: false,
@@ -173,7 +173,7 @@ export const useUserDataFetcher = () => {
       if (retryCount < maxRetries) {
         console.log(`useUserDataFetcher - Retrying full fetch (${retryCount + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, 1500)); // Esperar más tiempo entre reintentos
-        return this.fetchUserData(userId, retryCount + 1);
+        return fetchUserData(userId, retryCount + 1);
       }
       
       // Si se agotaron los reintentos, lanzar el error
