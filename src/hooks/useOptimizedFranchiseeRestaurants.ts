@@ -53,8 +53,8 @@ export const useOptimizedFranchiseeRestaurants = (franchiseeId: string | undefin
           franchise_fee_percentage,
           advertising_fee_percentage,
           notes,
-          created_at,
-          updated_at,
+          assigned_at,
+          status,
           base_restaurant:base_restaurants (
             id,
             restaurant_name,
@@ -71,11 +71,27 @@ export const useOptimizedFranchiseeRestaurants = (franchiseeId: string | undefin
       
       // Map the data to include the restaurant_id from base_restaurant_id
       const mappedData = (data || []).map(item => ({
-        ...item,
-        restaurant_id: item.base_restaurant_id || '', // Map base_restaurant_id to restaurant_id
+        id: item.id,
+        franchisee_id: item.franchisee_id || '',
+        restaurant_id: item.base_restaurant_id || '',
+        monthly_rent: item.monthly_rent,
+        last_year_revenue: item.last_year_revenue,
+        franchise_fee_percentage: item.franchise_fee_percentage,
+        advertising_fee_percentage: item.advertising_fee_percentage,
+        notes: item.notes,
+        created_at: item.assigned_at || new Date().toISOString(),
+        updated_at: item.assigned_at || new Date().toISOString(),
         base_restaurant: item.base_restaurant ? {
-          ...item.base_restaurant,
-          status: 'active' // Default status
+          id: item.base_restaurant.id,
+          restaurant_name: item.base_restaurant.restaurant_name,
+          site_number: item.base_restaurant.site_number,
+          address: item.base_restaurant.address,
+          city: item.base_restaurant.city,
+          opening_date: item.base_restaurant.opening_date,
+          restaurant_type: item.base_restaurant.restaurant_type,
+          status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         } : null
       }));
       

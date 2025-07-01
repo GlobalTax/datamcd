@@ -78,7 +78,18 @@ const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({ year, restaurantId 
         category: 'revenue',
         subcategory: null,
         created_by: user?.id || null,
-        ...monthlyData
+        jan: monthlyData.jan || 0,
+        feb: monthlyData.feb || 0,
+        mar: monthlyData.mar || 0,
+        apr: monthlyData.apr || 0,
+        may: monthlyData.may || 0,
+        jun: monthlyData.jun || 0,
+        jul: monthlyData.jul || 0,
+        aug: monthlyData.aug || 0,
+        sep: monthlyData.sep || 0,
+        oct: monthlyData.oct || 0,
+        nov: monthlyData.nov || 0,
+        dec: monthlyData.dec || 0
       });
       
       showSuccess('Presupuesto guardado correctamente');

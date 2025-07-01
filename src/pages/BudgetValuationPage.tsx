@@ -8,7 +8,33 @@ import { BudgetDetail } from '@/components/budget/BudgetDetail';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft, TrendingUp, Calculator, DollarSign } from 'lucide-react';
-import { ValuationBudget } from '@/types/budget';
+
+interface ValuationBudget {
+  id: string;
+  franchisee_restaurant_id: string;
+  budget_name: string;
+  budget_year: number;
+  initial_sales: number;
+  status: string;
+  notes: string | null;
+  discount_rate: number;
+  years_projection: number;
+  sales_growth_rate: number | null;
+  inflation_rate: number | null;
+  pac_percentage: number | null;
+  rent_percentage: number | null;
+  service_fees_percentage: number | null;
+  depreciation: number | null;
+  interest: number | null;
+  loan_payment: number | null;
+  rent_index: number | null;
+  miscellaneous: number | null;
+  final_valuation: number | null;
+  projected_cash_flows: any;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function BudgetValuationPage() {
   const { budgets, loading, createBudget, updateBudget, deleteBudget } = useValuationBudgets();
@@ -32,10 +58,8 @@ export default function BudgetValuationPage() {
   };
 
   const handleFormSubmit = async (data: any) => {
-    const success = await createBudget(data);
-    if (success) {
-      setCurrentView('list');
-    }
+    await createBudget(data);
+    setCurrentView('list');
   };
 
   const totalValuation = budgets.reduce((sum, budget) => sum + (budget.final_valuation || 0), 0);
@@ -147,9 +171,12 @@ export default function BudgetValuationPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           {currentView === 'list' && (
             <BudgetList
-              budgets={budgets}
+              budgets={budgets as any}
               onSelectBudget={handleSelectBudget}
-              onDeleteBudget={deleteBudget}
+              onDeleteBudget={async (id: string) => {
+                await deleteBudget(id);
+                return true;
+              }}
             />
           )}
 
@@ -163,9 +190,15 @@ export default function BudgetValuationPage() {
 
           {currentView === 'detail' && selectedBudget && (
             <BudgetDetail
-              budget={selectedBudget}
-              onUpdate={updateBudget}
-              onDelete={deleteBudget}
+              budget={selectedBudget as any}
+              onUpdate={async (id: string, data: any) => {
+                await updateBudget(id, data);
+                return true;
+              }}
+              onDelete={async (id: string) => {
+                await deleteBudget(id);
+                return true;
+              }}
               onBack={handleBack}
             />
           )}

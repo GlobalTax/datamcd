@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Building, Users, FileText, LogOut, Store, BarChart3, TrendingUp, Building2 } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import AdvisorManagement from '@/components/AdvisorManagement';
-import { FranchiseesManagement } from '@/components/FranchiseesManagement';
-import { AdvisorReports } from '@/components/AdvisorReports';
-import { BaseRestaurantsTable } from '@/components/BaseRestaurantsTable';
+import FranchiseesManagement from '@/components/FranchiseesManagement';
+import AdvisorReports from '@/components/AdvisorReports';
+import BaseRestaurantsTable from '@/components/BaseRestaurantsTable';
 import { useBaseRestaurants } from '@/hooks/useBaseRestaurants';
 
 const AdvisorPage = () => {

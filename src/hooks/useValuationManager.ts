@@ -1,91 +1,115 @@
-import { useState, useEffect } from 'react';
-import { useRestaurantValuations } from '@/hooks/useRestaurantValuations';
+
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/utils/notifications';
 
+interface RestaurantValuation {
+  id: string;
+  restaurant_id: string;
+  restaurant_name: string;
+  valuation_name: string;
+  discount_rate: number;
+  growth_rate: number;
+  inflation_rate: number;
+  valuation_date: string;
+  yearly_data: any;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export const useValuationManager = () => {
-  const [selectedRestaurantId, setSelectedRestaurantId] = useState<string>('');
-  const [selectedRestaurantName, setSelectedRestaurantName] = useState<string>('');
-  const [valuationName, setValuationName] = useState<string>('');
-  const [currentValuationId, setCurrentValuationId] = useState<string | null>(null);
-  
-  const { 
-    valuations, 
-    saveValuation, 
-    updateValuation, 
-    deleteValuation,
-    scenarios,
-    saveScenario,
-    deleteScenario
-  } = useRestaurantValuations();
+  const [loading, setLoading] = useState(false);
+  const [valuations, setValuations] = useState<RestaurantValuation[]>([]);
 
-  const handleSaveValuation = async (currentData: any) => {
-    if (!selectedRestaurantId) {
-      showError('Por favor selecciona un restaurante');
-      return;
-    }
-
-    if (!valuationName.trim()) {
-      showError('Por favor ingresa un nombre para la valoración');
-      return;
-    }
-
+  const saveValuation = useCallback(async (valuationData: {
+    restaurant_id: string;
+    restaurant_name: string;
+    valuation_name: string;
+    valuation_data: any;
+  }) => {
     try {
-      const valuationData = {
-        restaurant_id: selectedRestaurantId,
-        restaurant_name: selectedRestaurantName,
-        valuation_name: valuationName,
-        valuation_data: currentData
-      };
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('restaurant_valuations')
+        .insert({
+          restaurant_id: valuationData.restaurant_id,
+          restaurant_name: valuationData.restaurant_name,
+          valuation_name: valuationData.valuation_name,
+          discount_rate: 21.0,
+          growth_rate: 3.0,
+          inflation_rate: 1.5,
+          valuation_date: new Date().toISOString().split('T')[0],
+          yearly_data: valuationData.valuation_data,
+          created_by: null
+        })
+        .select()
+        .single();
 
-      if (currentValuationId) {
-        await updateValuation(currentValuationId, valuationData);
-      } else {
-        const result = await saveValuation(valuationData);
-        setCurrentValuationId(result.id);
-      }
+      if (error) throw error;
       
       showSuccess('Valoración guardada correctamente');
+      return data;
     } catch (error) {
       console.error('Error saving valuation:', error);
       showError('Error al guardar la valoración');
+      throw error;
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const handleLoadValuation = (valuation: any, onValuationLoaded: (data: any) => void) => {
+  const loadValuations = useCallback(async (restaurantId?: string) => {
     try {
-      setSelectedRestaurantId(valuation.restaurant_id);
-      setSelectedRestaurantName(valuation.restaurant_name);
-      setValuationName(valuation.valuation_name);
-      setCurrentValuationId(valuation.id);
+      setLoading(true);
       
-      onValuationLoaded(valuation.valuation_data);
-      showSuccess(`Valoración "${valuation.valuation_name}" cargada correctamente`);
-    } catch (error) {
-      console.error('Error loading valuation:', error);
-      showError('Error al cargar la valoración');
-    }
-  };
+      let query = supabase
+        .from('restaurant_valuations')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  const getRestaurantValuations = () => {
-    return valuations.filter(v => v.restaurant_id === selectedRestaurantId);
-  };
+      if (restaurantId) {
+        query = query.eq('restaurant_id', restaurantId);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      setValuations(data || []);
+      return data || [];
+    } catch (error) {
+      console.error('Error loading valuations:', error);
+      showError('Error al cargar las valoraciones');
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const deleteValuation = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('restaurant_valuations')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      showSuccess('Valoración eliminada correctamente');
+      setValuations(prev => prev.filter(v => v.id !== id));
+    } catch (error) {
+      console.error('Error deleting valuation:', error);
+      showError('Error al eliminar la valoración');
+    }
+  }, []);
 
   return {
-    selectedRestaurantId,
-    setSelectedRestaurantId,
-    selectedRestaurantName,
-    setSelectedRestaurantName,
-    valuationName,
-    setValuationName,
-    currentValuationId,
-    setCurrentValuationId,
+    loading,
     valuations,
-    scenarios,
-    handleSaveValuation,
-    handleLoadValuation,
-    getRestaurantValuations,
-    deleteValuation,
-    saveScenario,
-    deleteScenario
+    saveValuation,
+    loadValuations,
+    deleteValuation
   };
 };
