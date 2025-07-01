@@ -70,7 +70,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleDataLoadError = useCallback(async (userId: string, user: any) => {
     console.log('AuthProvider - Handling data load error for user:', userId);
     
-    // Crear usuario básico inmediatamente
+    // Si es usuario de emergencia, manejar diferente
+    if (userId.startsWith('emergency-')) {
+      console.log('AuthProvider - Emergency user detected, setting up basic access');
+      const basicUser = {
+        id: userId,
+        email: user.email || 'emergency@ejemplo.com',
+        role: 'franchisee' as const,
+        full_name: user.user_metadata?.full_name || 'Usuario de Emergencia',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      setUser(basicUser);
+      setFranchisee(null);
+      setRestaurants([]);
+      currentUserId.current = userId;
+      return;
+    }
+    
+    // Crear usuario básico inmediatamente para usuarios normales
     const basicUser = {
       id: userId,
       email: user.email || 'usuario@ejemplo.com',
@@ -85,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRestaurants([]);
     currentUserId.current = userId;
     
-    // Intentar recuperación de datos en segundo plano
+    // Intentar recuperación de datos en segundo plano solo para usuarios normales
     setTimeout(async () => {
       try {
         console.log('AuthProvider - Attempting background data recovery');
@@ -102,11 +121,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (recoveryError) {
         console.log('AuthProvider - Background recovery failed, user has basic access');
       }
-    }, 2000);
+    }, 3000); // Aumentado a 3 segundos para dar más tiempo
     
     // Mostrar error solo ocasionalmente
     const now = Date.now();
-    if (now - lastErrorTime.current > 30000) {
+    if (now - lastErrorTime.current > 60000) { // Reducir frecuencia de errores
       showError('Modo básico activado. Algunas funciones pueden estar limitadas.');
       lastErrorTime.current = now;
     }
@@ -130,11 +149,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isFetchingUserData.current = true;
       
       try {
-        const userData = await fetchUserData(session.user.id);
-        setUser(userData.user);
-        setFranchisee(userData.franchisee);
-        setRestaurants(userData.restaurants);
-        console.log('AuthProvider - User data loaded successfully');
+        // Para usuarios de emergencia, configuración inmediata
+        if (session.user.id.startsWith('emergency-')) {
+          console.log('AuthProvider - Emergency user detected, immediate setup');
+          await handleDataLoadError(session.user.id, session.user);
+        } else {
+          // Para usuarios normales, intentar carga de datos con timeout más corto
+          const userData = await Promise.race([
+            fetchUserData(session.user.id),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Data load timeout')), 8000)
+            )
+          ]) as any;
+          
+          setUser(userData.user);
+          setFranchisee(userData.franchisee);
+          setRestaurants(userData.restaurants);
+          console.log('AuthProvider - User data loaded successfully');
+        }
       } catch (error) {
         console.error('AuthProvider - Error loading user data:', error);
         await handleDataLoadError(session.user.id, session.user);
@@ -169,10 +201,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Verificar sesión inicial con sistema de recuperación
     const initializeAuth = async () => {
       try {
-        // Timeout más agresivo para detección rápida de problemas
+        // Timeout reducido a 3s para detección más rápida de problemas
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 5000) // Reducido a 5s
+          setTimeout(() => reject(new Error('Session check timeout')), 3000)
         );
         
         const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
@@ -187,15 +219,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('AuthProvider - Error in initial auth check:', error);
         setLoading(false);
         
-        // Programar reintento en segundo plano
+        // Programar reintento en segundo plano con tiempo extendido
         retryTimeoutRef.current = setTimeout(() => {
-          console.log('AuthProvider - Background retry for session check');
+          console.log('AuthProvider - Extended background retry for session check');
           supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.user) {
               handleAuthChange('SIGNED_IN', session);
             }
           }).catch(console.error);
-        }, 3000);
+        }, 5000); // Aumentado a 5 segundos
       } finally {
         isInitializing.current = false;
         isInitialized.current = true;

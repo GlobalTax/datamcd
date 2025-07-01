@@ -12,14 +12,15 @@ interface FastAuthActionsProps {
 export const useFastAuthActions = ({ clearUserData, setSession, onAuthSuccess }: FastAuthActionsProps) => {
   const { createEmergencyProfile } = useAuthRecovery();
 
-  const fastSignIn = async (email: string, password: string) => {
-    console.log('useFastAuthActions - Fast sign in attempt for:', email);
+  const fastSignIn = async (email: string, password: string, isRetry = false) => {
+    console.log('useFastAuthActions - Fast sign in attempt for:', email, isRetry ? '(retry)' : '');
     
     try {
-      // Timeout más corto para signIn
+      // Timeout progresivo: 12s para primer intento, 20s para retry
+      const timeoutMs = isRetry ? 20000 : 12000;
       const signInPromise = supabase.auth.signInWithPassword({ email, password });
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Login timeout')), 10000)
+        setTimeout(() => reject(new Error('Login timeout')), timeoutMs)
       );
 
       const { data, error } = await Promise.race([signInPromise, timeoutPromise]) as any;
@@ -33,11 +34,11 @@ export const useFastAuthActions = ({ clearUserData, setSession, onAuthSuccess }:
         } else if (error.message.includes('Email not confirmed')) {
           errorMessage = 'Por favor confirma tu email antes de iniciar sesión';
         } else if (error.message.includes('timeout')) {
-          errorMessage = 'Conexión lenta. Intenta de nuevo o usa el modo de recuperación.';
+          errorMessage = 'Conexión lenta detectada. ¿Intentar con más tiempo?';
         }
         
         showError(errorMessage);
-        return { error: errorMessage };
+        return { error: errorMessage, canRetry: !isRetry && error.message.includes('timeout') };
       }
 
       if (data.user) {
@@ -50,8 +51,8 @@ export const useFastAuthActions = ({ clearUserData, setSession, onAuthSuccess }:
     } catch (error: any) {
       console.error('useFastAuthActions - Sign in timeout or error:', error);
       
-      if (error.message.includes('timeout')) {
-        showError('Conexión lenta. El sistema intentará conectar en segundo plano.');
+      if (error.message.includes('timeout') && !isRetry) {
+        showError('Conexión lenta. ¿Quieres intentar con más tiempo o crear cuenta de emergencia?');
         return { error: 'timeout', canRetry: true };
       }
       
@@ -60,11 +61,12 @@ export const useFastAuthActions = ({ clearUserData, setSession, onAuthSuccess }:
     }
   };
 
-  const fastSignUp = async (email: string, password: string, fullName: string) => {
-    console.log('useFastAuthActions - Fast sign up attempt for:', email);
+  const fastSignUp = async (email: string, password: string, fullName: string, isRetry = false) => {
+    console.log('useFastAuthActions - Fast sign up attempt for:', email, isRetry ? '(retry)' : '');
     
     try {
-      // Intentar signUp normal primero con timeout
+      // Timeout progresivo: 15s para primer intento, 25s para retry
+      const timeoutMs = isRetry ? 25000 : 15000;
       const signUpPromise = supabase.auth.signUp({
         email,
         password,
@@ -75,20 +77,26 @@ export const useFastAuthActions = ({ clearUserData, setSession, onAuthSuccess }:
       });
       
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Signup timeout')), 8000)
+        setTimeout(() => reject(new Error('Signup timeout')), timeoutMs)
       );
 
       const { data, error } = await Promise.race([signUpPromise, timeoutPromise]) as any;
 
       if (error) {
-        console.log('useFastAuthActions - Normal signup failed, trying emergency mode');
+        console.log('useFastAuthActions - Normal signup failed:', error.message);
         
         if (error.message.includes('User already registered')) {
           showError('Este email ya está registrado. Intenta iniciar sesión.');
           return { error: 'Este email ya está registrado' };
         }
         
-        // Si falla, intentar modo de emergencia
+        // Si falla, ofrecer modo de emergencia
+        if (!isRetry) {
+          showError('Signup falló. ¿Crear cuenta de emergencia?');
+          return { error: error.message, canCreateEmergency: true };
+        }
+        
+        // En retry, crear directamente cuenta de emergencia
         const emergencyResult = await createEmergencyProfile(email, password, fullName);
         if (emergencyResult.error) {
           showError(emergencyResult.error);
@@ -96,7 +104,7 @@ export const useFastAuthActions = ({ clearUserData, setSession, onAuthSuccess }:
         }
         
         if (emergencyResult.user) {
-          showSuccess('Cuenta creada en modo de recuperación');
+          showSuccess('Cuenta creada en modo de emergencia');
           onAuthSuccess?.(emergencyResult);
           return { success: true, recoveryMode: true };
         }
@@ -110,23 +118,44 @@ export const useFastAuthActions = ({ clearUserData, setSession, onAuthSuccess }:
 
       return { error: 'Error inesperado al crear cuenta' };
     } catch (error: any) {
-      console.log('useFastAuthActions - Signup timeout, trying emergency creation');
+      console.log('useFastAuthActions - Signup timeout, evaluating emergency creation');
       
-      // En caso de timeout, intentar modo de emergencia
-      const emergencyResult = await createEmergencyProfile(email, password, fullName);
-      if (emergencyResult.error) {
-        showError('Error de conexión. Intenta de nuevo más tarde.');
-        return { error: emergencyResult.error };
+      // En caso de timeout, crear cuenta de emergencia si es retry o si el usuario lo pidió
+      if (isRetry || error.message.includes('timeout')) {
+        const emergencyResult = await createEmergencyProfile(email, password, fullName);
+        if (emergencyResult.error) {
+          showError('Error de conexión. Intenta de nuevo más tarde.');
+          return { error: emergencyResult.error };
+        }
+        
+        if (emergencyResult.user) {
+          showSuccess('Cuenta creada en modo de emergencia debido a problemas de conexión');
+          onAuthSuccess?.(emergencyResult);
+          return { success: true, recoveryMode: true };
+        }
       }
       
-      if (emergencyResult.user) {
-        showSuccess('Cuenta creada en modo de recuperación');
-        onAuthSuccess?.(emergencyResult);
-        return { success: true, recoveryMode: true };
-      }
-      
-      return { error: 'Error de conexión' };
+      return { error: 'Error de conexión', canCreateEmergency: true };
     }
+  };
+
+  const createEmergencyAccount = async (email: string, password: string, fullName: string) => {
+    console.log('useFastAuthActions - Creating emergency account for:', email);
+    showSuccess('Creando cuenta de emergencia...');
+    
+    const emergencyResult = await createEmergencyProfile(email, password, fullName);
+    if (emergencyResult.error) {
+      showError('Error al crear cuenta de emergencia: ' + emergencyResult.error);
+      return { error: emergencyResult.error };
+    }
+    
+    if (emergencyResult.user) {
+      showSuccess('¡Cuenta de emergencia creada! Puedes acceder inmediatamente.');
+      onAuthSuccess?.(emergencyResult);
+      return { success: true, recoveryMode: true };
+    }
+    
+    return { error: 'Error inesperado' };
   };
 
   const signOut = async () => {
@@ -153,5 +182,5 @@ export const useFastAuthActions = ({ clearUserData, setSession, onAuthSuccess }:
     }
   };
 
-  return { fastSignIn, fastSignUp, signOut };
+  return { fastSignIn, fastSignUp, createEmergencyAccount, signOut };
 };

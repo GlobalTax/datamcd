@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { AlertCircle, Wifi, WifiOff, Zap, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useFastAuthActions } from '@/hooks/auth/useFastAuthActions';
 import { showSuccess, showError } from '@/utils/notifications';
@@ -17,8 +17,10 @@ const AuthPage = () => {
   const [signupData, setSignupData] = useState({ email: '', password: '', fullName: '' });
   const [loading, setLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'good' | 'slow' | 'poor'>('good');
+  const [showRetryOptions, setShowRetryOptions] = useState(false);
+  const [authProgress, setAuthProgress] = useState('');
 
-  const { fastSignIn, fastSignUp, signOut } = useFastAuthActions({
+  const { fastSignIn, fastSignUp, createEmergencyAccount, signOut } = useFastAuthActions({
     clearUserData,
     setSession: () => {}, // Se maneja en el AuthProvider
     onAuthSuccess: (userData) => {
@@ -26,7 +28,7 @@ const AuthPage = () => {
     }
   });
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent, isRetry = false) => {
     e.preventDefault();
     
     if (!loginData.email || !loginData.password) {
@@ -37,27 +39,35 @@ const AuthPage = () => {
     try {
       setLoading(true);
       setConnectionStatus('good');
+      setAuthProgress(isRetry ? 'Reintentando con más tiempo...' : 'Iniciando sesión...');
+      setShowRetryOptions(false);
       
-      const result = await fastSignIn(loginData.email, loginData.password);
+      const result = await fastSignIn(loginData.email, loginData.password, isRetry);
       
       if (result.error) {
-        if (result.error.includes('timeout')) {
+        if (result.canRetry) {
+          setConnectionStatus('slow');
+          setShowRetryOptions(true);
+          setAuthProgress('');
+        } else if (result.error.includes('timeout')) {
           setConnectionStatus('poor');
+          setAuthProgress('');
         }
-        // El error ya se muestra en fastSignIn
       } else if (result.success) {
-        // El éxito ya se muestra en fastSignIn
+        setAuthProgress('¡Éxito!');
+        setShowRetryOptions(false);
       }
     } catch (error) {
       console.error('Login error:', error);
       setConnectionStatus('poor');
+      setAuthProgress('');
       showError('Error inesperado al iniciar sesión');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent, isRetry = false) => {
     e.preventDefault();
     
     if (!signupData.email || !signupData.password || !signupData.fullName) {
@@ -73,45 +83,140 @@ const AuthPage = () => {
     try {
       setLoading(true);
       setConnectionStatus('good');
+      setAuthProgress(isRetry ? 'Reintentando con más tiempo...' : 'Creando cuenta...');
+      setShowRetryOptions(false);
       
-      const result = await fastSignUp(signupData.email, signupData.password, signupData.fullName);
+      const result = await fastSignUp(signupData.email, signupData.password, signupData.fullName, isRetry);
       
       if (result.error) {
-        // El error ya se muestra en fastSignUp
+        if (result.canCreateEmergency) {
+          setConnectionStatus('slow');
+          setShowRetryOptions(true);
+          setAuthProgress('');
+        } else if (result.error.includes('timeout')) {
+          setConnectionStatus('poor');
+          setAuthProgress('');
+        }
       } else if (result.success) {
         if (result.recoveryMode) {
           setConnectionStatus('slow');
+          setAuthProgress('Cuenta creada en modo de emergencia');
+        } else {
+          setAuthProgress('¡Cuenta creada con éxito!');
         }
-        // El éxito ya se muestra en fastSignUp
+        setShowRetryOptions(false);
       }
     } catch (error) {
       console.error('Signup error:', error);
       setConnectionStatus('poor');
+      setAuthProgress('');
       showError('Error inesperado al crear la cuenta');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleEmergencySignup = async () => {
+    if (!signupData.email || !signupData.password || !signupData.fullName) {
+      showError('Por favor completa todos los campos primero');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      setAuthProgress('Creando cuenta de emergencia...');
+      
+      const result = await createEmergencyAccount(signupData.email, signupData.password, signupData.fullName);
+      
+      if (result.success) {
+        setConnectionStatus('slow');
+        setAuthProgress('¡Cuenta de emergencia creada!');
+        setShowRetryOptions(false);
+      }
+    } catch (error) {
+      console.error('Emergency signup error:', error);
+      showError('Error al crear cuenta de emergencia');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const ConnectionStatusAlert = () => {
-    if (connectionStatus === 'good') return null;
+    if (connectionStatus === 'good' && !authProgress) return null;
+    
+    const getStatusConfig = () => {
+      switch (connectionStatus) {
+        case 'slow':
+          return {
+            icon: <Wifi className="h-4 w-4 text-yellow-600" />,
+            borderColor: 'border-yellow-400',
+            title: 'Conexión lenta detectada',
+            description: 'Se activó el modo de recuperación para garantizar el acceso.'
+          };
+        case 'poor':
+          return {
+            icon: <WifiOff className="h-4 w-4 text-red-600" />,
+            borderColor: 'border-red-400',
+            title: 'Problemas de conexión',
+            description: 'Usa el botón de emergencia para acceso inmediato.'
+          };
+        default:
+          return {
+            icon: <Clock className="h-4 w-4 text-blue-600" />,
+            borderColor: 'border-blue-400',
+            title: authProgress,
+            description: ''
+          };
+      }
+    };
+
+    const config = getStatusConfig();
     
     return (
-      <Alert className={`mb-4 ${connectionStatus === 'slow' ? 'border-yellow-400' : 'border-red-400'}`}>
+      <Alert className={`mb-4 ${config.borderColor}`}>
         <div className="flex items-center">
-          {connectionStatus === 'slow' ? 
-            <Wifi className="h-4 w-4 text-yellow-600" /> : 
-            <WifiOff className="h-4 w-4 text-red-600" />
-          }
+          {config.icon}
           <AlertCircle className="h-4 w-4 ml-2" />
         </div>
         <AlertDescription className="ml-6">
-          {connectionStatus === 'slow' ? 
-            'Conexión lenta detectada. Tu cuenta se ha creado en modo de recuperación.' :
-            'Problemas de conexión. Algunos datos pueden tardar en cargarse.'
-          }
+          <div className="font-medium">{config.title}</div>
+          {config.description && <div className="text-sm mt-1">{config.description}</div>}
         </AlertDescription>
       </Alert>
+    );
+  };
+
+  const RetryOptions = ({ isLogin = false }) => {
+    if (!showRetryOptions) return null;
+    
+    return (
+      <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
+        <div className="text-sm font-medium text-gray-700 mb-2">Opciones disponibles:</div>
+        <div className="space-y-2">
+          <Button
+            onClick={(e) => isLogin ? handleLogin(e, true) : handleSignup(e, true)}
+            variant="outline"
+            size="sm"
+            className="w-full"
+            disabled={loading}
+          >
+            <Clock className="h-4 w-4 mr-2" />
+            Intentar con más tiempo ({isLogin ? '20s' : '25s'})
+          </Button>
+          {!isLogin && (
+            <Button
+              onClick={handleEmergencySignup}
+              variant="outline"
+              size="sm"
+              className="w-full text-green-700 border-green-300 hover:bg-green-50"
+              disabled={loading}
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Crear cuenta de emergencia (acceso inmediato)
+            </Button>
+          )}
+        </div>
+      </div>
     );
   };
 
@@ -131,7 +236,7 @@ const AuthPage = () => {
             </TabsList>
             
             <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form onSubmit={(e) => handleLogin(e, false)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -157,11 +262,12 @@ const AuthPage = () => {
                 <Button disabled={loading} className="w-full">
                   {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                 </Button>
+                <RetryOptions isLogin={true} />
               </form>
             </TabsContent>
             
             <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
+              <form onSubmit={(e) => handleSignup(e, false)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Nombre Completo</Label>
                   <Input
@@ -199,13 +305,21 @@ const AuthPage = () => {
                 <Button disabled={loading} className="w-full">
                   {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
                 </Button>
+                <RetryOptions isLogin={false} />
               </form>
             </TabsContent>
           </Tabs>
 
-          <div className="mt-4 text-xs text-gray-500 text-center">
-            <p>¿Problemas de conexión?</p>
-            <p>El sistema tiene modo de recuperación automático</p>
+          <div className="mt-6 text-xs text-gray-500 text-center space-y-2">
+            <div className="p-2 bg-blue-50 rounded text-blue-700">
+              <div className="font-medium">Sistema optimizado:</div>
+              <div>✓ Timeouts extendidos (15-25s)</div>
+              <div>✓ Modo de emergencia automático</div>
+              <div>✓ Acceso inmediato disponible</div>
+            </div>
+            <p className="text-gray-400">
+              ¿Problemas? Usa el botón de emergencia para acceso inmediato
+            </p>
           </div>
         </CardContent>
       </Card>
