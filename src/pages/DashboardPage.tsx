@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useFastAuth } from '@/hooks/useFastAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
@@ -30,40 +30,35 @@ type DisplayRestaurant = {
 };
 
 const DashboardPage = () => {
-  const { user, franchisee, restaurants, loading, isUsingCache } = useFastAuth();
+  const { user, franchisee, restaurants, loading } = useAuth();
   const navigate = useNavigate();
 
-  console.log('DashboardPage - Fast loading state:', {
+  console.log('DashboardPage - Auth state:', {
     user: user ? { id: user.id, role: user.role } : null,
     franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
     restaurantsCount: restaurants?.length || 0,
-    loading,
-    isUsingCache
+    loading
   });
 
-  // Transformar datos para el componente
+  // Transform data for display
   const displayRestaurants: DisplayRestaurant[] = restaurants.map(r => ({
     id: r.id || `restaurant-${Math.random()}`,
-    name: r.base_restaurant?.restaurant_name || 'Restaurante',
-    restaurant_name: r.base_restaurant?.restaurant_name || 'Restaurante',
-    location: r.base_restaurant ? 
-      `${r.base_restaurant.city || 'Ciudad'}, ${r.base_restaurant.address || 'Dirección'}` : 
-      'Ubicación',
-    city: r.base_restaurant?.city || 'Ciudad',
-    address: r.base_restaurant?.address || 'Dirección',
-    siteNumber: r.base_restaurant?.site_number || 'N/A',
-    site_number: r.base_restaurant?.site_number || 'N/A',
+    name: r.restaurant_name || 'Restaurante',
+    restaurant_name: r.restaurant_name || 'Restaurante',
+    location: r.city && r.address ? `${r.city}, ${r.address}` : 'Ubicación',
+    city: r.city || 'Ciudad',
+    address: r.address || 'Dirección',
+    siteNumber: r.site_number || 'N/A',
+    site_number: r.site_number || 'N/A',
     franchiseeName: franchisee?.franchisee_name || 'Franquiciado',
-    franchise_start_date: r.franchise_start_date,
-    franchise_end_date: r.franchise_end_date,
-    restaurant_type: r.base_restaurant?.restaurant_type || 'traditional',
+    restaurant_type: r.restaurant_type || 'traditional',
     status: r.status || 'active',
-    lastYearRevenue: typeof r.last_year_revenue === 'number' ? r.last_year_revenue : 0,
-    baseRent: typeof r.monthly_rent === 'number' ? r.monthly_rent : 0,
+    lastYearRevenue: 0,
+    baseRent: 0,
     isOwnedByMcD: false,
   }));
 
-  // Calcular métricas del dashboard
+  // Calculate dashboard metrics
   const calculateDashboardMetrics = () => {
     const totalRevenue = displayRestaurants.reduce((sum, r) => sum + (r.lastYearRevenue || 0), 0);
     const totalRent = displayRestaurants.reduce((sum, r) => sum + (r.baseRent || 0) * 12, 0);
@@ -89,13 +84,13 @@ const DashboardPage = () => {
     }).format(value);
   };
 
-  // Loading rápido - máximo 1 segundo
+  // Loading state - should resolve quickly now
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando dashboard rápido...</p>
+          <p className="text-gray-600">Cargando dashboard...</p>
         </div>
       </div>
     );
@@ -111,20 +106,13 @@ const DashboardPage = () => {
             <div className="flex-1">
               <div className="flex items-center gap-3">
                 <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
-                {isUsingCache ? (
-                  <div className="flex items-center gap-2 px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs">
-                    <WifiOff className="w-3 h-3" />
-                    <span>Modo offline</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs">
-                    <Wifi className="w-3 h-3" />
-                    <span>En línea</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs">
+                  <Wifi className="w-3 h-3" />
+                  <span>Sistema optimizado</span>
+                </div>
               </div>
               <p className="text-sm text-gray-500">
-                {isUsingCache ? 'Datos predefinidos - Carga rápida' : 'Datos actualizados'}
+                Bienvenido, {user?.full_name || user?.email}
               </p>
             </div>
             <div className="flex gap-2">
@@ -149,7 +137,7 @@ const DashboardPage = () => {
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
-              {/* Métricas principales */}
+              {/* Main metrics */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -196,11 +184,11 @@ const DashboardPage = () => {
                 </Card>
               </div>
 
-              {/* Dashboard principal */}
+              {/* Main dashboard */}
               <DashboardSummary 
                 totalRestaurants={metrics.totalRestaurants} 
                 displayRestaurants={displayRestaurants}
-                isTemporaryData={isUsingCache}
+                isTemporaryData={false}
               />
             </div>
           </main>
