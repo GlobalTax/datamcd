@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/notifications';
 
 interface AuthActionsProps {
   clearUserData: () => void;
@@ -33,16 +33,16 @@ export const useAuthActions = ({ clearUserData, setSession }: AuthActionsProps) 
           errorMessage = error.message;
         }
         
-        toast.error(errorMessage);
+        showError(errorMessage);
         return { error: errorMessage };
       } else {
         console.log('useAuthActions - Sign in successful for:', data.user?.email);
-        toast.success('Sesión iniciada correctamente');
+        showSuccess('Sesión iniciada correctamente');
         return {};
       }
     } catch (error) {
       console.error('useAuthActions - Unexpected sign in error:', error);
-      toast.error('Error inesperado al iniciar sesión');
+      showError('Error inesperado al iniciar sesión');
       return { error: 'Error inesperado al iniciar sesión' };
     }
   };
@@ -79,16 +79,16 @@ export const useAuthActions = ({ clearUserData, setSession }: AuthActionsProps) 
           errorMessage = error.message;
         }
         
-        toast.error(errorMessage);
+        showError(errorMessage);
         return { error: errorMessage };
       } else {
         console.log('useAuthActions - Sign up successful for:', email);
-        toast.success('Cuenta creada correctamente. Revisa tu email para confirmar tu cuenta.');
+        showSuccess('Cuenta creada correctamente. Revisa tu email para confirmar tu cuenta.');
         return {};
       }
     } catch (error) {
       console.error('useAuthActions - Unexpected sign up error:', error);
-      toast.error('Error inesperado al crear cuenta');
+      showError('Error inesperado al crear cuenta');
       return { error: 'Error inesperado al crear cuenta' };
     }
   };
@@ -108,18 +108,18 @@ export const useAuthActions = ({ clearUserData, setSession }: AuthActionsProps) 
         console.error('useAuthActions - Sign out error:', error);
         // Don't show error toast for session_not_found errors as they're harmless
         if (!error.message.includes('Session not found')) {
-          toast.error(error.message);
+          showError(error.message);
         }
       } else {
         console.log('useAuthActions - Sign out successful');
-        toast.success('Sesión cerrada correctamente');
+        showSuccess('Sesión cerrada correctamente');
       }
     } catch (error) {
       console.error('useAuthActions - Unexpected sign out error:', error);
       // Still clear the local state even if there's an error
       clearUserData();
       setSession(null);
-      toast.success('Sesión cerrada correctamente');
+      showSuccess('Sesión cerrada correctamente');
     }
   };
 

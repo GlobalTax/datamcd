@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { RestaurantValuation, ValuationScenario } from '@/types/restaurantValuation';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/notifications';
 import {
   fetchValuationsFromDB,
   fetchScenariosFromDB,
@@ -26,7 +26,7 @@ export const useRestaurantValuations = () => {
       setValuations(typedValuations);
     } catch (error) {
       console.error('Error fetching valuations:', error);
-      toast.error('Error al cargar las valoraciones');
+      showError('Error al cargar las valoraciones');
     } finally {
       setLoading(false);
     }
@@ -39,7 +39,7 @@ export const useRestaurantValuations = () => {
       return typedScenarios;
     } catch (error) {
       console.error('Error fetching scenarios:', error);
-      toast.error('Error al cargar los escenarios');
+      showError('Error al cargar los escenarios');
       return [];
     }
   };
@@ -47,12 +47,12 @@ export const useRestaurantValuations = () => {
   const saveValuation = async (valuation: Omit<RestaurantValuation, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const typedData = await saveValuationToDB(valuation, user?.id);
-      toast.success('Valoración guardada correctamente');
+      showSuccess('Valoración guardada correctamente');
       await fetchValuations();
       return typedData;
     } catch (error) {
       console.error('Error saving valuation:', error);
-      toast.error('Error al guardar la valoración');
+      showError('Error al guardar la valoración');
       throw error;
     }
   };
@@ -60,11 +60,11 @@ export const useRestaurantValuations = () => {
   const updateValuation = async (id: string, updates: Partial<RestaurantValuation>) => {
     try {
       await updateValuationInDB(id, updates);
-      toast.success('Valoración actualizada correctamente');
+      showSuccess('Valoración actualizada correctamente');
       await fetchValuations();
     } catch (error) {
       console.error('Error updating valuation:', error);
-      toast.error('Error al actualizar la valoración');
+      showError('Error al actualizar la valoración');
       throw error;
     }
   };
@@ -72,11 +72,11 @@ export const useRestaurantValuations = () => {
   const deleteValuation = async (id: string) => {
     try {
       await deleteValuationFromDB(id);
-      toast.success('Valoración eliminada correctamente');
+      showSuccess('Valoración eliminada correctamente');
       await fetchValuations();
     } catch (error) {
       console.error('Error deleting valuation:', error);
-      toast.error('Error al eliminar la valoración');
+      showError('Error al eliminar la valoración');
       throw error;
     }
   };
@@ -84,12 +84,12 @@ export const useRestaurantValuations = () => {
   const saveScenario = async (scenario: Omit<ValuationScenario, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const typedData = await saveScenarioToDB(scenario);
-      toast.success('Escenario guardado correctamente');
+      showSuccess('Escenario guardado correctamente');
       await fetchScenarios(scenario.valuation_id);
       return typedData;
     } catch (error) {
       console.error('Error saving scenario:', error);
-      toast.error('Error al guardar el escenario');
+      showError('Error al guardar el escenario');
       throw error;
     }
   };
@@ -97,11 +97,11 @@ export const useRestaurantValuations = () => {
   const deleteScenario = async (id: string, valuationId: string) => {
     try {
       await deleteScenarioFromDB(id);
-      toast.success('Escenario eliminado correctamente');
+      showSuccess('Escenario eliminado correctamente');
       await fetchScenarios(valuationId);
     } catch (error) {
       console.error('Error deleting scenario:', error);
-      toast.error('Error al eliminar el escenario');
+      showError('Error al eliminar el escenario');
       throw error;
     }
   };

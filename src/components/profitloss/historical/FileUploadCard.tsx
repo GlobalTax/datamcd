@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { File, Download } from 'lucide-react';
 import { parseDataFromText, downloadTemplate } from './utils';
 import { YearlyData, ImportMethod } from './types';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/notifications';
 
 interface FileUploadCardProps {
   onDataParsed: (data: YearlyData[], method: ImportMethod) => void;
@@ -41,23 +41,23 @@ export const FileUploadCard: React.FC<FileUploadCardProps> = ({ onDataParsed }) 
         console.log('Parsed data successfully:', data.length, 'years');
         console.log('Sample data:', data[0]);
         onDataParsed(data, 'file');
-        toast.success(`Archivo cargado correctamente. Detectado separador: "${separator}"`);
+        showSuccess(`Archivo cargado correctamente. Detectado separador: "${separator}"`);
       } catch (error) {
         console.error('Error reading file:', error);
-        toast.error('Error al leer el archivo. Verifica el formato.');
+        showError('Error al leer el archivo. Verifica el formato.');
       }
     };
 
     reader.onerror = (error) => {
       console.error('FileReader error:', error);
-      toast.error('Error al leer el archivo.');
+      showError('Error al leer el archivo.');
     };
 
     if (file.type.includes('text') || file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
       reader.readAsText(file);
     } else {
       console.error('Invalid file type:', file.type);
-      toast.error('Por favor, sube un archivo .csv, .txt o copia los datos directamente.');
+      showError('Por favor, sube un archivo .csv, .txt o copia los datos directamente.');
     }
   };
 
