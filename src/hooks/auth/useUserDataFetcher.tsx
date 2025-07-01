@@ -19,13 +19,13 @@ export const useUserDataFetcher = () => {
       };
 
       // Fetch user profile with timeout
-      const profilePromise = supabase
+      const profileQuery = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      const { data: profileData, error: profileError } = await withTimeout(profilePromise, 8000);
+      const { data: profileData, error: profileError } = await withTimeout(profileQuery, 8000);
 
       if (profileError) {
         console.error('useUserDataFetcher - Error fetching profile:', profileError);
@@ -52,13 +52,13 @@ export const useUserDataFetcher = () => {
       // If user is franchisee, fetch franchisee data and restaurants
       if (user.role === 'franchisee') {
         try {
-          const franchiseePromise = supabase
+          const franchiseeQuery = supabase
             .from('franchisees')
             .select('*')
             .eq('user_id', userId)
             .single();
 
-          const { data: franchiseeData, error: franchiseeError } = await withTimeout(franchiseePromise, 8000);
+          const { data: franchiseeData, error: franchiseeError } = await withTimeout(franchiseeQuery, 8000);
 
           if (franchiseeError) {
             console.error('useUserDataFetcher - Error fetching franchisee:', franchiseeError);
@@ -91,7 +91,7 @@ export const useUserDataFetcher = () => {
 
             // Fetch restaurants only if franchisee exists
             try {
-              const restaurantsPromise = supabase
+              const restaurantsQuery = supabase
                 .from('franchisee_restaurants')
                 .select(`
                   *,
@@ -100,7 +100,7 @@ export const useUserDataFetcher = () => {
                 .eq('franchisee_id', franchisee.id)
                 .eq('status', 'active');
 
-              const { data: restaurantData, error: restaurantError } = await withTimeout(restaurantsPromise, 10000);
+              const { data: restaurantData, error: restaurantError } = await withTimeout(restaurantsQuery, 10000);
 
               if (restaurantError) {
                 console.error('useUserDataFetcher - Error fetching restaurants:', restaurantError);
