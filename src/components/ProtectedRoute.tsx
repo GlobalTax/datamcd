@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useSimpleAuth';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -25,7 +25,7 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
     return <Navigate to="/auth" replace />;
   }
 
-  // Check if user has required role - usando allowedRoles principalmente
+  // Check if user has required role
   if (allowedRoles && allowedRoles.length > 0) {
     if (!allowedRoles.includes(user.role)) {
       return (
@@ -39,10 +39,8 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
     }
   }
 
-  // Check if user has required role - para asesor permitir también admin y superadmin
   if (requiredRole) {
     if (requiredRole === 'asesor') {
-      // Si se requiere asesor, permitir asesor, admin y superadmin
       if (!['asesor', 'admin', 'superadmin'].includes(user.role)) {
         return (
           <div className="min-h-screen flex items-center justify-center">

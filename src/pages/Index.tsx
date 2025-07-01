@@ -1,14 +1,14 @@
 
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useSimpleAuth";
 import { useEffect } from "react";
 import { IndexHeader } from "@/components/index/IndexHeader";
 import { HeroSection } from "@/components/index/HeroSection";
-import { DebugSection } from "@/components/index/DebugSection";
 import { FeatureCards } from "@/components/index/FeatureCards";
 import { FeatureHighlights } from "@/components/index/FeatureHighlights";
 import { IndexFooter } from "@/components/index/IndexFooter";
 import { LoadingSpinner } from "@/components/index/LoadingSpinner";
+import SimpleAuthDebugger from "@/components/debug/SimpleAuthDebugger";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -27,7 +27,6 @@ const Index = () => {
       console.log('Index - User authenticated, redirecting based on role:', user.role);
       
       try {
-        // Redirigir usuarios autenticados según su rol
         if (['asesor', 'admin', 'superadmin'].includes(user.role)) {
           console.log('Index - Redirecting asesor/admin/superadmin to /advisor');
           navigate('/advisor', { replace: true });
@@ -60,7 +59,14 @@ const Index = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <HeroSection />
-        <DebugSection />
+        
+        {/* Mostrar depurador si hay usuario */}
+        {user && (
+          <div className="mb-8">
+            <SimpleAuthDebugger />
+          </div>
+        )}
+        
         <FeatureCards />
         <FeatureHighlights />
       </div>

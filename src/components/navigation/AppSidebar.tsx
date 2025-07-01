@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useSimpleAuth';
 
 const menuItems = [
   {

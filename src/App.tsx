@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider } from "@/hooks/useSimpleAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
@@ -75,7 +75,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              {/* Redirección de /profit-loss a /profit-loss/001 (primer restaurante) */}
               <Route
                 path="/profit-loss"
                 element={<Navigate to="/profit-loss/001" replace />}

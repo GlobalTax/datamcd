@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useSimpleAuth';
 import { Loader2, Store } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -32,7 +32,6 @@ const AuthPage = () => {
       console.log('AuthPage - User role:', user.role);
       console.log('AuthPage - Determining redirect...');
       
-      // Redirigir usuarios con roles de asesor, admin o superadmin al panel de asesor
       if (['asesor', 'admin', 'superadmin'].includes(user.role)) {
         console.log('AuthPage - Redirecting asesor/admin/superadmin to /advisor');
         navigate('/advisor', { replace: true });
@@ -50,7 +49,6 @@ const AuthPage = () => {
     console.log('AuthPage - Starting sign in process');
     const result = await signIn(email, password);
     
-    // Solo mostrar error si hay uno, el éxito se maneja en useAuth
     if (result?.error) {
       console.log('AuthPage - Sign in error:', result.error);
     }

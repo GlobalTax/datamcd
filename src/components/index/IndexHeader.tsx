@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Store, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useSimpleAuth";
 
 export const IndexHeader = () => {
   const navigate = useNavigate();

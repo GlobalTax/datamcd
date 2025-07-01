@@ -23,14 +23,6 @@ export interface Franchisee {
   created_at: string;
   updated_at: string;
   total_restaurants?: number;
-  hasAccount?: boolean;
-  isOnline?: boolean;
-  lastAccess?: string;
-  profiles?: {
-    email: string;
-    full_name?: string;
-    phone?: string;
-  };
 }
 
 export interface Restaurant {
@@ -52,13 +44,17 @@ export interface Restaurant {
   updated_at: string;
 }
 
-export interface AuthContextType {
+export interface AuthState {
   user: User | null;
-  session?: any;
-  franchisee?: Franchisee | null;
-  restaurants?: Restaurant[];
+  session: any;
+  franchisee: Franchisee | null;
+  restaurants: Restaurant[];
   loading: boolean;
+}
+
+export interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
+  refreshData: () => Promise<void>;
 }
