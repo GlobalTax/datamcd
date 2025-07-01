@@ -1,6 +1,6 @@
 
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useSimpleAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { IndexHeader } from "@/components/index/IndexHeader";
 import { HeroSection } from "@/components/index/HeroSection";
