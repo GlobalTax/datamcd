@@ -21,9 +21,10 @@ interface User {
 
 interface FranchiseeUsersProps {
   franchiseeId: string;
+  franchiseeName: string;
 }
 
-export const FranchiseeUsers: React.FC<FranchiseeUsersProps> = ({ franchiseeId }) => {
+export const FranchiseeUsers: React.FC<FranchiseeUsersProps> = ({ franchiseeId, franchiseeName }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -94,6 +95,10 @@ export const FranchiseeUsers: React.FC<FranchiseeUsersProps> = ({ franchiseeId }
       console.error('Error removing user:', error);
       showError('Error al desactivar el usuario');
     }
+  };
+
+  const refresh = () => {
+    fetchUsers();
   };
 
   useEffect(() => {

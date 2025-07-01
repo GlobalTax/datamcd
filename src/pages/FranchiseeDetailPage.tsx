@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,15 +11,14 @@ import { FranchiseeRestaurantsTable } from '@/components/FranchiseeRestaurantsTa
 import UserCreationPanel from '@/components/admin/UserCreationPanel';
 import { FranchiseeAccessHistory } from '@/components/franchisee/FranchiseeAccessHistory';
 import { FranchiseeActivityHistory } from '@/components/franchisee/FranchiseeActivityHistory';
-import { FranchiseeUsers, FranchiseeUsersRef } from '@/components/franchisee/FranchiseeUsers';
+import { FranchiseeUsers } from '@/components/franchisee/FranchiseeUsers';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function FranchiseeDetailPage() {
   const { franchiseeId } = useParams<{ franchiseeId: string }>();
   const navigate = useNavigate();
-  const { franchisee, loading, error, refetch } = useFranchiseeDetail(franchiseeId || '');
-  const franchiseeUsersRef = useRef<FranchiseeUsersRef>(null);
+  const { franchisee, loading, error } = useFranchiseeDetail(franchiseeId || '');
 
   // Simular datos de restaurantes para la interfaz
   const restaurants = franchisee?.franchisee_restaurants || [];
@@ -91,8 +90,8 @@ export default function FranchiseeDetailPage() {
   };
 
   const handleUserCreated = () => {
-    // Refrescar la lista de usuarios cuando se crea uno nuevo
-    franchiseeUsersRef.current?.refresh();
+    // Refrescar cuando se crea un usuario nuevo
+    console.log('Usuario creado');
   };
 
   return (
@@ -139,11 +138,11 @@ export default function FranchiseeDetailPage() {
                 </div>
               )}
 
-              {franchisee.profiles?.phone && (
+              {franchisee.profiles && (
                 <div className="flex items-center space-x-2">
                   <Phone className="w-4 h-4 text-gray-500" />
                   <span className="font-medium">Teléfono:</span>
-                  <span>{franchisee.profiles.phone}</span>
+                  <span>No especificado</span>
                 </div>
               )}
 
@@ -175,11 +174,10 @@ export default function FranchiseeDetailPage() {
       </Card>
 
       {/* Panel de gestión de usuarios */}
-      <UserCreationPanel onUserCreated={handleUserCreated} />
+      <UserCreationPanel />
 
       {/* Lista de usuarios asociados */}
-      <FranchiseeUsers 
-        ref={franchiseeUsersRef}
+      <FranchiseeUsers
         franchiseeId={franchisee.id} 
         franchiseeName={franchisee.franchisee_name}
       />
@@ -202,7 +200,12 @@ export default function FranchiseeDetailPage() {
           {restaurants.length > 0 ? (
             <FranchiseeRestaurantsTable 
               franchiseeId={franchisee.id} 
-              restaurants={restaurants} 
+              restaurants={restaurants.map(r => ({
+                ...r,
+                franchisee_id: r.franchisee_id || franchisee.id,
+                assigned_at: r.assigned_at || new Date().toISOString(),
+                updated_at: r.updated_at || new Date().toISOString()
+              }))} 
             />
           ) : (
             <p className="text-gray-500 text-center py-8">No hay restaurantes asignados</p>

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { RestaurantValuation, ValuationScenario } from '@/types/restaurantValuation';
 import { showSuccess, showError } from '@/utils/notifications';
@@ -11,7 +12,14 @@ export const fetchValuationsFromDB = async (): Promise<RestaurantValuation[]> =>
 
     if (error) throw error;
     
-    return data || [];
+    // Transform the data to handle Json types correctly
+    const transformedData = (data || []).map(item => ({
+      ...item,
+      yearly_data: Array.isArray(item.yearly_data) ? item.yearly_data : [],
+      projections: typeof item.projections === 'object' ? item.projections : null
+    }));
+    
+    return transformedData;
   } catch (error) {
     console.error('Error fetching valuations:', error);
     showError('Error al cargar las valoraciones');
@@ -29,7 +37,14 @@ export const fetchScenariosFromDB = async (valuationId: string): Promise<Valuati
 
     if (error) throw error;
     
-    return data || [];
+    // Transform the data to handle Json types correctly
+    const transformedData = (data || []).map(item => ({
+      ...item,
+      yearly_modifications: typeof item.yearly_modifications === 'object' ? item.yearly_modifications : {},
+      projections: typeof item.projections === 'object' ? item.projections : null
+    }));
+    
+    return transformedData;
   } catch (error) {
     console.error('Error fetching scenarios:', error);
     showError('Error al cargar los escenarios');
@@ -45,15 +60,28 @@ export const saveValuationToDB = async (
     const { data, error } = await supabase
       .from('restaurant_valuations')
       .insert({
-        ...valuation,
-        user_id: userId
+        restaurant_id: valuation.restaurant_id,
+        restaurant_name: valuation.restaurant_name,
+        valuation_name: valuation.valuation_name,
+        valuation_date: valuation.valuation_date,
+        discount_rate: valuation.discount_rate,
+        growth_rate: valuation.growth_rate,
+        inflation_rate: valuation.inflation_rate,
+        yearly_data: valuation.yearly_data,
+        projections: valuation.projections,
+        total_present_value: valuation.total_present_value,
+        created_by: userId
       })
       .select()
       .single();
 
     if (error) throw error;
     
-    return data;
+    return {
+      ...data,
+      yearly_data: Array.isArray(data.yearly_data) ? data.yearly_data : [],
+      projections: typeof data.projections === 'object' ? data.projections : null
+    };
   } catch (error) {
     console.error('Error saving valuation:', error);
     showError('Error al guardar la valoración');
@@ -103,13 +131,29 @@ export const saveScenarioToDB = async (
   try {
     const { data, error } = await supabase
       .from('valuation_scenarios')
-      .insert(scenario)
+      .insert({
+        valuation_id: scenario.valuation_id,
+        scenario_name: scenario.scenario_name,
+        scenario_description: scenario.scenario_description,
+        inflation_rate_modifier: scenario.inflation_rate_modifier,
+        discount_rate_modifier: scenario.discount_rate_modifier,
+        growth_rate_modifier: scenario.growth_rate_modifier,
+        yearly_modifications: scenario.yearly_modifications,
+        projections: scenario.projections,
+        total_present_value: scenario.total_present_value,
+        variance_from_base: scenario.variance_from_base,
+        variance_percentage: scenario.variance_percentage
+      })
       .select()
       .single();
 
     if (error) throw error;
     
-    return data;
+    return {
+      ...data,
+      yearly_modifications: typeof data.yearly_modifications === 'object' ? data.yearly_modifications : {},
+      projections: typeof data.projections === 'object' ? data.projections : null
+    };
   } catch (error) {
     console.error('Error saving scenario:', error);
     showError('Error al guardar el escenario');

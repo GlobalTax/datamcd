@@ -21,6 +21,10 @@ interface RestaurantValuation {
 export const useValuationManager = () => {
   const [loading, setLoading] = useState(false);
   const [valuations, setValuations] = useState<RestaurantValuation[]>([]);
+  const [selectedRestaurantId, setSelectedRestaurantId] = useState<string>('');
+  const [selectedRestaurantName, setSelectedRestaurantName] = useState<string>('');
+  const [valuationName, setValuationName] = useState<string>('');
+  const [currentValuationId, setCurrentValuationId] = useState<string | null>(null);
 
   const saveValuation = useCallback(async (valuationData: {
     restaurant_id: string;
@@ -50,6 +54,7 @@ export const useValuationManager = () => {
       if (error) throw error;
       
       showSuccess('Valoración guardada correctamente');
+      setCurrentValuationId(data.id);
       return data;
     } catch (error) {
       console.error('Error saving valuation:', error);
@@ -105,11 +110,49 @@ export const useValuationManager = () => {
     }
   }, []);
 
+  const handleSaveValuation = useCallback(async (currentData: any) => {
+    if (!selectedRestaurantId || !valuationName) {
+      showError('Selecciona un restaurante y proporciona un nombre para la valoración');
+      return;
+    }
+
+    await saveValuation({
+      restaurant_id: selectedRestaurantId,
+      restaurant_name: selectedRestaurantName,
+      valuation_name: valuationName,
+      valuation_data: currentData
+    });
+  }, [selectedRestaurantId, selectedRestaurantName, valuationName, saveValuation]);
+
+  const handleLoadValuation = useCallback((valuation: RestaurantValuation, onValuationLoaded: (valuation: any) => void) => {
+    setSelectedRestaurantId(valuation.restaurant_id);
+    setSelectedRestaurantName(valuation.restaurant_name);
+    setValuationName(valuation.valuation_name);
+    setCurrentValuationId(valuation.id);
+    onValuationLoaded(valuation);
+  }, []);
+
+  const getRestaurantValuations = useCallback(() => {
+    return selectedRestaurantId 
+      ? valuations.filter(v => v.restaurant_id === selectedRestaurantId)
+      : valuations;
+  }, [valuations, selectedRestaurantId]);
+
   return {
     loading,
     valuations,
+    selectedRestaurantId,
+    setSelectedRestaurantId,
+    selectedRestaurantName,
+    setSelectedRestaurantName,
+    valuationName,
+    setValuationName,
+    currentValuationId,
     saveValuation,
     loadValuations,
-    deleteValuation
+    deleteValuation,
+    handleSaveValuation,
+    handleLoadValuation,
+    getRestaurantValuations
   };
 };

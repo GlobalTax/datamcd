@@ -8,6 +8,7 @@ interface Profile {
   full_name: string;
   email: string;
   role: string;
+  phone?: string;
 }
 
 interface BaseRestaurant {
@@ -18,6 +19,9 @@ interface BaseRestaurant {
 
 interface FranchiseeRestaurant {
   id: string;
+  franchisee_id: string;
+  assigned_at: string;
+  updated_at: string;
   base_restaurant: BaseRestaurant | null;
 }
 
@@ -31,6 +35,8 @@ export interface FranchiseeDetail {
   state: string;
   zip_code: string;
   notes: string;
+  company_name?: string;
+  tax_id?: string;
   created_at: string;
   updated_at: string;
   franchisee_restaurants: FranchiseeRestaurant[];
@@ -40,30 +46,36 @@ export interface FranchiseeDetail {
 export const useFranchiseeDetail = (franchiseeId: string) => {
   const [franchisee, setFranchisee] = useState<FranchiseeDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchFranchiseeDetail = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      const { data, error } = await supabase
+      const { data, error: supabaseError } = await supabase
         .from('franchisees')
         .select(`
           *,
           franchisee_restaurants (
             id,
+            franchisee_id,
+            assigned_at,
+            updated_at,
             base_restaurant:base_restaurants (*)
           ),
           profiles (
             id,
             full_name,
             email,
-            role
+            role,
+            phone
           )
         `)
         .eq('id', franchiseeId)
         .single();
 
-      if (error) throw error;
+      if (supabaseError) throw supabaseError;
       
       // Map the database data to our interface
       const mappedData: FranchiseeDetail = {
@@ -76,6 +88,8 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
         state: data.state || '',
         zip_code: data.postal_code || '',
         notes: data.company_name || '', // Using company_name as fallback for notes
+        company_name: data.company_name,
+        tax_id: data.tax_id,
         created_at: data.created_at,
         updated_at: data.updated_at,
         franchisee_restaurants: data.franchisee_restaurants || [],
@@ -85,6 +99,7 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
       setFranchisee(mappedData);
     } catch (error) {
       console.error('Error fetching franchisee detail:', error);
+      setError('Error al cargar los detalles del franquiciado');
       showError('Error al cargar los detalles del franquiciado');
     } finally {
       setLoading(false);
@@ -125,6 +140,7 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
   return {
     franchisee,
     loading,
+    error,
     updateFranchisee,
     refetch: fetchFranchiseeDetail
   };
