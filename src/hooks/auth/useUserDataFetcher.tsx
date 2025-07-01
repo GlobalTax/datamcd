@@ -18,14 +18,15 @@ export const useUserDataFetcher = () => {
         ]);
       };
 
-      // Fetch user profile with timeout - execute the query first
-      const profileQuery = supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      const { data: profileData, error: profileError } = await withTimeout(profileQuery, 8000);
+      // Fetch user profile with timeout - ejecutar la consulta directamente
+      const { data: profileData, error: profileError } = await withTimeout(
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single(),
+        8000
+      );
 
       if (profileError) {
         console.error('useUserDataFetcher - Error fetching profile:', profileError);
@@ -52,13 +53,14 @@ export const useUserDataFetcher = () => {
       // If user is franchisee, fetch franchisee data and restaurants
       if (user.role === 'franchisee') {
         try {
-          const franchiseeQuery = supabase
-            .from('franchisees')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
-
-          const { data: franchiseeData, error: franchiseeError } = await withTimeout(franchiseeQuery, 8000);
+          const { data: franchiseeData, error: franchiseeError } = await withTimeout(
+            supabase
+              .from('franchisees')
+              .select('*')
+              .eq('user_id', userId)
+              .single(),
+            8000
+          );
 
           if (franchiseeError) {
             console.error('useUserDataFetcher - Error fetching franchisee:', franchiseeError);
@@ -91,16 +93,17 @@ export const useUserDataFetcher = () => {
 
             // Fetch restaurants only if franchisee exists
             try {
-              const restaurantsQuery = supabase
-                .from('franchisee_restaurants')
-                .select(`
-                  *,
-                  base_restaurant:base_restaurants(*)
-                `)
-                .eq('franchisee_id', franchisee.id)
-                .eq('status', 'active');
-
-              const { data: restaurantData, error: restaurantError } = await withTimeout(restaurantsQuery, 10000);
+              const { data: restaurantData, error: restaurantError } = await withTimeout(
+                supabase
+                  .from('franchisee_restaurants')
+                  .select(`
+                    *,
+                    base_restaurant:base_restaurants(*)
+                  `)
+                  .eq('franchisee_id', franchisee.id)
+                  .eq('status', 'active'),
+                10000
+              );
 
               if (restaurantError) {
                 console.error('useUserDataFetcher - Error fetching restaurants:', restaurantError);
