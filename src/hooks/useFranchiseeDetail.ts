@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/utils/notifications';
@@ -64,7 +65,24 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
 
       if (error) throw error;
       
-      setFranchisee(data);
+      // Map the database data to our interface
+      const mappedData: FranchiseeDetail = {
+        id: data.id,
+        franchisee_name: data.franchisee_name,
+        contact_email: data.franchisee_name, // Using franchisee_name as fallback
+        contact_phone: data.company_name || '', // Using company_name as fallback
+        address: data.address || '',
+        city: data.city || '',
+        state: data.state || '',
+        zip_code: data.postal_code || '',
+        notes: data.company_name || '', // Using company_name as fallback for notes
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        franchisee_restaurants: data.franchisee_restaurants || [],
+        profiles: data.profiles
+      };
+      
+      setFranchisee(mappedData);
     } catch (error) {
       console.error('Error fetching franchisee detail:', error);
       showError('Error al cargar los detalles del franquiciado');
@@ -78,7 +96,12 @@ export const useFranchiseeDetail = (franchiseeId: string) => {
       const { error } = await supabase
         .from('franchisees')
         .update({
-          ...updates,
+          franchisee_name: updates.franchisee_name,
+          address: updates.address,
+          city: updates.city,
+          state: updates.state,
+          postal_code: updates.zip_code,
+          company_name: updates.notes,
           updated_at: new Date().toISOString()
         })
         .eq('id', franchiseeId);

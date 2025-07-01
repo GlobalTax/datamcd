@@ -14,7 +14,7 @@ export const useProfitLossCalculations = () => {
   };
 
   const calculateMetrics = (data: any) => {
-    const totalRevenue = data.total_revenue || data.net_sales + (data.other_revenue || 0);
+    const totalRevenue = data.net_sales + (data.other_revenue || 0);
     
     if (totalRevenue === 0) {
       return {
@@ -26,11 +26,15 @@ export const useProfitLossCalculations = () => {
       };
     }
 
-    const grossProfit = data.gross_profit || totalRevenue - (data.total_cost_of_sales || data.food_cost + (data.paper_cost || 0));
+    const grossProfit = totalRevenue - (data.food_cost + (data.paper_cost || 0));
     const operatingIncome = data.operating_income || 0;
-    const totalLabor = data.total_labor || data.management_labor + data.crew_labor + (data.benefits || 0);
+    const totalLabor = data.management_labor + data.crew_labor + (data.benefits || 0);
     const foodCost = data.food_cost || 0;
-    const totalExpenses = (data.total_cost_of_sales || 0) + totalLabor + (data.total_operating_expenses || 0) + (data.total_mcdonalds_fees || 0);
+    const totalExpenses = (data.food_cost || 0) + (data.paper_cost || 0) + totalLabor + 
+      (data.rent || 0) + (data.utilities || 0) + (data.maintenance || 0) + 
+      (data.advertising || 0) + (data.insurance || 0) + (data.supplies || 0) + 
+      (data.other_expenses || 0) + (data.franchise_fee || 0) + (data.advertising_fee || 0) + 
+      (data.rent_percentage || 0);
 
     return {
       grossMargin: (grossProfit / totalRevenue) * 100,

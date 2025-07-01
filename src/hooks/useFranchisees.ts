@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/utils/notifications';
@@ -47,7 +48,23 @@ export const useFranchisees = () => {
 
       if (error) throw error;
       
-      setFranchisees(data || []);
+      // Map the database data to our interface
+      const mappedData = (data || []).map(item => ({
+        id: item.id,
+        franchisee_name: item.franchisee_name,
+        contact_email: item.franchisee_name, // Using franchisee_name as fallback
+        contact_phone: item.company_name || '', // Using company_name as fallback
+        address: item.address || '',
+        city: item.city || '',
+        state: item.state || '',
+        zip_code: item.postal_code || '',
+        notes: item.company_name || '', // Using company_name as fallback for notes
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        profiles: item.profiles
+      }));
+      
+      setFranchisees(mappedData);
     } catch (error) {
       console.error('Error fetching franchisees:', error);
       showError('Error al cargar los franquiciados');
@@ -60,7 +77,14 @@ export const useFranchisees = () => {
     try {
       const { error } = await supabase
         .from('franchisees')
-        .insert(franchiseeData);
+        .insert({
+          franchisee_name: franchiseeData.franchisee_name,
+          address: franchiseeData.address,
+          city: franchiseeData.city,
+          state: franchiseeData.state,
+          postal_code: franchiseeData.zip_code,
+          company_name: franchiseeData.notes // Map notes to company_name
+        });
 
       if (error) throw error;
       
@@ -77,7 +101,12 @@ export const useFranchisees = () => {
       const { error } = await supabase
         .from('franchisees')
         .update({
-          ...updates,
+          franchisee_name: updates.franchisee_name,
+          address: updates.address,
+          city: updates.city,
+          state: updates.state,
+          postal_code: updates.zip_code,
+          company_name: updates.notes,
           updated_at: new Date().toISOString()
         })
         .eq('id', id);

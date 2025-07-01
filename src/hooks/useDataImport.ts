@@ -7,6 +7,19 @@ export const useDataImport = () => {
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  const validateData = (data: any[]): any[] => {
+    return data.filter(item => {
+      // Basic validation - ensure required fields exist
+      return item && 
+             typeof item.year === 'number' && 
+             typeof item.month === 'number' &&
+             item.year >= 2000 && 
+             item.year <= 2050 &&
+             item.month >= 1 && 
+             item.month <= 12;
+    });
+  };
+
   const importData = async (data: any[], restaurantId: string) => {
     try {
       setImporting(true);
@@ -17,9 +30,16 @@ export const useDataImport = () => {
         return false;
       }
 
+      // Validate data first
+      const validData = validateData(data);
+      if (validData.length === 0) {
+        showError('No se encontraron datos válidos para importar');
+        return false;
+      }
+
       // Simulate import progress
-      for (let i = 0; i < data.length; i++) {
-        const item = data[i];
+      for (let i = 0; i < validData.length; i++) {
+        const item = validData[i];
         
         // Import to profit_loss_data table
         const { error } = await supabase
@@ -52,10 +72,10 @@ export const useDataImport = () => {
           continue;
         }
 
-        setProgress(((i + 1) / data.length) * 100);
+        setProgress(((i + 1) / validData.length) * 100);
       }
 
-      showSuccess(`${data.length} registros importados correctamente`);
+      showSuccess(`${validData.length} registros importados correctamente`);
       return true;
     } catch (error) {
       console.error('Error importing data:', error);
@@ -70,6 +90,7 @@ export const useDataImport = () => {
   return {
     importing,
     progress,
-    importData
+    importData,
+    validateData
   };
 };

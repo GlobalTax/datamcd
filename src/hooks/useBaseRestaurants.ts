@@ -98,6 +98,23 @@ export const useBaseRestaurants = () => {
     }
   };
 
+  const deleteRestaurant = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('base_restaurants')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      showSuccess('Restaurante eliminado correctamente');
+      await fetchRestaurants();
+    } catch (error) {
+      console.error('Error deleting restaurant:', error);
+      showError('Error al eliminar el restaurante');
+    }
+  };
+
   useEffect(() => {
     fetchRestaurants();
   }, []);
@@ -107,6 +124,7 @@ export const useBaseRestaurants = () => {
     loading,
     createRestaurant,
     updateRestaurant,
+    deleteRestaurant,
     refetch: fetchRestaurants
   };
 };

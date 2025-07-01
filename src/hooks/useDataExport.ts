@@ -41,8 +41,34 @@ export const useDataExport = () => {
     }
   };
 
+  const exportRestaurantsData = (restaurants: any[]) => {
+    try {
+      if (!restaurants || restaurants.length === 0) {
+        showError('No hay datos de restaurantes para exportar');
+        return;
+      }
+
+      const exportData = restaurants.map(restaurant => ({
+        nombre: restaurant.base_restaurant?.restaurant_name || 'N/A',
+        numero_sitio: restaurant.base_restaurant?.site_number || 'N/A',
+        direccion: restaurant.base_restaurant?.address || 'N/A',
+        ciudad: restaurant.base_restaurant?.city || 'N/A',
+        tipo: restaurant.base_restaurant?.restaurant_type || 'N/A',
+        estado: restaurant.status || 'N/A',
+        renta_mensual: restaurant.monthly_rent || 0,
+        ingresos_ultimo_año: restaurant.last_year_revenue || 0
+      }));
+
+      exportToCSV(exportData, 'restaurantes_franquicia');
+    } catch (error) {
+      console.error('Error exporting restaurants data:', error);
+      showError('Error al exportar los datos de restaurantes');
+    }
+  };
+
   return {
     exporting,
-    exportToCSV
+    exportToCSV,
+    exportRestaurantsData
   };
 };

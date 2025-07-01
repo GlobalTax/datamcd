@@ -76,8 +76,9 @@ const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({ year, restaurantId 
         year,
         restaurant_id: restaurantId,
         category: 'revenue',
-        ...monthlyData,
-        created_by: user?.id
+        subcategory: null,
+        created_by: user?.id || null,
+        ...monthlyData
       });
       
       showSuccess('Presupuesto guardado correctamente');

@@ -131,6 +131,40 @@ export const parseDataFromText = (text: string): YearlyData[] => {
       yearData.paper_cost = parseFloat(values[3]) || 0;
       yearData.crew_labor = parseFloat(values[4]) || 0;
       
+      // Add all other required fields with default values
+      yearData.other_revenue = parseFloat(values[5]) || 0;
+      yearData.food_employees = parseFloat(values[6]) || 0;
+      yearData.waste = parseFloat(values[7]) || 0;
+      yearData.management_labor = parseFloat(values[8]) || 0;
+      yearData.social_security = parseFloat(values[9]) || 0;
+      yearData.travel_expenses = parseFloat(values[10]) || 0;
+      yearData.advertising = parseFloat(values[11]) || 0;
+      yearData.promotion = parseFloat(values[12]) || 0;
+      yearData.external_services = parseFloat(values[13]) || 0;
+      yearData.uniforms = parseFloat(values[14]) || 0;
+      yearData.operation_supplies = parseFloat(values[15]) || 0;
+      yearData.maintenance = parseFloat(values[16]) || 0;
+      yearData.utilities = parseFloat(values[17]) || 0;
+      yearData.office_expenses = parseFloat(values[18]) || 0;
+      yearData.cash_differences = parseFloat(values[19]) || 0;
+      yearData.other_controllable = parseFloat(values[20]) || 0;
+      yearData.pac = parseFloat(values[21]) || 0;
+      yearData.rent = parseFloat(values[22]) || 0;
+      yearData.additional_rent = parseFloat(values[23]) || 0;
+      yearData.royalty = parseFloat(values[24]) || 0;
+      yearData.office_legal = parseFloat(values[25]) || 0;
+      yearData.insurance = parseFloat(values[26]) || 0;
+      yearData.taxes_licenses = parseFloat(values[27]) || 0;
+      yearData.depreciation = parseFloat(values[28]) || 0;
+      yearData.interest = parseFloat(values[29]) || 0;
+      yearData.other_non_controllable = parseFloat(values[30]) || 0;
+      yearData.non_product_sales = parseFloat(values[31]) || 0;
+      yearData.non_product_cost = parseFloat(values[32]) || 0;
+      yearData.draw_salary = parseFloat(values[33]) || 0;
+      yearData.general_expenses = parseFloat(values[34]) || 0;
+      yearData.loan_payment = parseFloat(values[35]) || 0;
+      yearData.investment_own_funds = parseFloat(values[36]) || 0;
+      
       results.push(yearData);
     }
     

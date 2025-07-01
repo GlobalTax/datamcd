@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/notifications';
@@ -46,7 +47,7 @@ export const useOptimizedFranchiseeRestaurants = (franchiseeId: string | undefin
         .select(`
           id,
           franchisee_id,
-          restaurant_id,
+          base_restaurant_id,
           monthly_rent,
           last_year_revenue,
           franchise_fee_percentage,
@@ -61,15 +62,24 @@ export const useOptimizedFranchiseeRestaurants = (franchiseeId: string | undefin
             address,
             city,
             opening_date,
-            restaurant_type,
-            status
+            restaurant_type
           )
         `)
         .eq('franchisee_id', franchiseeId);
 
       if (supabaseError) throw supabaseError;
       
-      setRestaurants(data || []);
+      // Map the data to include the restaurant_id from base_restaurant_id
+      const mappedData = (data || []).map(item => ({
+        ...item,
+        restaurant_id: item.base_restaurant_id || '', // Map base_restaurant_id to restaurant_id
+        base_restaurant: item.base_restaurant ? {
+          ...item.base_restaurant,
+          status: 'active' // Default status
+        } : null
+      }));
+      
+      setRestaurants(mappedData);
     } catch (error) {
       console.error('Error fetching optimized franchisee restaurants:', error);
       const errorMessage = 'Error al cargar los restaurantes del franquiciado';
