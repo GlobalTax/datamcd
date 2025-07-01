@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthContext } from './auth/AuthContext';
 import { useAuthState } from './auth/useAuthState';
@@ -24,92 +24,108 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   } = useAuthState();
 
   const { fetchUserData } = useUserDataFetcher();
-
   const { signIn, signUp, signOut } = useAuthActions({
     clearUserData,
     setSession
   });
 
-  const refreshData = async () => {
+  // Ref para evitar llamadas duplicadas
+  const isInitializing = useRef(false);
+  const currentUserId = useRef<string | null>(null);
+
+  const refreshData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
+    if (session?.user && currentUserId.current !== session.user.id) {
+      try {
+        console.log('AuthProvider - Refreshing data for user:', session.user.id);
+        const userData = await fetchUserData(session.user.id);
+        setUser(userData.user);
+        setFranchisee(userData.franchisee);
+        setRestaurants(userData.restaurants);
+        currentUserId.current = session.user.id;
+      } catch (error) {
+        console.error('AuthProvider - Error refreshing data:', error);
+        // En caso de error, limpiar datos y permitir reintento
+        clearUserData();
+        currentUserId.current = null;
+      }
+    }
+  }, [fetchUserData, setUser, setFranchisee, setRestaurants, clearUserData]);
+
+  // Función para manejar cambios de autenticación
+  const handleAuthChange = useCallback(async (event: string, session: any) => {
+    console.log('AuthProvider - Auth state change:', event, session?.user?.id);
+    
+    setSession(session);
+    
+    if (session?.user && currentUserId.current !== session.user.id) {
+      console.log('AuthProvider - New user session, fetching data');
+      currentUserId.current = session.user.id;
+      setLoading(true);
+      
       try {
         const userData = await fetchUserData(session.user.id);
         setUser(userData.user);
         setFranchisee(userData.franchisee);
         setRestaurants(userData.restaurants);
+        console.log('AuthProvider - User data loaded successfully');
       } catch (error) {
-        console.error('Error refreshing data:', error);
-      }
-    }
-  };
-
-  // Use ref to prevent duplicate calls
-  const authInitialized = useRef(false);
-  const currentUserId = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (authInitialized.current) return;
-    
-    console.log('useAuth - Setting up auth state listener');
-    authInitialized.current = true;
-    
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('useAuth - Auth state change:', event, session?.user?.id);
-        setSession(session);
-        
-        if (session?.user && currentUserId.current !== session.user.id) {
-          console.log('useAuth - User found in session, fetching user data');
-          currentUserId.current = session.user.id;
-          try {
-            const userData = await fetchUserData(session.user.id);
-            setUser(userData.user);
-            setFranchisee(userData.franchisee);
-            setRestaurants(userData.restaurants);
-            console.log('useAuth - User data fetch completed');
-          } catch (error) {
-            console.error('useAuth - Error fetching user data:', error);
-          }
-        } else if (!session?.user) {
-          console.log('useAuth - No session, clearing user data');
-          currentUserId.current = null;
-          clearUserData();
-        }
+        console.error('AuthProvider - Error loading user data:', error);
+        // En caso de error, limpiar datos
+        clearUserData();
+        currentUserId.current = null;
+      } finally {
         setLoading(false);
       }
-    );
-
-    // Check for existing session only once
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log('useAuth - Initial session check:', session?.user?.id);
-      setSession(session);
-      if (session?.user && currentUserId.current !== session.user.id) {
-        currentUserId.current = session.user.id;
-        try {
-          const userData = await fetchUserData(session.user.id);
-          setUser(userData.user);
-          setFranchisee(userData.franchisee);
-          setRestaurants(userData.restaurants);
-          console.log('useAuth - Initial user data fetch completed');
-        } catch (error) {
-          console.error('useAuth - Error in initial user data fetch:', error);
-        }
-      }
+    } else if (!session?.user) {
+      console.log('AuthProvider - No session, clearing data');
+      currentUserId.current = null;
+      clearUserData();
       setLoading(false);
-    });
+    }
+  }, [fetchUserData, setUser, setFranchisee, setRestaurants, setSession, setLoading, clearUserData]);
 
+  useEffect(() => {
+    if (isInitializing.current) return;
+    
+    console.log('AuthProvider - Initializing auth system');
+    isInitializing.current = true;
+    setLoading(true);
+    
+    // Configurar listener de cambios de autenticación
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+    
+    // Verificar sesión inicial
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('AuthProvider - Initial session check:', session?.user?.id);
+        
+        if (session?.user) {
+          await handleAuthChange('SIGNED_IN', session);
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('AuthProvider - Error in initial auth check:', error);
+        setLoading(false);
+      }
+    };
+    
+    initializeAuth();
+    
     return () => {
       subscription.unsubscribe();
-      authInitialized.current = false;
+      isInitializing.current = false;
     };
-  }, []);
+  }, [handleAuthChange, setLoading]);
 
-  console.log('useAuth - Current state:', { 
+  console.log('AuthProvider - Current state:', { 
     user: user ? { id: user.id, role: user.role } : null, 
     session: !!session, 
-    loading 
+    loading,
+    franchisee: !!franchisee,
+    restaurantsCount: restaurants.length
   });
 
   const value = {
