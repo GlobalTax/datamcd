@@ -6,18 +6,34 @@ import { User, Franchisee, Restaurant } from '@/types/auth';
 export const useUserDataFetcher = () => {
   const fetchUserData = useCallback(async (userId: string) => {
     try {
-      console.log('Fetching user data for:', userId);
+      console.log('useUserDataFetcher - Fetching user data for:', userId);
 
-      // Fetch user profile
-      const { data: profileData, error: profileError } = await supabase
+      // Función helper para manejar timeouts
+      const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> => {
+        return Promise.race([
+          promise,
+          new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms`)), timeoutMs)
+          )
+        ]);
+      };
+
+      // Fetch user profile with timeout
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
+      const { data: profileData, error: profileError } = await withTimeout(profilePromise, 8000);
+
       if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        throw profileError;
+        console.error('useUserDataFetcher - Error fetching profile:', profileError);
+        throw new Error(`Error al cargar perfil: ${profileError.message}`);
+      }
+
+      if (!profileData) {
+        throw new Error('Perfil de usuario no encontrado');
       }
 
       const user: User = {
@@ -35,85 +51,108 @@ export const useUserDataFetcher = () => {
 
       // If user is franchisee, fetch franchisee data and restaurants
       if (user.role === 'franchisee') {
-        const { data: franchiseeData, error: franchiseeError } = await supabase
-          .from('franchisees')
-          .select('*')
-          .eq('user_id', userId)
-          .single();
+        try {
+          const franchiseePromise = supabase
+            .from('franchisees')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
 
-        if (franchiseeError) {
-          console.error('Error fetching franchisee:', franchiseeError);
-        } else if (franchiseeData) {
-          franchisee = {
-            id: franchiseeData.id,
-            user_id: franchiseeData.user_id,
-            franchisee_name: franchiseeData.franchisee_name,
-            company_name: franchiseeData.company_name,
-            tax_id: franchiseeData.tax_id,
-            address: franchiseeData.address,
-            city: franchiseeData.city,
-            state: franchiseeData.state,
-            postal_code: franchiseeData.postal_code,
-            country: franchiseeData.country,
-            created_at: franchiseeData.created_at,
-            updated_at: franchiseeData.updated_at,
-            total_restaurants: franchiseeData.total_restaurants,
-            // Propiedades adicionales para compatibilidad
-            profiles: {
-              email: profileData.email,
-              phone: profileData.phone,
-              full_name: profileData.full_name
-            },
-            hasAccount: true,
-            isOnline: false,
-            lastAccess: new Date().toISOString()
-          };
+          const { data: franchiseeData, error: franchiseeError } = await withTimeout(franchiseePromise, 8000);
 
-          // Fetch restaurants
-          const { data: restaurantData, error: restaurantError } = await supabase
-            .from('franchisee_restaurants')
-            .select(`
-              *,
-              base_restaurant:base_restaurants(*)
-            `)
-            .eq('franchisee_id', franchisee.id);
+          if (franchiseeError) {
+            console.error('useUserDataFetcher - Error fetching franchisee:', franchiseeError);
+            // No lanzar error aquí, solo log. El usuario puede no tener datos de franquiciado aún
+          } else if (franchiseeData) {
+            franchisee = {
+              id: franchiseeData.id,
+              user_id: franchiseeData.user_id,
+              franchisee_name: franchiseeData.franchisee_name,
+              company_name: franchiseeData.company_name,
+              tax_id: franchiseeData.tax_id,
+              address: franchiseeData.address,
+              city: franchiseeData.city,
+              state: franchiseeData.state,
+              postal_code: franchiseeData.postal_code,
+              country: franchiseeData.country,
+              created_at: franchiseeData.created_at,
+              updated_at: franchiseeData.updated_at,
+              total_restaurants: franchiseeData.total_restaurants,
+              // Propiedades adicionales para compatibilidad
+              profiles: {
+                email: profileData.email,
+                phone: profileData.phone,
+                full_name: profileData.full_name
+              },
+              hasAccount: true,
+              isOnline: false,
+              lastAccess: new Date().toISOString()
+            };
 
-          if (restaurantError) {
-            console.error('Error fetching restaurants:', restaurantError);
-          } else if (restaurantData) {
-            restaurants = restaurantData
-              .filter(item => item.base_restaurant)
-              .map(item => {
-                // Asegurar que el status sea uno de los valores permitidos
-                const validStatus = ['active', 'inactive', 'pending', 'closed'];
-                const status = validStatus.includes(item.status) ? item.status : 'active';
-                
-                return {
-                  id: item.base_restaurant.id,
-                  franchisee_id: item.franchisee_id,
-                  site_number: item.base_restaurant.site_number,
-                  restaurant_name: item.base_restaurant.restaurant_name,
-                  address: item.base_restaurant.address,
-                  city: item.base_restaurant.city,
-                  state: item.base_restaurant.state,
-                  postal_code: item.base_restaurant.postal_code,
-                  country: item.base_restaurant.country,
-                  opening_date: item.base_restaurant.opening_date,
-                  restaurant_type: item.base_restaurant.restaurant_type || 'traditional',
-                  status: status as 'active' | 'inactive' | 'pending' | 'closed',
-                  square_meters: item.base_restaurant.square_meters,
-                  seating_capacity: item.base_restaurant.seating_capacity,
-                  created_at: item.base_restaurant.created_at,
-                  updated_at: item.base_restaurant.updated_at
-                };
-              });
+            // Fetch restaurants only if franchisee exists
+            try {
+              const restaurantsPromise = supabase
+                .from('franchisee_restaurants')
+                .select(`
+                  *,
+                  base_restaurant:base_restaurants(*)
+                `)
+                .eq('franchisee_id', franchisee.id)
+                .eq('status', 'active');
+
+              const { data: restaurantData, error: restaurantError } = await withTimeout(restaurantsPromise, 10000);
+
+              if (restaurantError) {
+                console.error('useUserDataFetcher - Error fetching restaurants:', restaurantError);
+                // No lanzar error, restaurantes pueden estar vacíos
+              } else if (restaurantData && restaurantData.length > 0) {
+                restaurants = restaurantData
+                  .filter(item => item.base_restaurant)
+                  .map(item => {
+                    // Asegurar que el status sea uno de los valores permitidos
+                    const validStatus = ['active', 'inactive', 'pending', 'closed'];
+                    const status = validStatus.includes(item.status) ? item.status : 'active';
+                    
+                    return {
+                      id: item.base_restaurant.id,
+                      franchisee_id: item.franchisee_id,
+                      site_number: item.base_restaurant.site_number,
+                      restaurant_name: item.base_restaurant.restaurant_name,
+                      address: item.base_restaurant.address,
+                      city: item.base_restaurant.city,
+                      state: item.base_restaurant.state,
+                      postal_code: item.base_restaurant.postal_code,
+                      country: item.base_restaurant.country,
+                      opening_date: item.base_restaurant.opening_date,
+                      restaurant_type: item.base_restaurant.restaurant_type || 'traditional',
+                      status: status as 'active' | 'inactive' | 'pending' | 'closed',
+                      square_meters: item.base_restaurant.square_meters,
+                      seating_capacity: item.base_restaurant.seating_capacity,
+                      created_at: item.base_restaurant.created_at,
+                      updated_at: item.base_restaurant.updated_at
+                    };
+                  });
+              }
+            } catch (restaurantError) {
+              console.error('useUserDataFetcher - Restaurant fetch timeout:', restaurantError);
+              // Continuar sin restaurantes
+            }
           }
+        } catch (franchiseeError) {
+          console.error('useUserDataFetcher - Franchisee fetch timeout:', franchiseeError);
+          // Continuar sin datos de franquiciado
         }
       }
 
+      console.log('useUserDataFetcher - Successfully loaded data:', {
+        user: { id: user.id, role: user.role },
+        franchisee: !!franchisee,
+        restaurantsCount: restaurants.length
+      });
+
       return { user, franchisee, restaurants };
     } catch (error) {
-      console.error('Error in fetchUserData:', error);
+      console.error('useUserDataFetcher - Critical error:', error);
       throw error;
     }
   }, []);
