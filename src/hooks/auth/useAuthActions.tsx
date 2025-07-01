@@ -10,7 +10,7 @@ interface AuthActionsProps {
 export const useAuthActions = ({ clearUserData, setSession }: AuthActionsProps) => {
   
   const signIn = async (email: string, password: string) => {
-    console.log('signIn - Attempting login for:', email);
+    console.log('useAuthActions - Attempting login for:', email);
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -19,22 +19,37 @@ export const useAuthActions = ({ clearUserData, setSession }: AuthActionsProps) 
       });
 
       if (error) {
-        console.error('signIn - Error:', error);
-        toast.error(error.message);
-        return { error: error.message };
+        console.error('useAuthActions - Sign in error:', error);
+        
+        // Manejar errores específicos
+        let errorMessage = 'Error al iniciar sesión';
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Email o contraseña incorrectos';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Por favor confirma tu email antes de iniciar sesión';
+        } else if (error.message.includes('Too many requests')) {
+          errorMessage = 'Demasiados intentos. Intenta de nuevo en unos minutos';
+        } else {
+          errorMessage = error.message;
+        }
+        
+        toast.error(errorMessage);
+        return { error: errorMessage };
       } else {
-        console.log('signIn - Success, user data:', data.user);
+        console.log('useAuthActions - Sign in successful for:', data.user?.email);
         toast.success('Sesión iniciada correctamente');
         return {};
       }
     } catch (error) {
-      console.error('signIn - Unexpected error:', error);
+      console.error('useAuthActions - Unexpected sign in error:', error);
       toast.error('Error inesperado al iniciar sesión');
       return { error: 'Error inesperado al iniciar sesión' };
     }
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    console.log('useAuthActions - Attempting sign up for:', email);
+    
     const redirectUrl = `${window.location.origin}/`;
 
     try {
@@ -50,14 +65,29 @@ export const useAuthActions = ({ clearUserData, setSession }: AuthActionsProps) 
       });
 
       if (error) {
-        toast.error(error.message);
-        return { error: error.message };
+        console.error('useAuthActions - Sign up error:', error);
+        
+        // Manejar errores específicos
+        let errorMessage = 'Error al crear cuenta';
+        if (error.message.includes('User already registered')) {
+          errorMessage = 'Este email ya está registrado';
+        } else if (error.message.includes('Password should be at least')) {
+          errorMessage = 'La contraseña debe tener al menos 6 caracteres';
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = 'Email inválido';
+        } else {
+          errorMessage = error.message;
+        }
+        
+        toast.error(errorMessage);
+        return { error: errorMessage };
       } else {
+        console.log('useAuthActions - Sign up successful for:', email);
         toast.success('Cuenta creada correctamente. Revisa tu email para confirmar tu cuenta.');
         return {};
       }
     } catch (error) {
-      console.error('signUp - Unexpected error:', error);
+      console.error('useAuthActions - Unexpected sign up error:', error);
       toast.error('Error inesperado al crear cuenta');
       return { error: 'Error inesperado al crear cuenta' };
     }
@@ -65,7 +95,7 @@ export const useAuthActions = ({ clearUserData, setSession }: AuthActionsProps) 
 
   const signOut = async () => {
     try {
-      console.log('signOut - Starting logout process');
+      console.log('useAuthActions - Starting logout process');
       
       // Clear user data immediately to prevent UI delays
       clearUserData();
@@ -75,20 +105,21 @@ export const useAuthActions = ({ clearUserData, setSession }: AuthActionsProps) 
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.error('signOut - Error:', error);
+        console.error('useAuthActions - Sign out error:', error);
         // Don't show error toast for session_not_found errors as they're harmless
         if (!error.message.includes('Session not found')) {
           toast.error(error.message);
         }
       } else {
-        console.log('signOut - Success');
+        console.log('useAuthActions - Sign out successful');
         toast.success('Sesión cerrada correctamente');
       }
     } catch (error) {
-      console.error('signOut - Unexpected error:', error);
+      console.error('useAuthActions - Unexpected sign out error:', error);
       // Still clear the local state even if there's an error
       clearUserData();
       setSession(null);
+      toast.success('Sesión cerrada correctamente');
     }
   };
 

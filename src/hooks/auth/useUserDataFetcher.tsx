@@ -9,16 +9,16 @@ export const useUserDataFetcher = () => {
       console.log('useUserDataFetcher - Fetching user data for:', userId);
 
       // Función helper para manejar timeouts
-      const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> => {
+      const withTimeout = (promise: Promise<any>, timeoutMs: number = 10000): Promise<any> => {
         return Promise.race([
           promise,
-          new Promise<never>((_, reject) => 
+          new Promise((_, reject) => 
             setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms`)), timeoutMs)
           )
         ]);
       };
 
-      // Fetch user profile with timeout
+      // Fetch user profile with timeout - execute the query first
       const profileQuery = supabase
         .from('profiles')
         .select('*')
