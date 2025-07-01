@@ -18,13 +18,15 @@ export const useUserDataFetcher = () => {
         ]);
       };
 
-      // Fetch user profile with timeout - ejecutar la consulta directamente
+      // Fetch user profile with timeout - ejecutar la consulta y pasar la promesa
+      const profileQuery = supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
       const { data: profileData, error: profileError } = await withTimeout(
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single(),
+        profileQuery,
         8000
       );
 
@@ -53,12 +55,14 @@ export const useUserDataFetcher = () => {
       // If user is franchisee, fetch franchisee data and restaurants
       if (user.role === 'franchisee') {
         try {
+          const franchiseeQuery = supabase
+            .from('franchisees')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+
           const { data: franchiseeData, error: franchiseeError } = await withTimeout(
-            supabase
-              .from('franchisees')
-              .select('*')
-              .eq('user_id', userId)
-              .single(),
+            franchiseeQuery,
             8000
           );
 
@@ -93,15 +97,17 @@ export const useUserDataFetcher = () => {
 
             // Fetch restaurants only if franchisee exists
             try {
+              const restaurantQuery = supabase
+                .from('franchisee_restaurants')
+                .select(`
+                  *,
+                  base_restaurant:base_restaurants(*)
+                `)
+                .eq('franchisee_id', franchisee.id)
+                .eq('status', 'active');
+
               const { data: restaurantData, error: restaurantError } = await withTimeout(
-                supabase
-                  .from('franchisee_restaurants')
-                  .select(`
-                    *,
-                    base_restaurant:base_restaurants(*)
-                  `)
-                  .eq('franchisee_id', franchisee.id)
-                  .eq('status', 'active'),
+                restaurantQuery,
                 10000
               );
 
