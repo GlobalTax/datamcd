@@ -23,6 +23,15 @@ export interface Franchisee {
   created_at: string;
   updated_at: string;
   total_restaurants?: number;
+  // Propiedades adicionales para compatibilidad con código existente
+  profiles?: {
+    email?: string;
+    phone?: string;
+    full_name?: string;
+  };
+  hasAccount?: boolean;
+  isOnline?: boolean;
+  lastAccess?: string;
 }
 
 export interface Restaurant {
@@ -36,7 +45,7 @@ export interface Restaurant {
   postal_code?: string;
   country: string;
   opening_date?: string;
-  restaurant_type: 'traditional' | 'mccafe' | 'drive_thru' | 'express';
+  restaurant_type: 'traditional' | 'mccafe' | 'drive_thru' | 'express' | string; // Permitir strings adicionales
   status: 'active' | 'inactive' | 'pending' | 'closed';
   square_meters?: number;
   seating_capacity?: number;

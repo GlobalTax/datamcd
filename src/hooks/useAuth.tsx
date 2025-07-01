@@ -30,6 +30,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession
   });
 
+  const refreshData = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      try {
+        const userData = await fetchUserData(session.user.id);
+        setUser(userData);
+        setFranchisee(userData.franchisee);
+        setRestaurants(userData.restaurants);
+      } catch (error) {
+        console.error('Error refreshing data:', error);
+      }
+    }
+  };
+
   // Use ref to prevent duplicate calls
   const authInitialized = useRef(false);
   const currentUserId = useRef<string | null>(null);
@@ -107,6 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signUp,
     signOut,
+    refreshData,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

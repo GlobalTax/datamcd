@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: profileData.id,
         email: profileData.email,
         full_name: profileData.full_name,
-        role: profileData.role,
+        role: profileData.role as 'franchisee' | 'asesor' | 'admin' | 'superadmin' | 'manager' | 'asistente',
         phone: profileData.phone,
         created_at: profileData.created_at,
         updated_at: profileData.updated_at
@@ -83,7 +83,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           country: franchiseeData.country,
           created_at: franchiseeData.created_at,
           updated_at: franchiseeData.updated_at,
-          total_restaurants: franchiseeData.total_restaurants
+          total_restaurants: franchiseeData.total_restaurants,
+          // Propiedades adicionales para compatibilidad
+          profiles: {
+            email: profileData.email,
+            phone: profileData.phone,
+            full_name: profileData.full_name
+          },
+          hasAccount: true,
+          isOnline: false, // Por defecto false, se puede actualizar según necesidades
+          lastAccess: new Date().toISOString()
         } : null;
 
         // Fetch restaurants
@@ -113,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 postal_code: item.base_restaurant.postal_code,
                 country: item.base_restaurant.country,
                 opening_date: item.base_restaurant.opening_date,
-                restaurant_type: item.base_restaurant.restaurant_type,
+                restaurant_type: item.base_restaurant.restaurant_type || 'traditional',
                 status: item.status || 'active',
                 square_meters: item.base_restaurant.square_meters,
                 seating_capacity: item.base_restaurant.seating_capacity,
