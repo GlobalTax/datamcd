@@ -21,17 +21,27 @@ Este proyecto utiliza **Vitest** con **Testing Library** para realizar pruebas u
 
 ## 🚀 Comandos Disponibles
 
+### Uso Manual (Recomendado actualmente)
 ```bash
 # Ejecutar todos los tests
-npm run test
+npx vitest
 
 # Ejecutar tests en modo watch
-npm run test:watch
+npx vitest --watch
 
 # Ejecutar tests con interfaz web
-npm run test:ui
+npx vitest --ui
 
 # Generar reporte de cobertura
+npx vitest --coverage
+```
+
+### Scripts NPM (Si package.json permite modificaciones)
+```bash
+# Una vez configurado package.json:
+npm run test
+npm run test:watch  
+npm run test:ui
 npm run test:coverage
 ```
 
@@ -51,6 +61,10 @@ describe('MiComponente', () => {
 });
 ```
 
+### Tests Incluidos
+- `src/test/basic.test.tsx` - Tests básicos para verificar el setup
+- `src/test/example.test.tsx` - Ejemplo con componente DashboardSummary
+
 ### Testing de Componentes con Context
 Usa `render` de `test-utils.tsx` que incluye todos los providers necesarios:
 
@@ -67,19 +81,14 @@ Los mocks principales están configurados en `setup.ts`:
 - React Router hooks
 - APIs del navegador (ResizeObserver, IntersectionObserver)
 
-### Ejemplo de Test de Interacción
-```typescript
-import { render, screen, fireEvent } from '@/test/test-utils';
-import userEvent from '@testing-library/user-event';
+## ✅ Verificar Instalación
 
-it('debe manejar click del usuario', async () => {
-  const user = userEvent.setup();
-  render(<MiBoton />);
-  
-  await user.click(screen.getByRole('button'));
-  expect(screen.getByText('Clickeado')).toBeInTheDocument();
-});
+Ejecuta este comando para confirmar que todo funciona:
+```bash
+npx vitest src/test/basic.test.tsx
 ```
+
+Si ves que todos los tests pasan, la configuración está correcta.
 
 ## 🎯 Mejores Prácticas
 
@@ -126,61 +135,6 @@ La cobertura se genera en la carpeta `coverage/` con reportes en:
 - **Componentes críticos**: 90%+
 - **Utilidades**: 85%+
 - **Hooks personalizados**: 80%+
-
-## 🔧 Configuración Personalizada
-
-### Variables de Entorno para Tests
-Crea `.env.test` para variables específicas de testing:
-```
-VITE_SUPABASE_URL=http://localhost:54321
-VITE_SUPABASE_ANON_KEY=test-key
-```
-
-### Mocks Personalizados
-Para crear mocks específicos de componentes:
-
-```typescript
-// En tu archivo de test
-import { vi } from 'vitest';
-
-vi.mock('@/components/ComponenteComplejo', () => ({
-  ComponenteComplejo: () => <div>Mock Component</div>
-}));
-```
-
-## 🐛 Debugging Tests
-
-### Debug en VS Code
-1. Instala la extensión "Vitest"
-2. Usa breakpoints directamente en el código
-3. Ejecuta tests en modo debug
-
-### Debug Manual
-```typescript
-import { screen } from '@testing-library/react';
-
-// Ver el DOM actual
-screen.debug();
-
-// Ver un elemento específico
-screen.debug(screen.getByRole('button'));
-```
-
-## 📁 Estructura de Archivos de Test
-
-```
-src/
-├── test/
-│   ├── setup.ts              # Setup global
-│   ├── test-utils.tsx        # Utilidades personalizadas
-│   └── example.test.tsx      # Ejemplos
-├── components/
-│   ├── Component.tsx
-│   └── Component.test.tsx    # Tests junto al componente
-└── hooks/
-    ├── useHook.tsx
-    └── useHook.test.tsx      # Tests junto al hook
-```
 
 ---
 
