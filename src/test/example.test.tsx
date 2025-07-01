@@ -1,20 +1,8 @@
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from '@/hooks/useAuth';
+import { screen } from '@testing-library/react';
+import { render } from './test-utils';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
-
-// Custom render function with providers
-const renderWithProviders = (ui: React.ReactElement) => {
-  return render(
-    <BrowserRouter>
-      <AuthProvider>
-        {ui}
-      </AuthProvider>
-    </BrowserRouter>
-  );
-};
 
 describe('DashboardSummary', () => {
   it('renders dashboard summary correctly', () => {
@@ -28,7 +16,7 @@ describe('DashboardSummary', () => {
       }
     ];
 
-    renderWithProviders(
+    render(
       <DashboardSummary 
         totalRestaurants={1} 
         displayRestaurants={mockRestaurants}
@@ -41,7 +29,7 @@ describe('DashboardSummary', () => {
   });
 
   it('shows temporary data warning when applicable', () => {
-    renderWithProviders(
+    render(
       <DashboardSummary 
         totalRestaurants={0} 
         displayRestaurants={[]}
