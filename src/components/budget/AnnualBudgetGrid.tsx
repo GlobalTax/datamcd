@@ -6,11 +6,6 @@ import { useAnnualBudgets } from '@/hooks/useAnnualBudgets';
 import { showSuccess, showError } from '@/utils/notifications';
 import { useAuth } from '@/hooks/useAuth';
 
-interface BudgetEntry {
-  month: string;
-  value: number | string;
-}
-
 interface AnnualBudgetGridProps {
   year: number;
   restaurantId: string;
@@ -19,8 +14,23 @@ interface AnnualBudgetGridProps {
 const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({ year, restaurantId }) => {
   const { budgets, loading, saveBudget } = useAnnualBudgets();
   const { user } = useAuth();
-  const [budgetData, setBudgetData] = useState<any>({});
+  const [monthlyData, setMonthlyData] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
+
+  const months = [
+    { key: 'jan', label: 'Enero' },
+    { key: 'feb', label: 'Febrero' },
+    { key: 'mar', label: 'Marzo' },
+    { key: 'apr', label: 'Abril' },
+    { key: 'may', label: 'Mayo' },
+    { key: 'jun', label: 'Junio' },
+    { key: 'jul', label: 'Julio' },
+    { key: 'aug', label: 'Agosto' },
+    { key: 'sep', label: 'Septiembre' },
+    { key: 'oct', label: 'Octubre' },
+    { key: 'nov', label: 'Noviembre' },
+    { key: 'dec', label: 'Diciembre' }
+  ];
 
   useEffect(() => {
     // Find the budget for the current year and restaurant
@@ -28,26 +38,33 @@ const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({ year, restaurantId 
       (b) => b.year === year && b.restaurant_id === restaurantId
     );
 
-    // If a budget exists, load its data into the state
     if (budget) {
-      setBudgetData(budget.budget_data || {});
-    } else {
-      // Initialize with empty data for all months
-      const initialData: { [key: string]: string } = {};
-      [
-        'january', 'february', 'march', 'april', 'may', 'june',
-        'july', 'august', 'september', 'october', 'november', 'december'
-      ].forEach(month => {
-        initialData[month] = '';
+      setMonthlyData({
+        jan: budget.jan || 0,
+        feb: budget.feb || 0,
+        mar: budget.mar || 0,
+        apr: budget.apr || 0,
+        may: budget.may || 0,
+        jun: budget.jun || 0,
+        jul: budget.jul || 0,
+        aug: budget.aug || 0,
+        sep: budget.sep || 0,
+        oct: budget.oct || 0,
+        nov: budget.nov || 0,
+        dec: budget.dec || 0
       });
-      setBudgetData(initialData);
+    } else {
+      setMonthlyData({
+        jan: 0, feb: 0, mar: 0, apr: 0, may: 0, jun: 0,
+        jul: 0, aug: 0, sep: 0, oct: 0, nov: 0, dec: 0
+      });
     }
   }, [budgets, year, restaurantId]);
 
   const handleChange = (month: string, value: string) => {
-    setBudgetData((prevData: any) => ({
-      ...prevData,
-      [month]: value,
+    setMonthlyData(prev => ({
+      ...prev,
+      [month]: parseFloat(value) || 0
     }));
   };
 
@@ -58,8 +75,9 @@ const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({ year, restaurantId 
       await saveBudget({
         year,
         restaurant_id: restaurantId,
-        budget_data: budgetData,
-        user_id: user?.id
+        category: 'revenue',
+        ...monthlyData,
+        created_by: user?.id
       });
       
       showSuccess('Presupuesto guardado correctamente');
@@ -71,11 +89,6 @@ const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({ year, restaurantId 
     }
   };
 
-  const months = [
-    'january', 'february', 'march', 'april', 'may', 'june',
-    'july', 'august', 'september', 'october', 'november', 'december'
-  ];
-
   return (
     <Card>
       <CardHeader>
@@ -84,27 +97,29 @@ const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({ year, restaurantId 
       <CardContent>
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {months.map((month) => (
-            <div key={month} className="space-y-2">
+            <div key={month.key} className="space-y-2">
               <label
-                htmlFor={month}
+                htmlFor={month.key}
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                {month.charAt(0).toUpperCase() + month.slice(1)}
+                {month.label}
               </label>
               <input
                 type="number"
-                id={month}
-                placeholder={`Presupuesto para ${month}`}
+                id={month.key}
+                placeholder={`Presupuesto para ${month.label}`}
                 className="flex h-10 w-full rounded-md border border-gray-200 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={(budgetData as any)[month] || ''}
-                onChange={(e) => handleChange(month, e.target.value)}
+                value={monthlyData[month.key] || ''}
+                onChange={(e) => handleChange(month.key, e.target.value)}
               />
             </div>
           ))}
         </div>
-        <Button onClick={handleSave} disabled={saving || loading}>
-          {saving ? 'Guardando...' : 'Guardar Presupuesto'}
-        </Button>
+        <div className="mt-6">
+          <Button onClick={handleSave} disabled={saving || loading}>
+            {saving ? 'Guardando...' : 'Guardar Presupuesto'}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,49 +1,61 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/utils/notifications';
-
-interface ImportData {
-  year: number;
-  month: number;
-  net_sales: number;
-  food_cost: number;
-  paper_cost: number;
-  crew_labor: number;
-  management_salary: number;
-  rent: number;
-  royalties: number;
-  advertising: number;
-  other_expenses: number;
-}
 
 export const useDataImport = () => {
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const importData = async (data: ImportData[], siteNumber: string) => {
+  const importData = async (data: any[], restaurantId: string) => {
     try {
       setImporting(true);
       setProgress(0);
 
-      const totalRecords = data.length;
-      
+      if (!data || data.length === 0) {
+        showError('No hay datos para importar');
+        return false;
+      }
+
+      // Simulate import progress
       for (let i = 0; i < data.length; i++) {
-        const record = data[i];
+        const item = data[i];
         
+        // Import to profit_loss_data table
         const { error } = await supabase
-          .from('historical_data')
+          .from('profit_loss_data')
           .upsert({
-            ...record,
-            site_number: siteNumber,
+            restaurant_id: restaurantId,
+            year: item.year,
+            month: item.month || 1,
+            net_sales: item.net_sales || 0,
+            food_cost: item.food_cost || 0,
+            paper_cost: item.paper_cost || 0,
+            crew_labor: item.crew_labor || 0,
+            management_labor: item.management_labor || 0,
+            benefits: item.benefits || 0,
+            rent: item.rent || 0,
+            utilities: item.utilities || 0,
+            advertising: item.advertising || 0,
+            insurance: item.insurance || 0,
+            supplies: item.supplies || 0,
+            other_expenses: item.other_expenses || 0,
+            franchise_fee: item.franchise_fee || 0,
+            advertising_fee: item.advertising_fee || 0,
+            rent_percentage: item.rent_percentage || 0,
+            created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });
 
-        if (error) throw error;
-        
-        setProgress(((i + 1) / totalRecords) * 100);
+        if (error) {
+          console.error('Error importing item:', error);
+          continue;
+        }
+
+        setProgress(((i + 1) / data.length) * 100);
       }
 
-      showSuccess(`${totalRecords} registros importados correctamente`);
+      showSuccess(`${data.length} registros importados correctamente`);
       return true;
     } catch (error) {
       console.error('Error importing data:', error);
@@ -55,70 +67,9 @@ export const useDataImport = () => {
     }
   };
 
-  const validateData = (data: any[]): ImportData[] => {
-    try {
-      const validatedData = data.map(record => {
-        // Validar que los campos requeridos existan
-        if (
-          !record.year ||
-          !record.month ||
-          !record.net_sales ||
-          !record.food_cost ||
-          !record.paper_cost ||
-          !record.crew_labor ||
-          !record.management_salary ||
-          !record.rent ||
-          !record.royalties ||
-          !record.advertising ||
-          !record.other_expenses
-        ) {
-          throw new Error('Faltan campos requeridos en el registro');
-        }
-  
-        // Convertir los campos numéricos a números
-        record.year = parseInt(record.year, 10);
-        record.month = parseInt(record.month, 10);
-        record.net_sales = parseFloat(record.net_sales);
-        record.food_cost = parseFloat(record.food_cost);
-        record.paper_cost = parseFloat(record.paper_cost);
-        record.crew_labor = parseFloat(record.crew_labor);
-        record.management_salary = parseFloat(record.management_salary);
-        record.rent = parseFloat(record.rent);
-        record.royalties = parseFloat(record.royalties);
-        record.advertising = parseFloat(record.advertising);
-        record.other_expenses = parseFloat(record.other_expenses);
-  
-        // Validar que los campos numéricos sean números válidos
-        if (
-          isNaN(record.year) ||
-          isNaN(record.month) ||
-          isNaN(record.net_sales) ||
-          isNaN(record.food_cost) ||
-          isNaN(record.paper_cost) ||
-          isNaN(record.crew_labor) ||
-          isNaN(record.management_salary) ||
-          isNaN(record.rent) ||
-          isNaN(record.royalties) ||
-          isNaN(record.advertising) ||
-          isNaN(record.other_expenses)
-        ) {
-          throw new Error('Los campos numéricos deben ser números válidos');
-        }
-        return record;
-      });
-
-      return validatedData;
-    } catch (error) {
-      console.error('Error validating data:', error);
-      showError('Error al validar los datos de importación');
-      throw error;
-    }
-  };
-
   return {
     importing,
     progress,
-    importData,
-    validateData
+    importData
   };
 };

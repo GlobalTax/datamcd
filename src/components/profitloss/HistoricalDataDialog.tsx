@@ -29,8 +29,8 @@ export const HistoricalDataDialog: React.FC<HistoricalDataDialogProps> = ({ rest
         </DialogHeader>
         
         <HistoricalDataImporter 
-          restaurantId={restaurantId}
-          onClose={() => setIsOpen(false)}
+          siteNumber={restaurantId}
+          onImportComplete={() => setIsOpen(false)}
         />
       </DialogContent>
     </Dialog>

@@ -22,11 +22,11 @@ const ProfitLossDashboard = ({ restaurantId }: ProfitLossDashboardProps) => {
   const [viewMode, setViewMode] = useState<'table' | 'charts'>('table');
   const [showOnlyTotals, setShowOnlyTotals] = useState(false);
 
-  const { data: profitLossData, loading: isLoading } = useProfitLossData(restaurantId);
+  const { data, loading } = useProfitLossData(restaurantId);
   const { formatCurrency, formatPercentage } = useProfitLossCalculations();
 
   // Filtrar datos por año seleccionado
-  const filteredData = profitLossData.filter(item => item.year === selectedYear);
+  const filteredData = data.filter(item => item.year === selectedYear);
 
   // Generar años disponibles (último 5 años + próximo año)
   const currentYear = new Date().getFullYear();
@@ -34,9 +34,14 @@ const ProfitLossDashboard = ({ restaurantId }: ProfitLossDashboardProps) => {
 
   // Calcular métricas del año actual
   const yearTotals = filteredData.reduce((acc, month) => ({
-    totalRevenue: acc.totalRevenue + month.total_revenue,
-    totalExpenses: acc.totalExpenses + (month.total_cost_of_sales + month.total_labor + month.total_operating_expenses + month.total_mcdonalds_fees),
-    operatingIncome: acc.operatingIncome + month.operating_income,
+    totalRevenue: acc.totalRevenue + (month.total_revenue || month.net_sales + (month.other_revenue || 0)),
+    totalExpenses: acc.totalExpenses + (
+      (month.total_cost_of_sales || month.food_cost + (month.paper_cost || 0)) + 
+      (month.total_labor || month.management_labor + month.crew_labor + (month.benefits || 0)) + 
+      (month.total_operating_expenses || month.rent + (month.utilities || 0) + (month.maintenance || 0) + (month.advertising || 0) + (month.insurance || 0) + (month.supplies || 0) + (month.other_expenses || 0)) + 
+      (month.total_mcdonalds_fees || month.franchise_fee + (month.advertising_fee || 0) + (month.rent_percentage || 0))
+    ),
+    operatingIncome: acc.operatingIncome + (month.operating_income || 0),
   }), { totalRevenue: 0, totalExpenses: 0, operatingIncome: 0 });
 
   const yearMetrics = yearTotals.totalRevenue > 0 ? {
@@ -44,7 +49,7 @@ const ProfitLossDashboard = ({ restaurantId }: ProfitLossDashboardProps) => {
     expenseRatio: (yearTotals.totalExpenses / yearTotals.totalRevenue) * 100,
   } : { operatingMargin: 0, expenseRatio: 0 };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">

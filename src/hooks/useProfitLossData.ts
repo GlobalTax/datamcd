@@ -1,28 +1,44 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/utils/notifications';
 
 export interface ProfitLossData {
   id: string;
-  site_number: string;
+  restaurant_id: string;
   year: number;
   month: number;
   net_sales: number;
+  other_revenue: number;
+  total_revenue: number;
   food_cost: number;
   paper_cost: number;
+  total_cost_of_sales: number;
+  management_labor: number;
   crew_labor: number;
-  management_salary: number;
-  payroll_taxes: number;
   benefits: number;
+  total_labor: number;
   rent: number;
   utilities: number;
-  marketing: number;
+  maintenance: number;
+  advertising: number;
+  insurance: number;
+  supplies: number;
   other_expenses: number;
+  total_operating_expenses: number;
+  franchise_fee: number;
+  advertising_fee: number;
+  rent_percentage: number;
+  total_mcdonalds_fees: number;
+  gross_profit: number;
+  operating_income: number;
   created_at: string;
   updated_at: string;
+  created_by?: string;
+  notes?: string;
 }
 
-export const useProfitLossData = (siteNumber: string) => {
+export const useProfitLossData = (restaurantId: string) => {
   const [data, setData] = useState<ProfitLossData[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -34,7 +50,7 @@ export const useProfitLossData = (siteNumber: string) => {
       const { data: profitLossData, error } = await supabase
         .from('profit_loss_data')
         .select('*')
-        .eq('site_number', siteNumber)
+        .eq('restaurant_id', restaurantId)
         .order('year', { ascending: false })
         .order('month', { ascending: true });
 
@@ -58,7 +74,7 @@ export const useProfitLossData = (siteNumber: string) => {
           .from('profit_loss_data')
           .upsert({
             ...data,
-            site_number: siteNumber,
+            restaurant_id: restaurantId,
             updated_at: new Date().toISOString()
           });
 
@@ -75,17 +91,21 @@ export const useProfitLossData = (siteNumber: string) => {
     }
   };
 
+  const refetch = async () => {
+    await fetchData();
+  };
+
   useEffect(() => {
-    if (siteNumber) {
+    if (restaurantId) {
       fetchData();
     }
-  }, [siteNumber]);
+  }, [restaurantId]);
 
   return {
     data,
     loading,
     saving,
     saveData,
-    refetch: fetchData
+    refetch
   };
 };

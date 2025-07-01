@@ -3,7 +3,42 @@ import { showError } from '@/utils/notifications';
 
 export interface YearlyData {
   year: number;
-  data: MonthlyProfitLoss[];
+  net_sales: number;
+  other_revenue: number;
+  food_employees: number;
+  waste: number;
+  food_cost: number;
+  paper_cost: number;
+  crew_labor: number;
+  management_labor: number;
+  social_security: number;
+  travel_expenses: number;
+  advertising: number;
+  promotion: number;
+  external_services: number;
+  uniforms: number;
+  operation_supplies: number;
+  maintenance: number;
+  utilities: number;
+  office_expenses: number;
+  cash_differences: number;
+  other_controllable: number;
+  pac: number;
+  rent: number;
+  additional_rent: number;
+  royalty: number;
+  office_legal: number;
+  insurance: number;
+  taxes_licenses: number;
+  depreciation: number;
+  interest: number;
+  other_non_controllable: number;
+  non_product_sales: number;
+  non_product_cost: number;
+  draw_salary: number;
+  general_expenses: number;
+  loan_payment: number;
+  investment_own_funds: number;
 }
 
 export interface MonthlyProfitLoss {
@@ -30,26 +65,42 @@ export interface MonthlyProfitLoss {
 export const createEmptyYearlyData = (year: number): YearlyData => {
   return {
     year,
-    data: Array.from({ length: 12 }, (_, index) => ({
-      month: index + 1,
-      net_sales: 0,
-      other_revenue: 0,
-      food_cost: 0,
-      paper_cost: 0,
-      management_labor: 0,
-      crew_labor: 0,
-      benefits: 0,
-      rent: 0,
-      utilities: 0,
-      maintenance: 0,
-      advertising: 0,
-      insurance: 0,
-      supplies: 0,
-      other_expenses: 0,
-      franchise_fee: 0,
-      advertising_fee: 0,
-      rent_percentage: 0,
-    }))
+    net_sales: 0,
+    other_revenue: 0,
+    food_employees: 0,
+    waste: 0,
+    food_cost: 0,
+    paper_cost: 0,
+    crew_labor: 0,
+    management_labor: 0,
+    social_security: 0,
+    travel_expenses: 0,
+    advertising: 0,
+    promotion: 0,
+    external_services: 0,
+    uniforms: 0,
+    operation_supplies: 0,
+    maintenance: 0,
+    utilities: 0,
+    office_expenses: 0,
+    cash_differences: 0,
+    other_controllable: 0,
+    pac: 0,
+    rent: 0,
+    additional_rent: 0,
+    royalty: 0,
+    office_legal: 0,
+    insurance: 0,
+    taxes_licenses: 0,
+    depreciation: 0,
+    interest: 0,
+    other_non_controllable: 0,
+    non_product_sales: 0,
+    non_product_cost: 0,
+    draw_salary: 0,
+    general_expenses: 0,
+    loan_payment: 0,
+    investment_own_funds: 0
   };
 };
 
@@ -58,25 +109,12 @@ export const validateYearlyData = (data: YearlyData): boolean => {
     showError('Año inválido');
     return false;
   }
-
-  if (!data.data || data.data.length !== 12) {
-    showError('Datos mensuales incompletos');
-    return false;
-  }
-
-  for (const monthData of data.data) {
-    if (monthData.month < 1 || monthData.month > 12) {
-      showError('Mes inválido');
-      return false;
-    }
-  }
-
   return true;
 };
 
-export const processImportData = (rawData: string): YearlyData[] => {
+export const parseDataFromText = (text: string): YearlyData[] => {
   try {
-    const lines = rawData.split('\n').filter(line => line.trim());
+    const lines = text.split('\n').filter(line => line.trim());
     const results: YearlyData[] = [];
     
     for (const line of lines) {
@@ -85,28 +123,15 @@ export const processImportData = (rawData: string): YearlyData[] => {
       if (values.length < 5) continue;
       
       const year = parseInt(values[0]);
-      const month = parseInt(values[1]);
-      const net_sales = parseFloat(values[2]) || 0;
-      const food_cost = parseFloat(values[3]) || 0;
-      const paper_cost = parseFloat(values[4]) || 0;
-      const crew_labor = parseFloat(values[5]) || 0;
+      if (isNaN(year)) continue;
       
-      let yearData = results.find(y => y.year === year);
-      if (!yearData) {
-        yearData = createEmptyYearlyData(year);
-        results.push(yearData);
-      }
+      const yearData = createEmptyYearlyData(year);
+      yearData.net_sales = parseFloat(values[1]) || 0;
+      yearData.food_cost = parseFloat(values[2]) || 0;
+      yearData.paper_cost = parseFloat(values[3]) || 0;
+      yearData.crew_labor = parseFloat(values[4]) || 0;
       
-      const monthIndex = month - 1;
-      if (monthIndex >= 0 && monthIndex < 12) {
-        yearData.data[monthIndex] = {
-          ...yearData.data[monthIndex],
-          net_sales,
-          food_cost,
-          paper_cost,
-          crew_labor
-        };
-      }
+      results.push(yearData);
     }
     
     return results;
@@ -114,4 +139,19 @@ export const processImportData = (rawData: string): YearlyData[] => {
     showError('Error procesando los datos importados');
     return [];
   }
+};
+
+export const downloadTemplate = () => {
+  const csvContent = "data:text/csv;charset=utf-8,Año,Ventas Netas,Coste Comida,Coste Papel,Mano de Obra\n2023,100000,30000,5000,25000\n2024,110000,32000,5500,27000";
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "plantilla_datos_historicos.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+export const processImportData = (rawData: string): YearlyData[] => {
+  return parseDataFromText(rawData);
 };

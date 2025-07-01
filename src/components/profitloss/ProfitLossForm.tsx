@@ -104,7 +104,7 @@ export const ProfitLossForm = ({ restaurantId, onClose, editData }: ProfitLossFo
         notes: formData.notes,
         created_at: editData?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        created_by: null
+        created_by: undefined
       };
 
       await saveData([dataToSave]);
