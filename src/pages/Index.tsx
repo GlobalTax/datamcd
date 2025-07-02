@@ -9,6 +9,7 @@ import { FeatureHighlights } from "@/components/index/FeatureHighlights";
 import { IndexFooter } from "@/components/index/IndexFooter";
 import { LoadingSpinner } from "@/components/index/LoadingSpinner";
 import SimpleAuthDebugger from "@/components/debug/SimpleAuthDebugger";
+import { EmergencyAccess } from "@/components/auth/EmergencyAccess";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -165,6 +166,13 @@ const Index = () => {
                 📍 Ir a /dashboard
               </button>
             </div>
+          </div>
+        )}
+        
+        {/* Acceso de emergencia si hay usuario autenticado */}
+        {user && (
+          <div className="mb-8">
+            <EmergencyAccess />
           </div>
         )}
         

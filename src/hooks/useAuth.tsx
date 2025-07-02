@@ -76,8 +76,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       currentUserId.current = null;
       isFetchingUserData.current = false;
       
-      // 1. Obtener sesión actual sin caché
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      // 1. Obtener sesión actual sin caché con timeout extendido
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Session timeout')), 30000)
+      );
+      
+      const { data: { session: currentSession } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
       
       if (!currentSession?.user) {
         console.error('AuthProvider - No active session found');
