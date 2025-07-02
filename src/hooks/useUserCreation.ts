@@ -22,13 +22,16 @@ export const useUserCreation = () => {
     try {
       setLoading(true);
       
-      const { error } = await supabase.auth.admin.createUser({
+      // Usar signUp normal en lugar de admin
+      const { error } = await supabase.auth.signUp({
         email: userData.email,
-        password: userData.password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: userData.fullName,
-          role: userData.role
+        password: userData.password || 'defaultPassword123',
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: userData.fullName,
+            role: userData.role
+          }
         }
       });
 

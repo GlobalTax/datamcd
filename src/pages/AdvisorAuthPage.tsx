@@ -199,14 +199,16 @@ const AdvisorAuthPage = () => {
           </Tabs>
 
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">Credenciales existentes:</h4>
-            <p className="text-sm text-blue-700">
-              Email: <strong>s.navarro@obn.es</strong><br/>
-              Rol: <strong>superadmin</strong>
+            <h4 className="font-medium text-blue-900 mb-2">Acceso Rápido:</h4>
+            <p className="text-sm text-blue-700 mb-3">
+              Puedes crear un nuevo usuario asesor directamente:
             </p>
-            <p className="text-xs text-blue-600 mt-2">
-              Si ya tienes credenciales para este email, úsalas en "Iniciar Sesión"
-            </p>
+            <div className="space-y-2">
+              <p className="text-xs text-blue-600">
+                Email sugerido: <strong>asesor@ejemplo.com</strong><br/>
+                Contraseña: <strong>123456</strong>
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
