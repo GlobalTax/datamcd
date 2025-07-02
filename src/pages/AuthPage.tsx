@@ -310,16 +310,42 @@ const AuthPage = () => {
             </TabsContent>
           </Tabs>
 
-          <div className="mt-6 text-xs text-gray-500 text-center space-y-2">
-            <div className="p-2 bg-blue-50 rounded text-blue-700">
-              <div className="font-medium">Sistema optimizado:</div>
-              <div>✓ Timeouts extendidos (15-25s)</div>
-              <div>✓ Modo de emergencia automático</div>
-              <div>✓ Acceso inmediato disponible</div>
+          <div className="mt-6 space-y-3">
+            <div className="flex justify-center space-x-2 flex-wrap gap-2">
+              <Button
+                variant="link"
+                onClick={() => window.location.href = '/auth-improved'}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                ⚡ Sistema Mejorado
+              </Button>
+              <Button
+                variant="link"
+                onClick={() => window.location.href = '/debug-auth'}
+                className="text-sm text-orange-600 hover:text-orange-800"
+              >
+                🔧 Debug
+              </Button>
+              <Button
+                variant="link"
+                onClick={() => window.location.href = '/advisor'}
+                className="text-sm text-green-600 hover:text-green-800 font-semibold"
+              >
+                🚀 Acceso Directo Asesor
+              </Button>
             </div>
-            <p className="text-gray-400">
-              ¿Problemas? Usa el botón de emergencia para acceso inmediato
-            </p>
+            
+            <div className="text-xs text-gray-500 text-center space-y-2">
+              <div className="p-2 bg-blue-50 rounded text-blue-700">
+                <div className="font-medium">Sistema optimizado:</div>
+                <div>✓ Timeouts extendidos (15-25s)</div>
+                <div>✓ Modo de emergencia automático</div>
+                <div>✓ Acceso inmediato disponible</div>
+              </div>
+              <p className="text-gray-400">
+                ¿Problemas? Usa el botón de emergencia para acceso inmediato
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

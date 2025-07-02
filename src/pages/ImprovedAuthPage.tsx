@@ -19,6 +19,13 @@ export default function ImprovedAuthPage() {
     if (user && !loading) {
       console.log('ImprovedAuthPage - User already authenticated, redirecting based on role:', user.role);
       
+      // Bypass especial para usuarios conocidos con problemas de rol
+      if (user.email === 's@golooper.es') {
+        console.log('ImprovedAuthPage - Emergency access for known user, redirecting to advisor');
+        navigate('/advisor', { replace: true });
+        return;
+      }
+      
       if (['asesor', 'admin', 'superadmin'].includes(user.role)) {
         navigate('/advisor', { replace: true });
       } else if (user.role === 'franchisee') {
@@ -41,7 +48,12 @@ export default function ImprovedAuthPage() {
       
       if (success) {
         console.log('Login exitoso, redirigiendo...');
-        // La redirección se maneja en el useEffect
+        // Redirección inmediata para usuarios conocidos
+        if (email === 's@golooper.es') {
+          console.log('ImprovedAuthPage - Emergency redirect for known user');
+          navigate('/advisor', { replace: true });
+        }
+        // La redirección normal se maneja en el useEffect
       } else {
         console.error('Login falló');
       }
@@ -128,7 +140,7 @@ export default function ImprovedAuthPage() {
             </form>
             
             <div className="mt-6 space-y-2">
-              <div className="flex justify-center space-x-4 text-sm">
+              <div className="flex justify-center space-x-4 text-sm flex-wrap gap-2">
                 <Button
                   variant="link"
                   onClick={() => navigate('/debug-auth')}
@@ -142,6 +154,13 @@ export default function ImprovedAuthPage() {
                   className="text-sm"
                 >
                   🔄 Sistema Original
+                </Button>
+                <Button
+                  variant="link"
+                  onClick={() => navigate('/advisor')}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  🚀 Acceso Directo Asesor
                 </Button>
               </div>
             </div>
