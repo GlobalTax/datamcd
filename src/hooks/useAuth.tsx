@@ -67,6 +67,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [fetchUserData, setUser, setFranchisee, setRestaurants, setLoading]);
 
+  const forceRoleUpdate = useCallback(async (): Promise<boolean> => {
+    console.log('AuthProvider - Force role update triggered');
+    try {
+      setLoading(true);
+      
+      // Refrescar la sesión completa de Supabase para obtener datos actualizados
+      const { data: { session: freshSession }, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.error('AuthProvider - Error refreshing session:', error);
+        return false;
+      }
+
+      if (freshSession?.user) {
+        console.log('AuthProvider - Session refreshed, forcing fresh data load');
+        
+        // Limpiar caché y forzar recarga completa desde la base de datos
+        currentUserId.current = null;
+        isFetchingUserData.current = true;
+        
+        try {
+          const userData = await fetchUserData(freshSession.user.id);
+          setUser(userData.user);
+          setFranchisee(userData.franchisee);
+          setRestaurants(userData.restaurants);
+          currentUserId.current = freshSession.user.id;
+          
+          console.log('AuthProvider - Role update successful, new role:', userData.user?.role);
+          return true;
+        } catch (fetchError) {
+          console.error('AuthProvider - Error fetching fresh user data:', fetchError);
+          return false;
+        } finally {
+          isFetchingUserData.current = false;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('AuthProvider - Error in force role update:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchUserData, setUser, setFranchisee, setRestaurants, setLoading]);
+
   const handleDataLoadError = useCallback(async (userId: string, user: any) => {
     console.log('AuthProvider - Handling data load error for user:', userId);
     
@@ -284,6 +329,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp: fastSignUp,
     signOut,
     refreshData,
+    forceRoleUpdate,
     clearUserData,
   };
 

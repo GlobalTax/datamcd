@@ -12,7 +12,7 @@ import SimpleAuthDebugger from "@/components/debug/SimpleAuthDebugger";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, loading, refreshData } = useAuth();
+  const { user, loading, refreshData, forceRoleUpdate } = useAuth();
 
   console.log('Index - Component rendered');
   console.log('Index - User:', user);
@@ -82,22 +82,40 @@ const Index = () => {
               <p><strong>Rol actual:</strong> <span className="bg-yellow-100 px-2 py-1 rounded font-mono">{user.role}</span></p>
               <p><strong>Debería ir a:</strong> {['asesor', 'admin', 'superadmin'].includes(user.role) ? '/advisor' : '/dashboard'}</p>
             </div>
-            <div className="flex gap-3 mt-4">
+            <div className="flex gap-2 mt-4 flex-wrap">
               <button 
                 onClick={() => {
                   console.log('Manual refresh triggered');
                   refreshData();
                 }}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
               >
                 🔄 Refrescar Datos
+              </button>
+              <button 
+                onClick={async () => {
+                  console.log('Force role update triggered');
+                  const success = await forceRoleUpdate();
+                  if (success) {
+                    console.log('Role update successful, checking for redirect');
+                    // Pequeña pausa para que se actualice el estado
+                    setTimeout(() => {
+                      if (user && ['asesor', 'admin', 'superadmin'].includes(user.role)) {
+                        navigate('/advisor', { replace: true });
+                      }
+                    }, 500);
+                  }
+                }}
+                className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 text-sm"
+              >
+                🚀 Actualizar Rol
               </button>
               <button 
                 onClick={() => {
                   console.log('Manual navigation to /advisor');
                   navigate('/advisor');
                 }}
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 text-sm"
               >
                 📍 Ir a /advisor
               </button>
@@ -106,7 +124,7 @@ const Index = () => {
                   console.log('Manual navigation to /dashboard');
                   navigate('/dashboard');
                 }}
-                className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
+                className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 text-sm"
               >
                 📍 Ir a /dashboard
               </button>
