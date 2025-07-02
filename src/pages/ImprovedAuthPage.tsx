@@ -157,10 +157,10 @@ export default function ImprovedAuthPage() {
                 </Button>
                 <Button
                   variant="link"
-                  onClick={() => navigate('/advisor')}
-                  className="text-sm text-blue-600 hover:text-blue-800"
+                  onClick={() => navigate('/emergency-access')}
+                  className="text-sm text-red-600 hover:text-red-800 font-bold"
                 >
-                  🚀 Acceso Directo Asesor
+                  🚨 ACCESO DE EMERGENCIA
                 </Button>
               </div>
             </div>

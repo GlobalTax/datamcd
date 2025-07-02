@@ -9,6 +9,7 @@ import AuthPage from "./pages/AuthPage";
 import ImprovedAuthPage from "./pages/ImprovedAuthPage";
 import AuthDebugPage from "./pages/AuthDebugPage";
 import AdvisorAuthPage from "./pages/AdvisorAuthPage";
+import EmergencyAccessPage from "./pages/EmergencyAccessPage";
 import DashboardPage from "./pages/DashboardPage";
 import OptimizedDashboardPage from "./pages/OptimizedDashboardPage";
 import RestaurantPage from "./pages/RestaurantPage";
@@ -37,6 +38,7 @@ function App() {
               <Route path="/auth-improved" element={<ImprovedAuthPage />} />
               <Route path="/debug-auth" element={<AuthDebugPage />} />
               <Route path="/advisor-auth" element={<AdvisorAuthPage />} />
+              <Route path="/emergency-access" element={<EmergencyAccessPage />} />
               <Route
                 path="/dashboard"
                 element={

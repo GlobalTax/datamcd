@@ -328,10 +328,10 @@ const AuthPage = () => {
               </Button>
               <Button
                 variant="link"
-                onClick={() => window.location.href = '/advisor'}
-                className="text-sm text-green-600 hover:text-green-800 font-semibold"
+                onClick={() => window.location.href = '/emergency-access'}
+                className="text-sm text-red-600 hover:text-red-800 font-bold"
               >
-                🚀 Acceso Directo Asesor
+                🚨 ACCESO DE EMERGENCIA
               </Button>
             </div>
             
