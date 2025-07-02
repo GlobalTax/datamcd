@@ -33,13 +33,14 @@ export default function AdvisorPage() {
     );
   }
 
-  if (!user || user.role !== 'asesor') {
+  if (!user || !['asesor', 'admin', 'superadmin'].includes(user.role)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card>
           <CardContent className="p-8 text-center">
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Acceso Denegado</h2>
             <p className="text-gray-600">No tienes permisos para acceder al panel de asesor.</p>
+            <p className="text-sm text-gray-500 mt-2">Rol actual: {user?.role}</p>
           </CardContent>
         </Card>
       </div>
