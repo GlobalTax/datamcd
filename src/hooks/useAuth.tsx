@@ -72,45 +72,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       
-      // Refrescar la sesión completa de Supabase para obtener datos actualizados
-      const { data: { session: freshSession }, error } = await supabase.auth.refreshSession();
+      // Limpiar completamente el caché local primero
+      currentUserId.current = null;
+      isFetchingUserData.current = false;
       
-      if (error) {
-        console.error('AuthProvider - Error refreshing session:', error);
+      // 1. Obtener sesión actual sin caché
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession?.user) {
+        console.error('AuthProvider - No active session found');
         return false;
       }
-
-      if (freshSession?.user) {
-        console.log('AuthProvider - Session refreshed, forcing fresh data load');
-        
-        // Limpiar caché y forzar recarga completa desde la base de datos
-        currentUserId.current = null;
-        isFetchingUserData.current = true;
-        
-        try {
-          const userData = await fetchUserData(freshSession.user.id);
-          setUser(userData.user);
-          setFranchisee(userData.franchisee);
-          setRestaurants(userData.restaurants);
-          currentUserId.current = freshSession.user.id;
-          
-          console.log('AuthProvider - Role update successful, new role:', userData.user?.role);
-          return true;
-        } catch (fetchError) {
-          console.error('AuthProvider - Error fetching fresh user data:', fetchError);
-          return false;
-        } finally {
-          isFetchingUserData.current = false;
-        }
+      
+      // 2. Forzar refresh de la sesión para obtener tokens actualizados
+      const { data: { session: freshSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        console.error('AuthProvider - Error refreshing session:', refreshError);
+        // Continuar con la sesión actual si el refresh falla
       }
-      return false;
+      
+      const sessionToUse = freshSession || currentSession;
+      
+      // 3. Fetch directo desde la base de datos sin caché
+      console.log('AuthProvider - Fetching fresh profile data from database');
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', sessionToUse.user.id)
+        .single();
+      
+      if (profileError || !profileData) {
+        console.error('AuthProvider - Error fetching fresh profile:', profileError);
+        return false;
+      }
+      
+      console.log('AuthProvider - Fresh profile data:', profileData);
+      
+      // 4. Verificar si el rol ha cambiado
+      const currentRole = user?.role;
+      const newRole = profileData.role;
+      
+      if (currentRole !== newRole) {
+        console.log(`AuthProvider - Role change detected: ${currentRole} → ${newRole}`);
+      }
+      
+      // 5. Cargar datos completos del usuario
+      try {
+        isFetchingUserData.current = true;
+        const userData = await fetchUserData(sessionToUse.user.id);
+        
+        // 6. Actualizar estado con datos frescos
+        setUser(userData.user);
+        setFranchisee(userData.franchisee);
+        setRestaurants(userData.restaurants);
+        currentUserId.current = sessionToUse.user.id;
+        
+        console.log('AuthProvider - Role update successful, new role:', userData.user?.role);
+        console.log('AuthProvider - Updated user data:', {
+          id: userData.user?.id,
+          email: userData.user?.email,
+          role: userData.user?.role
+        });
+        
+        return true;
+      } catch (fetchError) {
+        console.error('AuthProvider - Error fetching fresh user data:', fetchError);
+        return false;
+      } finally {
+        isFetchingUserData.current = false;
+      }
     } catch (error) {
       console.error('AuthProvider - Error in force role update:', error);
       return false;
     } finally {
       setLoading(false);
     }
-  }, [fetchUserData, setUser, setFranchisee, setRestaurants, setLoading]);
+  }, [fetchUserData, setUser, setFranchisee, setRestaurants, setLoading, user]);
 
   const handleDataLoadError = useCallback(async (userId: string, user: any) => {
     console.log('AuthProvider - Handling data load error for user:', userId);

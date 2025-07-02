@@ -94,19 +94,55 @@ const Index = () => {
               </button>
               <button 
                 onClick={async () => {
-                  console.log('Force role update triggered');
+                  console.log('Manual role update triggered from Index page');
                   const success = await forceRoleUpdate();
                   if (success) {
-                    console.log('Role update successful, checking for redirect');
-                    // Pequeña pausa para que se actualice el estado
+                    console.log('Role update successful, user data refreshed');
+                    
+                    // Mostrar notificación de éxito
+                    const notification = document.createElement('div');
+                    notification.innerHTML = '✅ Rol actualizado correctamente';
+                    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+                    document.body.appendChild(notification);
+                    
+                    // Verificar y redirigir según el nuevo rol
                     setTimeout(() => {
+                      console.log('Checking user role for redirect after update');
+                      console.log('Current user role:', user?.role);
+                      
                       if (user && ['asesor', 'admin', 'superadmin'].includes(user.role)) {
+                        console.log('Redirecting to /advisor');
                         navigate('/advisor', { replace: true });
+                      } else if (user && user.role === 'franchisee') {
+                        console.log('User is franchisee, redirecting to /dashboard');
+                        navigate('/dashboard', { replace: true });
                       }
-                    }, 500);
+                      
+                      // Remover notificación después de 3 segundos
+                      setTimeout(() => {
+                        if (notification.parentNode) {
+                          notification.parentNode.removeChild(notification);
+                        }
+                      }, 3000);
+                    }, 1000);
+                  } else {
+                    console.error('Role update failed');
+                    
+                    // Mostrar notificación de error
+                    const notification = document.createElement('div');
+                    notification.innerHTML = '❌ Error al actualizar el rol';
+                    notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
+                    document.body.appendChild(notification);
+                    
+                    // Remover notificación después de 3 segundos
+                    setTimeout(() => {
+                      if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                      }
+                    }, 3000);
                   }
                 }}
-                className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 text-sm"
+                className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 text-sm font-semibold"
               >
                 🚀 Actualizar Rol
               </button>
