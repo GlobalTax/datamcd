@@ -1,4 +1,5 @@
 
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -6,10 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
-import ImprovedAuthPage from "./pages/ImprovedAuthPage";
-import AuthDebugPage from "./pages/AuthDebugPage";
 import AdvisorAuthPage from "./pages/AdvisorAuthPage";
-import EmergencyAccessPage from "./pages/EmergencyAccessPage";
 import DashboardPage from "./pages/DashboardPage";
 import OptimizedDashboardPage from "./pages/OptimizedDashboardPage";
 import RestaurantPage from "./pages/RestaurantPage";
@@ -32,13 +30,11 @@ function App() {
       <AuthProvider>
         <TooltipProvider>
           <BrowserRouter>
+            <Toaster />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
-              <Route path="/auth-improved" element={<ImprovedAuthPage />} />
-              <Route path="/debug-auth" element={<AuthDebugPage />} />
               <Route path="/advisor-auth" element={<AdvisorAuthPage />} />
-              <Route path="/emergency-access" element={<EmergencyAccessPage />} />
               <Route
                 path="/dashboard"
                 element={
@@ -79,6 +75,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              {/* Redirección de /profit-loss a /profit-loss/001 (primer restaurante) */}
               <Route
                 path="/profit-loss"
                 element={<Navigate to="/profit-loss/001" replace />}

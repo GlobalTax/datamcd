@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { FileSpreadsheet, Upload } from 'lucide-react';
 import { parseDataFromText } from './utils';
 import { YearlyData, ImportMethod } from './types';
-import { showSuccess, showError } from '@/utils/notifications';
+import { toast } from 'sonner';
 
 interface CopyPasteCardProps {
   onDataParsed: (data: YearlyData[], method: ImportMethod) => void;
@@ -27,7 +27,7 @@ export const CopyPasteCard: React.FC<CopyPasteCardProps> = ({ onDataParsed }) =>
       onDataParsed(data, 'csv');
     } catch (error) {
       console.error('Error parsing CSV data:', error);
-      showError('Error al procesar los datos');
+      toast.error('Error al procesar los datos');
     }
   };
 

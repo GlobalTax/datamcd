@@ -1,65 +1,145 @@
 
-import React from 'react';
-import { RestaurantManager } from '@/components/RestaurantManager';
+import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
+import { useOptimizedFranchiseeRestaurants } from '@/hooks/useOptimizedFranchiseeRestaurants';
+import { useRestaurantUpdate } from '@/hooks/useRestaurantUpdate';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/navigation/AppSidebar';
+import RestaurantHeader from '@/components/restaurant/RestaurantHeader';
+import RestaurantCard from '@/components/restaurant/RestaurantCard';
+import EmptyRestaurantsState from '@/components/restaurant/EmptyRestaurantsState';
 
-export default function RestaurantManagementPage() {
+const RestaurantManagementPage = () => {
   const { user, franchisee } = useAuth();
-  const { restaurants } = useFranchiseeRestaurants();
-  
-  const handleAddRestaurant = () => {
-    console.log('Add restaurant functionality');
+  const { restaurants, loading, refetch } = useOptimizedFranchiseeRestaurants();
+  const { updateRestaurant, isUpdating } = useRestaurantUpdate();
+  const [editingRestaurant, setEditingRestaurant] = useState<string | null>(null);
+  const [editData, setEditData] = useState<any>({});
+
+  console.log('RestaurantManagementPage - User:', user ? { id: user.id, role: user.role } : null);
+  console.log('RestaurantManagementPage - Franchisee:', franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null);
+  console.log('RestaurantManagementPage - Restaurants:', restaurants.length, restaurants);
+  console.log('RestaurantManagementPage - Loading:', loading);
+
+  const handleEdit = (restaurant: any) => {
+    setEditingRestaurant(restaurant.id);
+    setEditData({
+      monthly_rent: restaurant.monthly_rent || 0,
+      last_year_revenue: restaurant.last_year_revenue || 0,
+      franchise_fee_percentage: restaurant.franchise_fee_percentage || 4.0,
+      advertising_fee_percentage: restaurant.advertising_fee_percentage || 4.0,
+      notes: restaurant.notes || ''
+    });
   };
 
-  const handleSelectRestaurant = (restaurant: any) => {
-    console.log('Select restaurant:', restaurant);
+  const handleSave = async (restaurantId: string) => {
+    const success = await updateRestaurant(restaurantId, editData);
+    
+    if (success) {
+      setEditingRestaurant(null);
+      setEditData({});
+      // Refrescar los datos
+      refetch();
+    }
   };
 
-  // Convert restaurants to the format expected by RestaurantManager
-  const convertedRestaurants = restaurants.map(fr => ({
-    id: fr.id,
-    name: fr.base_restaurant?.restaurant_name || 'Sin nombre',
-    location: fr.base_restaurant ? `${fr.base_restaurant.city}, ${fr.base_restaurant.country}` : 'Sin ubicación',
-    siteNumber: fr.base_restaurant?.site_number || 'N/A',
-    contractEndDate: fr.franchise_end_date || '',
-    franchiseEndDate: fr.franchise_end_date || '',
-    leaseEndDate: fr.lease_end_date || '',
-    lastYearRevenue: fr.last_year_revenue || 0,
-    baseRent: fr.monthly_rent || 0,
-    rentIndex: 0,
-    isOwnedByMcD: false,
-    franchiseeId: fr.franchisee_id || '',
-    valuationHistory: [],
-    currentValuation: null,
-    createdAt: new Date(fr.assigned_at)
-  }));
+  const handleCancel = () => {
+    setEditingRestaurant(null);
+    setEditData({});
+  };
+
+  const formatNumber = (value: number | undefined | null): string => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return '0';
+    }
+    return value.toLocaleString('es-ES');
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando datos del usuario...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.role !== 'franchisee') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Acceso no autorizado. Solo para franquiciados.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!franchisee) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Acceso Restringido</h2>
-          <p className="text-gray-600">No tienes permisos para acceder a esta página.</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando datos del franquiciado...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <RestaurantManager
-        franchisee={{
-          id: franchisee.id,
-          name: franchisee.franchisee_name,
-          email: franchisee.profiles?.email || user?.email || 'Sin email',
-          createdAt: new Date(franchisee.created_at),
-          restaurants: convertedRestaurants
-        }}
-        onAddRestaurant={handleAddRestaurant}
-        onSelectRestaurant={handleSelectRestaurant}
-        selectedRestaurant={convertedRestaurants[0] || null}
-      />
-    </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gray-50">
+        <AppSidebar />
+        <SidebarInset className="flex-1">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-white px-6">
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex-1">
+              <h1 className="text-lg font-semibold text-gray-900">Gestión de Restaurantes</h1>
+              <p className="text-sm text-gray-500">
+                Administra la información de tus restaurantes
+              </p>
+            </div>
+          </header>
+
+          <main className="flex-1 p-6">
+            <div className="space-y-6">
+              <RestaurantHeader 
+                franchiseeName={franchisee.franchisee_name}
+                restaurantCount={restaurants.length}
+              />
+
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Cargando restaurantes...</p>
+                </div>
+              ) : (
+                <div className="grid gap-6">
+                  {restaurants.map((restaurant) => (
+                    <RestaurantCard
+                      key={restaurant.id}
+                      restaurant={restaurant}
+                      editingRestaurant={editingRestaurant}
+                      editData={editData}
+                      setEditData={setEditData}
+                      onEdit={handleEdit}
+                      onSave={handleSave}
+                      onCancel={handleCancel}
+                      formatNumber={formatNumber}
+                      isUpdating={isUpdating}
+                    />
+                  ))}
+                  
+                  {restaurants.length === 0 && <EmptyRestaurantsState />}
+                </div>
+              )}
+            </div>
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
-}
+};
+
+export default RestaurantManagementPage;

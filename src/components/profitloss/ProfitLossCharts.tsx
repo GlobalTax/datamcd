@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProfitLossData } from '@/types/profitLoss';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { useProfitLossCalculations } from '@/hooks/useProfitLossCalculations';
+import { useProfitLossCalculations } from '@/hooks/useProfitLossData';
 
 interface ProfitLossChartsProps {
   data: ProfitLossData[];

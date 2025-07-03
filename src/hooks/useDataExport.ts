@@ -1,74 +1,99 @@
 
-import { useState } from 'react';
-import { useProfitLossCalculations } from '@/hooks/useProfitLossCalculations';
-import { showSuccess, showError } from '@/utils/notifications';
+import { useProfitLossCalculations } from '@/hooks/useProfitLossData';
 
 export const useDataExport = () => {
-  const [exporting, setExporting] = useState(false);
   const { formatCurrency } = useProfitLossCalculations();
 
-  const exportToCSV = async (data: any[], filename: string) => {
+  const exportToCSV = (data: any[], filename: string, headers: string[]) => {
+    console.log('Exporting data to CSV:', { filename, rowCount: data.length });
+    
     try {
-      setExporting(true);
-      
-      if (!data || data.length === 0) {
-        showError('No hay datos para exportar');
-        return;
-      }
+      const csvContent = [
+        headers.join(','),
+        ...data.map(row => 
+          headers.map(header => {
+            const value = row[header.toLowerCase().replace(/ /g, '_')];
+            if (typeof value === 'number') {
+              return value.toString();
+            }
+            return `"${value || ''}"`;
+          }).join(',')
+        )
+      ].join('\n');
 
-      // Convert data to CSV
-      const headers = Object.keys(data[0]).join(',');
-      const rows = data.map(row => Object.values(row).join(','));
-      const csvContent = [headers, ...rows].join('\n');
-
-      // Create and download file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${filename}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      showSuccess('Datos exportados correctamente');
+      
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } catch (error) {
-      console.error('Error exporting data:', error);
-      showError('Error al exportar los datos');
-    } finally {
-      setExporting(false);
+      console.error('Error exporting to CSV:', error);
+      throw new Error('Error al exportar los datos');
     }
   };
 
   const exportRestaurantsData = (restaurants: any[]) => {
-    try {
-      if (!restaurants || restaurants.length === 0) {
-        showError('No hay datos de restaurantes para exportar');
-        return;
-      }
+    const headers = [
+      'Nombre',
+      'Site Number',
+      'Ciudad',
+      'Dirección',
+      'Tipo',
+      'Renta Mensual',
+      'Facturación Último Año',
+      'Tarifa Franquicia',
+      'Tarifa Publicidad',
+      'Estado'
+    ];
 
-      const exportData = restaurants.map(restaurant => ({
-        nombre: restaurant.base_restaurant?.restaurant_name || 'N/A',
-        numero_sitio: restaurant.base_restaurant?.site_number || 'N/A',
-        direccion: restaurant.base_restaurant?.address || 'N/A',
-        ciudad: restaurant.base_restaurant?.city || 'N/A',
-        tipo: restaurant.base_restaurant?.restaurant_type || 'N/A',
-        estado: restaurant.status || 'N/A',
-        renta_mensual: restaurant.monthly_rent || 0,
-        ingresos_ultimo_año: restaurant.last_year_revenue || 0
-      }));
+    const exportData = restaurants.map(restaurant => ({
+      nombre: restaurant.base_restaurant?.restaurant_name || '',
+      site_number: restaurant.base_restaurant?.site_number || '',
+      ciudad: restaurant.base_restaurant?.city || '',
+      dirección: restaurant.base_restaurant?.address || '',
+      tipo: restaurant.base_restaurant?.restaurant_type || '',
+      renta_mensual: restaurant.monthly_rent || 0,
+      facturación_último_año: restaurant.last_year_revenue || 0,
+      tarifa_franquicia: restaurant.franchise_fee_percentage || 0,
+      tarifa_publicidad: restaurant.advertising_fee_percentage || 0,
+      estado: restaurant.status || ''
+    }));
 
-      exportToCSV(exportData, 'restaurantes_franquicia');
-    } catch (error) {
-      console.error('Error exporting restaurants data:', error);
-      showError('Error al exportar los datos de restaurantes');
-    }
+    exportToCSV(exportData, 'restaurantes', headers);
+  };
+
+  const exportProfitLossData = (data: any[]) => {
+    const headers = [
+      'Mes',
+      'Año',
+      'Ingresos Totales',
+      'Costos Totales',
+      'Beneficio Operativo',
+      'Margen %'
+    ];
+
+    const exportData = data.map(item => ({
+      mes: item.month,
+      año: item.year,
+      ingresos_totales: item.total_revenue || 0,
+      costos_totales: (item.total_cost_of_sales || 0) + (item.total_labor || 0) + (item.total_operating_expenses || 0),
+      beneficio_operativo: item.operating_income || 0,
+      'margen_%': item.total_revenue > 0 ? ((item.operating_income / item.total_revenue) * 100).toFixed(2) : 0
+    }));
+
+    exportToCSV(exportData, 'profit_loss', headers);
   };
 
   return {
-    exporting,
     exportToCSV,
-    exportRestaurantsData
+    exportRestaurantsData,
+    exportProfitLossData
   };
 };

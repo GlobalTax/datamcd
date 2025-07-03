@@ -1,119 +1,147 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { showError } from '@/utils/notifications';
+import { useAuth } from '@/hooks/useAuth';
+import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
+import { toast } from 'sonner';
 
-export interface BaseRestaurant {
-  id: string;
-  restaurant_name: string;
-  site_number: string;
-  address: string;
-  city: string;
-  opening_date: string;
-  restaurant_type: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface OptimizedFranchiseeRestaurant {
-  id: string;
-  franchisee_id: string;
-  restaurant_id: string;
-  monthly_rent: number | null;
-  last_year_revenue: number | null;
-  franchise_fee_percentage: number | null;
-  advertising_fee_percentage: number | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-  base_restaurant: BaseRestaurant | null;
-}
-
-export const useOptimizedFranchiseeRestaurants = (franchiseeId: string | undefined) => {
-  const [restaurants, setRestaurants] = useState<OptimizedFranchiseeRestaurant[]>([]);
-  const [loading, setLoading] = useState(false);
+export const useOptimizedFranchiseeRestaurants = () => {
+  const { user, franchisee } = useAuth();
+  const [restaurants, setRestaurants] = useState<FranchiseeRestaurant[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRestaurants = async () => {
-    if (!franchiseeId) return;
-
+  const fetchOptimizedRestaurants = async () => {
+    console.log('useOptimizedFranchiseeRestaurants - Starting optimized fetch');
+    console.log('useOptimizedFranchiseeRestaurants - User:', user ? { id: user.id, role: user.role } : null);
+    console.log('useOptimizedFranchiseeRestaurants - Franchisee:', franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null);
+    
     try {
+      if (!user) {
+        console.log('useOptimizedFranchiseeRestaurants - No user found');
+        setRestaurants([]);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
+      if (user.role !== 'franchisee') {
+        console.log('useOptimizedFranchiseeRestaurants - User is not franchisee, role:', user.role);
+        setRestaurants([]);
+        setError('Usuario no es franquiciado');
+        setLoading(false);
+        return;
+      }
+
+      if (!franchisee) {
+        console.log('useOptimizedFranchiseeRestaurants - No franchisee data found for user');
+        setRestaurants([]);
+        setError('No se encontró información del franquiciado');
+        setLoading(false);
+        return;
+      }
+
+      if (franchisee.id.startsWith('temp-')) {
+        console.log('useOptimizedFranchiseeRestaurants - Temporary franchisee detected, skipping database query');
+        setRestaurants([]);
+        toast.info('No se encontraron restaurantes asignados');
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
-      
-      const { data, error: supabaseError } = await supabase
+
+      console.log('useOptimizedFranchiseeRestaurants - Fetching optimized restaurants for franchisee:', franchisee.id);
+
+      // Consulta optimizada que usa los nuevos índices
+      const { data, error } = await supabase
         .from('franchisee_restaurants')
         .select(`
           id,
           franchisee_id,
           base_restaurant_id,
+          franchise_start_date,
+          franchise_end_date,
+          lease_start_date,
+          lease_end_date,
           monthly_rent,
-          last_year_revenue,
           franchise_fee_percentage,
           advertising_fee_percentage,
+          last_year_revenue,
+          average_monthly_sales,
+          status,
           notes,
           assigned_at,
-          status,
-          base_restaurant:base_restaurants (
+          updated_at,
+          base_restaurant:base_restaurants!inner(
             id,
-            restaurant_name,
             site_number,
+            restaurant_name,
             address,
             city,
+            state,
+            postal_code,
+            country,
+            restaurant_type,
+            square_meters,
+            seating_capacity,
+            franchisee_name,
+            franchisee_email,
+            company_tax_id,
             opening_date,
-            restaurant_type
+            property_type,
+            autonomous_community,
+            created_at,
+            updated_at,
+            created_by
           )
         `)
-        .eq('franchisee_id', franchiseeId);
+        .eq('franchisee_id', franchisee.id)
+        .eq('status', 'active');
 
-      if (supabaseError) throw supabaseError;
+      console.log('useOptimizedFranchiseeRestaurants - Optimized query result:', { data: data?.length || 0, error });
+
+      if (error) {
+        console.error('Error fetching optimized restaurants:', error);
+        setError(`Error al cargar restaurantes: ${error.message}`);
+        setRestaurants([]);
+        toast.error('Error al cargar restaurantes: ' + error.message);
+        return;
+      }
+
+      const validRestaurants = Array.isArray(data) ? data : [];
+      console.log('useOptimizedFranchiseeRestaurants - Setting optimized restaurants:', validRestaurants.length);
+      setRestaurants(validRestaurants);
       
-      // Map the data to include the restaurant_id from base_restaurant_id
-      const mappedData = (data || []).map(item => ({
-        id: item.id,
-        franchisee_id: item.franchisee_id || '',
-        restaurant_id: item.base_restaurant_id || '',
-        monthly_rent: item.monthly_rent,
-        last_year_revenue: item.last_year_revenue,
-        franchise_fee_percentage: item.franchise_fee_percentage,
-        advertising_fee_percentage: item.advertising_fee_percentage,
-        notes: item.notes,
-        created_at: item.assigned_at || new Date().toISOString(),
-        updated_at: item.assigned_at || new Date().toISOString(),
-        base_restaurant: item.base_restaurant ? {
-          id: item.base_restaurant.id,
-          restaurant_name: item.base_restaurant.restaurant_name,
-          site_number: item.base_restaurant.site_number,
-          address: item.base_restaurant.address,
-          city: item.base_restaurant.city,
-          opening_date: item.base_restaurant.opening_date,
-          restaurant_type: item.base_restaurant.restaurant_type,
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        } : null
-      }));
-      
-      setRestaurants(mappedData);
-    } catch (error) {
-      console.error('Error fetching optimized franchisee restaurants:', error);
-      const errorMessage = 'Error al cargar los restaurantes del franquiciado';
+      if (validRestaurants.length === 0) {
+        console.log('useOptimizedFranchiseeRestaurants - No restaurants found for franchisee');
+        toast.info('No se encontraron restaurantes asignados');
+      } else {
+        console.log(`useOptimizedFranchiseeRestaurants - Found ${validRestaurants.length} restaurants`);
+        toast.success(`Se cargaron ${validRestaurants.length} restaurantes`);
+      }
+    } catch (err) {
+      console.error('Error in optimized fetchRestaurants:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar los restaurantes';
       setError(errorMessage);
-      showError(errorMessage);
+      setRestaurants([]);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRestaurants();
-  }, [franchiseeId]);
+    console.log('useOptimizedFranchiseeRestaurants - useEffect triggered');
+    fetchOptimizedRestaurants();
+  }, [user?.id, franchisee?.id]);
 
   return {
     restaurants,
     loading,
     error,
-    refetch: fetchRestaurants
+    refetch: fetchOptimizedRestaurants
   };
 };

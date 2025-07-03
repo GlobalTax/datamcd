@@ -1,122 +1,145 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { showSuccess, showError } from '@/utils/notifications';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { ActualData, ActualDataUpdateParams } from '@/types/actualDataTypes';
+import { 
+  getMonthKey, 
+  getMonthNumber, 
+  getFieldMapping, 
+  groupDataByCategories 
+} from '@/utils/actualDataMappers';
 
-export interface MonthlyData {
-  id: string;
-  site_number: string;
-  year: number;
-  month: number;
-  net_sales: number;
-  food_cost: number;
-  paper_cost: number;
-  crew_labor: number;
-  management_salary: number;
-  other_labor: number;
-  rent: number;
-  utilities: number;
-  marketing: number;
-  supplies: number;
-  other_expenses: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export const useActualData = (siteNumber: string) => {
-  const [data, setData] = useState<MonthlyData[]>([]);
+export const useActualData = () => {
+  const { user } = useAuth();
+  const [actualData, setActualData] = useState<ActualData[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchActualData = useCallback(async (restaurantId: string, year: number) => {
+    if (!user || !restaurantId) return;
+
     try {
       setLoading(true);
-      // Utilizamos monthly_tracking en lugar de actual_data
-      const { data: actualData, error } = await supabase
-        .from('monthly_tracking')
+      setError(null);
+
+      // Obtener datos reales de profit_loss_data agrupados por categoría/subcategoría
+      const { data, error: queryError } = await supabase
+        .from('profit_loss_data')
         .select('*')
-        .eq('franchisee_restaurant_id', siteNumber)
-        .order('year', { ascending: false })
-        .order('month', { ascending: true });
+        .eq('restaurant_id', restaurantId)
+        .eq('year', year);
 
-      if (error) throw error;
+      if (queryError) {
+        console.error('Error fetching actual data:', queryError);
+        setError('Error al cargar los datos reales');
+        return;
+      }
 
-      // Mapear los datos a la estructura esperada
-      const mappedData: MonthlyData[] = (actualData || []).map(item => ({
-        id: item.id,
-        site_number: siteNumber,
-        year: item.year,
-        month: item.month,
-        net_sales: item.actual_revenue || 0,
-        food_cost: item.actual_food_cost || 0,
-        paper_cost: 0, // No disponible en monthly_tracking
-        crew_labor: item.actual_labor_cost || 0,
-        management_salary: 0, // No disponible en monthly_tracking
-        other_labor: 0, // No disponible en monthly_tracking
-        rent: item.actual_rent || 0,
-        utilities: item.actual_utilities || 0,
-        marketing: item.actual_marketing || 0,
-        supplies: 0, // No disponible en monthly_tracking
-        other_expenses: item.actual_other_expenses || 0,
-        created_at: item.created_at,
-        updated_at: item.updated_at
-      }));
+      if (!data || data.length === 0) {
+        setActualData([]);
+        return;
+      }
 
-      setData(mappedData);
-    } catch (error) {
-      console.error('Error fetching actual data:', error);
-      showError('Error al cargar los datos actuales');
+      // Agrupar datos por categorías similares al presupuesto
+      const groupedData = groupDataByCategories(data);
+
+      // Calcular totales
+      Object.values(groupedData).forEach(item => {
+        item.total = item.jan + item.feb + item.mar + item.apr + item.may + item.jun +
+                    item.jul + item.aug + item.sep + item.oct + item.nov + item.dec;
+      });
+
+      setActualData(Object.values(groupedData));
+
+    } catch (err) {
+      console.error('Error in fetchActualData:', err);
+      setError('Error al cargar los datos reales');
+      toast.error('Error al cargar los datos reales');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const saveData = async (monthlyData: MonthlyData[]) => {
+  const updateActualData = useCallback(async (data: ActualDataUpdateParams) => {
+    if (!user) return;
+
     try {
-      setSaving(true);
+      // Convertir el campo de mes a número
+      const monthFields = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      const monthField = Object.keys(data).find(key => monthFields.includes(key));
       
-      for (const data of monthlyData) {
-        const { error } = await supabase
-          .from('monthly_tracking')
-          .upsert({
-            id: data.id,
-            franchisee_restaurant_id: siteNumber,
-            year: data.year,
-            month: data.month,
-            actual_revenue: data.net_sales,
-            actual_food_cost: data.food_cost,
-            actual_labor_cost: data.crew_labor,
-            actual_rent: data.rent,
-            actual_utilities: data.utilities,
-            actual_marketing: data.marketing,
-            actual_other_expenses: data.other_expenses,
-            updated_at: new Date().toISOString()
-          });
-
-        if (error) throw error;
+      if (!monthField) {
+        throw new Error('No month field found');
       }
 
-      showSuccess('Datos guardados correctamente');
-      await fetchData();
-    } catch (error) {
-      console.error('Error saving actual data:', error);
-      showError('Error al guardar los datos');
-    } finally {
-      setSaving(false);
-    }
-  };
+      const monthNumber = getMonthNumber(monthField);
+      if (!monthNumber) {
+        throw new Error('Invalid month field');
+      }
 
-  useEffect(() => {
-    if (siteNumber) {
-      fetchData();
+      // Buscar registro existente
+      const { data: existingData, error: fetchError } = await supabase
+        .from('profit_loss_data')
+        .select('*')
+        .eq('restaurant_id', data.restaurant_id)
+        .eq('year', data.year)
+        .eq('month', monthNumber)
+        .maybeSingle();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      // Mapear la categoría y subcategoría a los campos de la base de datos
+      const fieldMapping = getFieldMapping(data.category, data.subcategory);
+      if (!fieldMapping) {
+        throw new Error(`No field mapping found for ${data.category} - ${data.subcategory}`);
+      }
+
+      const updateData = {
+        [fieldMapping]: data[monthField]
+      };
+
+      if (existingData) {
+        // Actualizar registro existente
+        const { error: updateError } = await supabase
+          .from('profit_loss_data')
+          .update(updateData)
+          .eq('id', existingData.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+      } else {
+        // Crear nuevo registro
+        const { error: insertError } = await supabase
+          .from('profit_loss_data')
+          .insert({
+            restaurant_id: data.restaurant_id,
+            year: data.year,
+            month: monthNumber,
+            ...updateData,
+            created_by: user.id
+          });
+
+        if (insertError) {
+          throw insertError;
+        }
+      }
+
+    } catch (err) {
+      console.error('Error updating actual data:', err);
+      throw err;
     }
-  }, [siteNumber]);
+  }, [user]);
 
   return {
-    data,
+    actualData,
     loading,
-    saving,
-    saveData,
-    refetch: fetchData
+    error,
+    fetchActualData,
+    updateActualData
   };
 };

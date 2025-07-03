@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { showSuccess, showError } from '@/utils/notifications';
+import { toast } from 'sonner';
 
 export const useRestaurantUpdate = () => {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -26,16 +26,16 @@ export const useRestaurantUpdate = () => {
 
       if (error) {
         console.error('Error updating restaurant:', error);
-        showError('Error al actualizar el restaurante: ' + error.message);
+        toast.error('Error al actualizar el restaurante: ' + error.message);
         return false;
       }
 
       console.log('Restaurant updated successfully:', data);
-      showSuccess('Restaurante actualizado correctamente');
+      toast.success('Restaurante actualizado correctamente');
       return true;
     } catch (error) {
       console.error('Unexpected error updating restaurant:', error);
-      showError('Error inesperado al actualizar el restaurante');
+      toast.error('Error inesperado al actualizar el restaurante');
       return false;
     } finally {
       setIsUpdating(false);

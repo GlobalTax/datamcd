@@ -23,15 +23,14 @@ export interface Franchisee {
   created_at: string;
   updated_at: string;
   total_restaurants?: number;
-  // Propiedades adicionales para compatibilidad con código existente
-  profiles?: {
-    email?: string;
-    phone?: string;
-    full_name?: string;
-  };
   hasAccount?: boolean;
   isOnline?: boolean;
   lastAccess?: string;
+  profiles?: {
+    email: string;
+    full_name?: string;
+    phone?: string;
+  };
 }
 
 export interface Restaurant {
@@ -45,7 +44,7 @@ export interface Restaurant {
   postal_code?: string;
   country: string;
   opening_date?: string;
-  restaurant_type: 'traditional' | 'mccafe' | 'drive_thru' | 'express' | string; // Permitir strings adicionales
+  restaurant_type: 'traditional' | 'mccafe' | 'drive_thru' | 'express';
   status: 'active' | 'inactive' | 'pending' | 'closed';
   square_meters?: number;
   seating_capacity?: number;
@@ -53,19 +52,13 @@ export interface Restaurant {
   updated_at: string;
 }
 
-export interface AuthState {
+export interface AuthContextType {
   user: User | null;
-  session: any;
-  franchisee: Franchisee | null;
-  restaurants: Restaurant[];
+  session?: any;
+  franchisee?: Franchisee | null;
+  restaurants?: Restaurant[];
   loading: boolean;
-}
-
-export interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
-  refreshData: () => Promise<void>;
-  forceRoleUpdate: () => Promise<boolean>;
-  clearUserData: () => void;
 }

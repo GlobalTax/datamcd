@@ -1,105 +1,106 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, FileText, AlertCircle } from 'lucide-react';
-import { YearlyData, parseDataFromText, downloadTemplate } from './utils';
+import { Input } from '@/components/ui/input';
+import { File, Download } from 'lucide-react';
+import { parseDataFromText, downloadTemplate } from './utils';
+import { YearlyData, ImportMethod } from './types';
+import { toast } from 'sonner';
 
 interface FileUploadCardProps {
-  onDataParsed: (data: YearlyData[]) => void;
+  onDataParsed: (data: YearlyData[], method: ImportMethod) => void;
 }
 
 export const FileUploadCard: React.FC<FileUploadCardProps> = ({ onDataParsed }) => {
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
-    setError(null);
+    console.log('=== FILE UPLOAD DEBUG ===');
+    console.log('File selected:', file.name, file.type, file.size);
 
-    try {
-      const text = await file.text();
-      const parsedData = parseDataFromText(text);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      console.log('File content loaded, length:', text.length);
+      console.log('First 200 chars:', text.substring(0, 200));
       
-      if (parsedData.length === 0) {
-        setError('No se pudieron procesar los datos del archivo. Verifica el formato.');
-        return;
+      // Detectar el separador automáticamente
+      let separator = '\t';
+      if (text.includes(',') && !text.includes('\t')) {
+        separator = ',';
+      } else if (text.includes(';')) {
+        separator = ';';
       }
 
-      onDataParsed(parsedData);
-    } catch (err) {
-      console.error('Error processing file:', err);
-      setError('Error al procesar el archivo. Verifica que sea un archivo válido.');
-    } finally {
-      setUploading(false);
-      // Reset file input
-      event.target.value = '';
+      console.log('Detected separator:', separator);
+
+      try {
+        const data = parseDataFromText(text, separator);
+        console.log('Parsed data successfully:', data.length, 'years');
+        console.log('Sample data:', data[0]);
+        onDataParsed(data, 'file');
+        toast.success(`Archivo cargado correctamente. Detectado separador: "${separator}"`);
+      } catch (error) {
+        console.error('Error reading file:', error);
+        toast.error('Error al leer el archivo. Verifica el formato.');
+      }
+    };
+
+    reader.onerror = (error) => {
+      console.error('FileReader error:', error);
+      toast.error('Error al leer el archivo.');
+    };
+
+    if (file.type.includes('text') || file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+      reader.readAsText(file);
+    } else {
+      console.error('Invalid file type:', file.type);
+      toast.error('Por favor, sube un archivo .csv, .txt o copia los datos directamente.');
     }
   };
 
   return (
-    <Card>
+    <Card className="cursor-pointer hover:shadow-lg transition-shadow">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Upload className="h-5 w-5" />
-          Subir Archivo CSV
+          <File className="w-5 h-5" />
+          Subir Archivo Excel/CSV
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <p className="text-sm text-gray-600">
-            Sube un archivo CSV con los datos históricos de P&L.
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={downloadTemplate}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Descargar Plantilla
-            </Button>
-            <span className="text-xs text-gray-500">
-              Usa la plantilla para formatear tus datos correctamente
-            </span>
-          </div>
-        </div>
-
-        {error && (
-          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <AlertCircle className="h-4 w-4 text-red-500" />
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
-
-        <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
-          <FileText className="h-8 w-8 text-gray-400 mx-auto mb-4" />
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Arrastra tu archivo CSV aquí</p>
-            <p className="text-xs text-gray-500">o haz clic para seleccionar</p>
-          </div>
-          <input
+        <p className="text-sm text-gray-600">
+          Sube un archivo .csv, .txt o Excel guardado como CSV
+        </p>
+        
+        <div className="space-y-3">
+          <Input
             type="file"
-            accept=".csv,.txt"
+            accept=".csv,.txt,.tsv"
             onChange={handleFileUpload}
-            disabled={uploading}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            className="w-full"
           />
-          {uploading && (
-            <div className="mt-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-sm text-gray-600 mt-2">Procesando archivo...</p>
-            </div>
-          )}
+          
+          <div className="text-xs text-gray-500">
+            <p><strong>Formatos soportados:</strong></p>
+            <ul className="list-disc list-inside mt-1">
+              <li>CSV con comas (,)</li>
+              <li>CSV con tabulaciones (TSV)</li>
+              <li>CSV con punto y coma (;)</li>
+              <li>Archivos de texto separados</li>
+            </ul>
+          </div>
         </div>
 
-        <div className="text-xs text-gray-500">
-          <p><strong>Formato esperado:</strong></p>
-          <p>Año, Ventas Netas, Coste Comida, Coste Papel, Mano de Obra, ...</p>
-        </div>
+        <Button 
+          variant="outline" 
+          onClick={downloadTemplate}
+          className="w-full"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Descargar Plantilla
+        </Button>
       </CardContent>
     </Card>
   );

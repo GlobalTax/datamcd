@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar, Upload, Info } from 'lucide-react';
 import { YearlyData, ImportMethod } from './types';
-import { showSuccess, showError } from '@/utils/notifications';
+import { toast } from 'sonner';
 import { conceptMapping, normalizeConceptName, isHeaderOrTotalLine } from './conceptMapping';
 import { parseNumber } from './numberParser';
 import { convertDetailedToStandard, createEmptyDetailedYearlyData } from './dataConverter';
@@ -91,11 +91,11 @@ export const SingleYearCopyPasteCard: React.FC<SingleYearCopyPasteCardProps> = (
       });
 
       onDataParsed([standardData], 'detailed');
-      showSuccess(`Datos del año ${selectedYear} procesados correctamente`);
+      toast.success(`Datos del año ${selectedYear} procesados correctamente`);
       
     } catch (error) {
       console.error('Error parsing single year data:', error);
-      showError('Error al procesar los datos: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      toast.error('Error al procesar los datos: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     }
   };
 

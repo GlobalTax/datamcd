@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useProfitLossCalculations } from '@/hooks/useProfitLossCalculations';
+import { useProfitLossCalculations } from '@/hooks/useProfitLossData';
 
 export const KPICards = () => {
   const { formatCurrency, formatPercentage } = useProfitLossCalculations();

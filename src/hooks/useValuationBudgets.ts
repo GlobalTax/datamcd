@@ -1,150 +1,239 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { showSuccess, showError } from '@/utils/notifications';
-
-export interface ValuationBudget {
-  id: string;
-  franchisee_restaurant_id: string;
-  budget_name: string;
-  budget_year: number;
-  initial_sales: number;
-  status: string;
-  notes: string | null;
-  discount_rate: number;
-  years_projection: number;
-  sales_growth_rate: number | null;
-  inflation_rate: number | null;
-  pac_percentage: number | null;
-  rent_percentage: number | null;
-  service_fees_percentage: number | null;
-  depreciation: number | null;
-  interest: number | null;
-  loan_payment: number | null;
-  rent_index: number | null;
-  miscellaneous: number | null;
-  final_valuation: number | null;
-  projected_cash_flows: any;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import { useAuth } from '@/hooks/useAuth';
+import { ValuationBudget, ValuationBudgetFormData, ValuationBudgetUpdateData, ProjectedYear } from '@/types/budget';
+import { toast } from 'sonner';
 
 export const useValuationBudgets = () => {
+  const { user } = useAuth();
   const [budgets, setBudgets] = useState<ValuationBudget[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchBudgets = async () => {
+    console.log('fetchBudgets - Starting fetch, user:', user);
+    
+    if (!user) {
+      console.log('fetchBudgets - No user found');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      setError(null);
+
+      console.log('fetchBudgets - Making Supabase query for valuation budgets');
       
-      const { data, error } = await supabase
+      const { data: budgetsData, error: budgetsError } = await supabase
         .from('valuation_budgets')
-        .select('*')
+        .select(`
+          *,
+          franchisee_restaurants!inner(
+            id,
+            base_restaurants(restaurant_name, site_number),
+            franchisees!inner(
+              franchisee_name,
+              user_id
+            )
+          )
+        `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (budgetsError) {
+        console.error('Error fetching budgets:', budgetsError);
+        setError(`Error al cargar los presupuestos: ${budgetsError.message}`);
+        toast.error('Error al cargar los presupuestos: ' + budgetsError.message);
+        setLoading(false);
+        return;
+      }
+
+      console.log('fetchBudgets - Raw data from Supabase:', budgetsData);
       
-      setBudgets(data || []);
-    } catch (error) {
-      console.error('Error fetching valuation budgets:', error);
-      showError('Error al cargar los presupuestos de valoración');
+      // Transformar los datos para manejar el tipo Json de projected_cash_flows
+      const transformedBudgets = (budgetsData || []).map(budget => ({
+        ...budget,
+        projected_cash_flows: Array.isArray(budget.projected_cash_flows) 
+          ? budget.projected_cash_flows 
+          : budget.projected_cash_flows ? JSON.parse(budget.projected_cash_flows as string) : []
+      })) as ValuationBudget[];
+
+      console.log('fetchBudgets - Setting budgets data:', transformedBudgets);
+      setBudgets(transformedBudgets);
+      
+      if (!transformedBudgets || transformedBudgets.length === 0) {
+        console.log('fetchBudgets - No budgets found in database');
+        toast.info('No se encontraron presupuestos de valoración');
+      } else {
+        console.log(`fetchBudgets - Found ${transformedBudgets.length} budgets`);
+        toast.success(`Se cargaron ${transformedBudgets.length} presupuestos`);
+      }
+    } catch (err) {
+      console.error('Error in fetchBudgets:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar los presupuestos';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const saveBudget = async (budgetData: Omit<ValuationBudget, 'id' | 'created_at' | 'updated_at'>) => {
+  const createBudget = async (budgetData: ValuationBudgetFormData): Promise<boolean> => {
     try {
+      console.log('Creating budget with data:', budgetData);
+
+      // Calcular proyecciones
+      const projectedYears = calculateProjections(budgetData);
+      const finalValuation = projectedYears.reduce((sum, year) => sum + year.present_value, 0);
+      const projectedCashFlows = projectedYears.map(year => year.cash_flow);
+
       const { error } = await supabase
         .from('valuation_budgets')
-        .upsert({
-          franchisee_restaurant_id: budgetData.franchisee_restaurant_id,
-          budget_name: budgetData.budget_name,
-          budget_year: budgetData.budget_year,
-          initial_sales: budgetData.initial_sales,
-          discount_rate: budgetData.discount_rate,
-          status: budgetData.status || 'draft',
-          notes: budgetData.notes,
-          years_projection: budgetData.years_projection || 5,
-          sales_growth_rate: budgetData.sales_growth_rate,
-          inflation_rate: budgetData.inflation_rate,
-          pac_percentage: budgetData.pac_percentage,
-          rent_percentage: budgetData.rent_percentage,
-          service_fees_percentage: budgetData.service_fees_percentage,
-          depreciation: budgetData.depreciation,
-          interest: budgetData.interest,
-          loan_payment: budgetData.loan_payment,
-          rent_index: budgetData.rent_index,
-          miscellaneous: budgetData.miscellaneous,
-          final_valuation: budgetData.final_valuation,
-          projected_cash_flows: budgetData.projected_cash_flows,
-          created_by: budgetData.created_by
+        .insert({
+          ...budgetData,
+          final_valuation: finalValuation,
+          projected_cash_flows: projectedCashFlows,
+          created_by: user?.id
         });
 
-      if (error) throw error;
-      
-      showSuccess('Presupuesto de valoración guardado correctamente');
-      await fetchBudgets();
-    } catch (error) {
-      console.error('Error saving valuation budget:', error);
-      showError('Error al guardar el presupuesto de valoración');
-    }
-  };
+      if (error) {
+        console.error('Error creating budget:', error);
+        toast.error('Error al crear el presupuesto: ' + error.message);
+        return false;
+      }
 
-  const createBudget = async (budgetData: Omit<ValuationBudget, 'id' | 'created_at' | 'updated_at'>) => {
-    return await saveBudget(budgetData);
-  };
-
-  const updateBudget = async (id: string, budgetData: Partial<ValuationBudget>) => {
-    try {
-      const { error } = await supabase
-        .from('valuation_budgets')
-        .update(budgetData)
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      showSuccess('Presupuesto actualizado correctamente');
-      await fetchBudgets();
+      toast.success('Presupuesto creado correctamente');
+      fetchBudgets(); // Refresh the list
       return true;
-    } catch (error) {
-      console.error('Error updating valuation budget:', error);
-      showError('Error al actualizar el presupuesto');
+    } catch (err) {
+      console.error('Error creating budget:', err);
+      toast.error('Error al crear el presupuesto');
       return false;
     }
   };
 
-  const deleteBudget = async (id: string) => {
+  const updateBudget = async (id: string, budgetData: ValuationBudgetUpdateData): Promise<boolean> => {
+    try {
+      console.log('Updating budget with id:', id, 'data:', budgetData);
+
+      // Recalcular proyecciones si se han cambiado parámetros financieros
+      let updateData = { ...budgetData };
+      
+      if (shouldRecalculate(budgetData)) {
+        const fullBudget = budgets.find(b => b.id === id);
+        if (fullBudget) {
+          const mergedData = { ...fullBudget, ...budgetData } as ValuationBudgetFormData;
+          const projectedYears = calculateProjections(mergedData);
+          updateData.final_valuation = projectedYears.reduce((sum, year) => sum + year.present_value, 0);
+          updateData.projected_cash_flows = projectedYears.map(year => year.cash_flow);
+        }
+      }
+
+      const { error } = await supabase
+        .from('valuation_budgets')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating budget:', error);
+        toast.error('Error al actualizar el presupuesto: ' + error.message);
+        return false;
+      }
+
+      toast.success('Presupuesto actualizado correctamente');
+      fetchBudgets(); // Refresh the list
+      return true;
+    } catch (err) {
+      console.error('Error updating budget:', err);
+      toast.error('Error al actualizar el presupuesto');
+      return false;
+    }
+  };
+
+  const deleteBudget = async (id: string): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('valuation_budgets')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
-      
-      showSuccess('Presupuesto eliminado correctamente');
-      await fetchBudgets();
+      if (error) {
+        console.error('Error deleting budget:', error);
+        toast.error('Error al eliminar el presupuesto: ' + error.message);
+        return false;
+      }
+
+      toast.success('Presupuesto eliminado correctamente');
+      fetchBudgets(); // Refresh the list
       return true;
-    } catch (error) {
-      console.error('Error deleting valuation budget:', error);
-      showError('Error al eliminar el presupuesto');
+    } catch (err) {
+      console.error('Error deleting budget:', err);
+      toast.error('Error al eliminar el presupuesto');
       return false;
     }
   };
 
+  // Función para calcular proyecciones financieras
+  const calculateProjections = (data: ValuationBudgetFormData): ProjectedYear[] => {
+    const projections: ProjectedYear[] = [];
+    
+    for (let year = 1; year <= data.years_projection; year++) {
+      const adjustedSales = data.initial_sales * Math.pow(1 + data.sales_growth_rate / 100, year);
+      const inflationFactor = Math.pow(1 + data.inflation_rate / 100, year);
+      
+      const pac = adjustedSales * (data.pac_percentage / 100);
+      const rent = adjustedSales * (data.rent_percentage / 100);
+      const serviceFees = adjustedSales * (data.service_fees_percentage / 100);
+      
+      const fixedCosts = (data.depreciation + data.interest + data.loan_payment + 
+                         data.rent_index + data.miscellaneous) * inflationFactor;
+      
+      const totalCosts = pac + rent + serviceFees + fixedCosts;
+      const netIncome = adjustedSales - totalCosts;
+      const cashFlow = netIncome + (data.depreciation * inflationFactor); // Add back depreciation as it's non-cash
+      
+      const presentValue = cashFlow / Math.pow(1 + data.discount_rate / 100, year);
+      
+      projections.push({
+        year: new Date().getFullYear() + year,
+        sales: adjustedSales,
+        pac,
+        rent,
+        service_fees: serviceFees,
+        total_costs: totalCosts,
+        net_income: netIncome,
+        cash_flow: cashFlow,
+        present_value: presentValue
+      });
+    }
+    
+    return projections;
+  };
+
+  const shouldRecalculate = (data: ValuationBudgetUpdateData): boolean => {
+    const financialFields = [
+      'initial_sales', 'sales_growth_rate', 'inflation_rate', 'discount_rate',
+      'years_projection', 'pac_percentage', 'rent_percentage', 'service_fees_percentage',
+      'depreciation', 'interest', 'loan_payment', 'rent_index', 'miscellaneous'
+    ];
+    
+    return financialFields.some(field => data.hasOwnProperty(field));
+  };
+
   useEffect(() => {
+    console.log('useValuationBudgets useEffect triggered, user:', user);
     fetchBudgets();
-  }, []);
+  }, [user?.id]);
 
   return {
     budgets,
     loading,
-    saveBudget,
+    error,
+    fetchBudgets,
     createBudget,
     updateBudget,
     deleteBudget,
-    refetch: fetchBudgets
+    calculateProjections
   };
 };

@@ -1,111 +1,194 @@
-
 import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { showSuccess, showError } from '@/utils/notifications';
+import { ProfitLossData, ProfitLossFormData, ProfitLossTemplate } from '@/types/profitLoss';
+import { toast } from 'sonner';
+import { useAuth } from './useAuth';
 
-export interface ProfitLossData {
-  id: string;
-  restaurant_id: string;
-  year: number;
-  month: number;
-  net_sales: number;
-  other_revenue: number;
-  total_revenue: number;
-  food_cost: number;
-  paper_cost: number;
-  total_cost_of_sales: number;
-  management_labor: number;
-  crew_labor: number;
-  benefits: number;
-  total_labor: number;
-  rent: number;
-  utilities: number;
-  maintenance: number;
-  advertising: number;
-  insurance: number;
-  supplies: number;
-  other_expenses: number;
-  total_operating_expenses: number;
-  franchise_fee: number;
-  advertising_fee: number;
-  rent_percentage: number;
-  total_mcdonalds_fees: number;
-  gross_profit: number;
-  operating_income: number;
-  created_at: string;
-  updated_at: string;
-  created_by?: string;
-  notes?: string;
-}
+export const useProfitLossData = (restaurantId?: string, year?: number) => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-export const useProfitLossData = (restaurantId: string) => {
-  const [data, setData] = useState<ProfitLossData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
+  // Fetch P&L data
+  const {
+    data: profitLossData,
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['profit-loss-data', restaurantId, year, user?.id],
+    queryFn: async () => {
+      if (!restaurantId || !user) return [];
       
-      const { data: profitLossData, error } = await supabase
+      let query = supabase
         .from('profit_loss_data')
         .select('*')
         .eq('restaurant_id', restaurantId)
         .order('year', { ascending: false })
-        .order('month', { ascending: true });
+        .order('month', { ascending: false });
 
-      if (error) throw error;
-      
-      setData(profitLossData || []);
-    } catch (error) {
-      console.error('Error fetching profit loss data:', error);
-      showError('Error al cargar los datos de P&L');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveData = async (profitLossData: ProfitLossData[]) => {
-    try {
-      setSaving(true);
-      
-      for (const data of profitLossData) {
-        const { error } = await supabase
-          .from('profit_loss_data')
-          .upsert({
-            ...data,
-            restaurant_id: restaurantId,
-            updated_at: new Date().toISOString()
-          });
-
-        if (error) throw error;
+      if (year) {
+        query = query.eq('year', year);
       }
 
-      showSuccess('Datos de P&L guardados correctamente');
-      await fetchData();
-    } catch (error) {
-      console.error('Error saving profit loss data:', error);
-      showError('Error al guardar los datos de P&L');
-    } finally {
-      setSaving(false);
-    }
-  };
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching P&L data:', error);
+        throw error;
+      }
+      
+      return data as ProfitLossData[];
+    },
+    enabled: !!restaurantId && !!user,
+  });
 
-  const refetch = async () => {
-    await fetchData();
-  };
+  // Fetch templates
+  const {
+    data: templates,
+    isLoading: templatesLoading
+  } = useQuery({
+    queryKey: ['profit-loss-templates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profit_loss_templates')
+        .select('*')
+        .order('name');
 
-  useEffect(() => {
-    if (restaurantId) {
-      fetchData();
-    }
-  }, [restaurantId]);
+      if (error) {
+        console.error('Error fetching P&L templates:', error);
+        throw error;
+      }
+
+      return data as ProfitLossTemplate[];
+    },
+  });
+
+  // Create P&L data mutation
+  const createProfitLossData = useMutation({
+    mutationFn: async (formData: ProfitLossFormData) => {
+      const { data, error } = await supabase
+        .from('profit_loss_data')
+        .insert([{
+          ...formData,
+          created_by: user?.email || 'system'
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating P&L data:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profit-loss-data'] });
+      toast.success('Datos de P&L guardados exitosamente');
+    },
+    onError: (error: any) => {
+      console.error('Error saving P&L data:', error);
+      toast.error('Error al guardar los datos de P&L');
+    },
+  });
+
+  // Update P&L data mutation
+  const updateProfitLossData = useMutation({
+    mutationFn: async ({ id, ...formData }: ProfitLossFormData & { id: string }) => {
+      const { data, error } = await supabase
+        .from('profit_loss_data')
+        .update(formData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating P&L data:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profit-loss-data'] });
+      toast.success('Datos de P&L actualizados exitosamente');
+    },
+    onError: (error: any) => {
+      console.error('Error updating P&L data:', error);
+      toast.error('Error al actualizar los datos de P&L');
+    },
+  });
+
+  // Delete P&L data mutation
+  const deleteProfitLossData = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('profit_loss_data')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting P&L data:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profit-loss-data'] });
+      toast.success('Datos de P&L eliminados exitosamente');
+    },
+    onError: (error: any) => {
+      console.error('Error deleting P&L data:', error);
+      toast.error('Error al eliminar los datos de P&L');
+    },
+  });
 
   return {
-    data,
-    loading,
-    saving,
-    saveData,
-    refetch
+    profitLossData: profitLossData || [],
+    templates: templates || [],
+    isLoading: isLoading || templatesLoading,
+    error,
+    refetch,
+    createProfitLossData,
+    updateProfitLossData,
+    deleteProfitLossData,
+  };
+};
+
+export const useProfitLossCalculations = () => {
+  const calculateMetrics = (data: ProfitLossData) => {
+    const grossMargin = data.total_revenue > 0 ? (data.gross_profit / data.total_revenue) * 100 : 0;
+    const operatingMargin = data.total_revenue > 0 ? (data.operating_income / data.total_revenue) * 100 : 0;
+    const laborPercentage = data.total_revenue > 0 ? (data.total_labor / data.total_revenue) * 100 : 0;
+    const foodCostPercentage = data.total_revenue > 0 ? (data.food_cost / data.total_revenue) * 100 : 0;
+    const totalExpensePercentage = data.total_revenue > 0 ? 
+      ((data.total_cost_of_sales + data.total_labor + data.total_operating_expenses + data.total_mcdonalds_fees) / data.total_revenue) * 100 : 0;
+
+    return {
+      grossMargin,
+      operatingMargin,
+      laborPercentage,
+      foodCostPercentage,
+      totalExpensePercentage,
+    };
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatPercentage = (percentage: number) => {
+    return `${percentage.toFixed(1)}%`;
+  };
+
+  return {
+    calculateMetrics,
+    formatCurrency,
+    formatPercentage,
   };
 };

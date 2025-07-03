@@ -1,93 +1,98 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { showError } from '@/utils/notifications';
+import { useAuth } from '@/hooks/useAuth';
+import { FranchiseeAccessLog, FranchiseeActivityLog } from '@/types/franchiseeInvitation';
+import { toast } from 'sonner';
 
-export interface FranchiseeActivity {
-  id: string;
-  franchisee_id: string;
-  activity_type: string;
-  description: string;
-  created_at: string;
-  user_id?: string;
-  entity_id?: string;
-  entity_type?: string;
-  activity_description?: string;
-  metadata?: any;
-}
-
-export const useFranchiseeActivity = (franchiseeId: string) => {
-  const [activities, setActivities] = useState<FranchiseeActivity[]>([]);
+export const useFranchiseeActivity = (franchiseeId?: string) => {
+  const { user } = useAuth();
+  const [accessLogs, setAccessLogs] = useState<FranchiseeAccessLog[]>([]);
+  const [activityLogs, setActivityLogs] = useState<FranchiseeActivityLog[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchActivities = async () => {
+  const fetchAccessLogs = async () => {
+    if (!user || !franchiseeId) return;
+
     try {
       setLoading(true);
-      
+      const { data, error } = await supabase
+        .from('franchisee_access_log')
+        .select('*')
+        .eq('franchisee_id', franchiseeId)
+        .order('login_time', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setAccessLogs(data || []);
+    } catch (err) {
+      console.error('Error fetching access logs:', err);
+      toast.error('Error al cargar el historial de acceso');
+    }
+  };
+
+  const fetchActivityLogs = async () => {
+    if (!user || !franchiseeId) return;
+
+    try {
       const { data, error } = await supabase
         .from('franchisee_activity_log')
         .select('*')
         .eq('franchisee_id', franchiseeId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (error) throw error;
-      
-      // Map the data to match our interface
-      const mappedActivities = (data || []).map(item => ({
-        id: item.id,
-        franchisee_id: item.franchisee_id,
-        activity_type: item.activity_type,
-        description: item.activity_description || item.activity_type,
-        created_at: item.created_at,
-        user_id: item.user_id,
-        entity_id: item.entity_id,
-        entity_type: item.entity_type,
-        activity_description: item.activity_description,
-        metadata: item.metadata
-      }));
-      
-      setActivities(mappedActivities);
-    } catch (error) {
-      console.error('Error fetching activities:', error);
-      showError('Error al cargar el historial de actividades');
+      setActivityLogs(data || []);
+    } catch (err) {
+      console.error('Error fetching activity logs:', err);
+      toast.error('Error al cargar el historial de actividad');
     } finally {
       setLoading(false);
     }
   };
 
-  const logActivity = async (activity: Omit<FranchiseeActivity, 'id' | 'created_at'>) => {
+  const logActivity = async (
+    activityType: string,
+    description?: string,
+    entityType?: string,
+    entityId?: string,
+    metadata?: any
+  ) => {
+    if (!franchiseeId) return;
+
     try {
-      const { error } = await supabase
+      await supabase
         .from('franchisee_activity_log')
         .insert({
-          franchisee_id: activity.franchisee_id,
-          activity_type: activity.activity_type,
-          activity_description: activity.description,
-          user_id: activity.user_id,
-          entity_id: activity.entity_id,
-          entity_type: activity.entity_type,
-          metadata: activity.metadata
+          franchisee_id: franchiseeId,
+          user_id: user?.id,
+          activity_type: activityType,
+          activity_description: description,
+          entity_type: entityType,
+          entity_id: entityId,
+          metadata
         });
-
-      if (error) throw error;
-      
-      await fetchActivities();
-    } catch (error) {
-      console.error('Error logging activity:', error);
-      showError('Error al registrar la actividad');
+    } catch (err) {
+      console.error('Error logging activity:', err);
     }
   };
 
   useEffect(() => {
     if (franchiseeId) {
-      fetchActivities();
+      fetchAccessLogs();
+      fetchActivityLogs();
     }
-  }, [franchiseeId]);
+  }, [franchiseeId, user?.id]);
 
   return {
-    activities,
+    accessLogs,
+    activityLogs,
     loading,
     logActivity,
-    refetch: fetchActivities
+    refetch: () => {
+      fetchAccessLogs();
+      fetchActivityLogs();
+    }
   };
 };

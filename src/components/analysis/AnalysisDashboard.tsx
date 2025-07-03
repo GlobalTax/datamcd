@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
 import { useDataExport } from '@/hooks/useDataExport';
-import { showSuccess, showError } from '@/utils/notifications';
+import { toast } from 'sonner';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardKPIs } from './DashboardKPIs';
 import { DashboardTabs } from './DashboardTabs';
@@ -22,9 +22,9 @@ export const AnalysisDashboard = () => {
   const handleExport = () => {
     try {
       exportRestaurantsData(restaurants);
-      showSuccess('Datos exportados correctamente');
+      toast.success('Datos exportados correctamente');
     } catch (error) {
-      showError('Error al exportar los datos');
+      toast.error('Error al exportar los datos');
     }
   };
 

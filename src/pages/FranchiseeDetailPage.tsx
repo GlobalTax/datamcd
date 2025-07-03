@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,20 +8,18 @@ import { ArrowLeft, Building, Mail, Phone, MapPin, User, Clock, Wifi, WifiOff } 
 import { useNavigate } from 'react-router-dom';
 import { useFranchiseeDetail } from '@/hooks/useFranchiseeDetail';
 import { FranchiseeRestaurantsTable } from '@/components/FranchiseeRestaurantsTable';
-import UserCreationPanel from '@/components/admin/UserCreationPanel';
+import { UserCreationPanel } from '@/components/admin/UserCreationPanel';
 import { FranchiseeAccessHistory } from '@/components/franchisee/FranchiseeAccessHistory';
 import { FranchiseeActivityHistory } from '@/components/franchisee/FranchiseeActivityHistory';
-import { FranchiseeUsers } from '@/components/franchisee/FranchiseeUsers';
+import { FranchiseeUsers, FranchiseeUsersRef } from '@/components/franchisee/FranchiseeUsers';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function FranchiseeDetailPage() {
   const { franchiseeId } = useParams<{ franchiseeId: string }>();
   const navigate = useNavigate();
-  const { franchisee, loading, error } = useFranchiseeDetail(franchiseeId || '');
-
-  // Simular datos de restaurantes para la interfaz
-  const restaurants = franchisee?.franchisee_restaurants || [];
+  const { franchisee, restaurants, loading, error, refetch } = useFranchiseeDetail(franchiseeId);
+  const franchiseeUsersRef = useRef<FranchiseeUsersRef>(null);
 
   // Mostrar mensaje de carga
   if (loading) {
@@ -77,21 +75,18 @@ export default function FranchiseeDetailPage() {
   }
 
   const getStatusBadge = () => {
-    const hasAccount = franchisee.profiles?.email;
-    if (!hasAccount) {
+    if (!franchisee.hasAccount) {
       return <Badge variant="outline" className="text-gray-600 border-gray-300">Sin cuenta</Badge>;
     }
-    // Simulación del estado online (en producción vendría de la base de datos)
-    const isOnline = Math.random() > 0.5;
-    if (isOnline) {
+    if (franchisee.isOnline) {
       return <Badge variant="outline" className="text-green-600 border-green-300"><Wifi className="w-3 h-3 mr-1" />En línea</Badge>;
     }
     return <Badge variant="outline" className="text-gray-600 border-gray-300"><WifiOff className="w-3 h-3 mr-1" />Desconectado</Badge>;
   };
 
   const handleUserCreated = () => {
-    // Refrescar cuando se crea un usuario nuevo
-    console.log('Usuario creado');
+    // Refrescar la lista de usuarios cuando se crea uno nuevo
+    franchiseeUsersRef.current?.refresh();
   };
 
   return (
@@ -138,11 +133,11 @@ export default function FranchiseeDetailPage() {
                 </div>
               )}
 
-              {franchisee.profiles && (
+              {franchisee.profiles?.phone && (
                 <div className="flex items-center space-x-2">
                   <Phone className="w-4 h-4 text-gray-500" />
                   <span className="font-medium">Teléfono:</span>
-                  <span>No especificado</span>
+                  <span>{franchisee.profiles.phone}</span>
                 </div>
               )}
 
@@ -163,6 +158,14 @@ export default function FranchiseeDetailPage() {
                 </div>
               )}
 
+              {franchisee.hasAccount && franchisee.lastAccess && (
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span className="font-medium">Último acceso:</span>
+                  <span>{format(new Date(franchisee.lastAccess), 'dd/MM/yyyy HH:mm', { locale: es })}</span>
+                </div>
+              )}
+
               <div className="flex items-center space-x-2">
                 <Building className="w-4 h-4 text-gray-500" />
                 <span className="font-medium">Restaurantes:</span>
@@ -177,7 +180,8 @@ export default function FranchiseeDetailPage() {
       <UserCreationPanel onUserCreated={handleUserCreated} />
 
       {/* Lista de usuarios asociados */}
-      <FranchiseeUsers
+      <FranchiseeUsers 
+        ref={franchiseeUsersRef}
         franchiseeId={franchisee.id} 
         franchiseeName={franchisee.franchisee_name}
       />
@@ -200,7 +204,7 @@ export default function FranchiseeDetailPage() {
           {restaurants.length > 0 ? (
             <FranchiseeRestaurantsTable 
               franchiseeId={franchisee.id} 
-              restaurants={restaurants}
+              restaurants={restaurants} 
             />
           ) : (
             <p className="text-gray-500 text-center py-8">No hay restaurantes asignados</p>

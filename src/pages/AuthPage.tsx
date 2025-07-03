@@ -1,354 +1,290 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Wifi, WifiOff, Zap, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useFastAuthActions } from '@/hooks/auth/useFastAuthActions';
-import { showSuccess, showError } from '@/utils/notifications';
+import { Loader2, Store } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const AuthPage = () => {
-  const { user, clearUserData, session } = useAuth();
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [signupData, setSignupData] = useState({ email: '', password: '', fullName: '' });
-  const [loading, setLoading] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'good' | 'slow' | 'poor'>('good');
-  const [showRetryOptions, setShowRetryOptions] = useState(false);
-  const [authProgress, setAuthProgress] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState('signin');
+  
+  const { signIn, signUp, user, loading } = useAuth();
+  const navigate = useNavigate();
 
-  const { fastSignIn, fastSignUp, createEmergencyAccount, signOut } = useFastAuthActions({
-    clearUserData,
-    setSession: () => {}, // Se maneja en el AuthProvider
-    onAuthSuccess: (userData) => {
-      console.log('Auth success in recovery mode:', userData);
+  useEffect(() => {
+    console.log('AuthPage - Effect triggered');
+    console.log('AuthPage - User:', user);
+    console.log('AuthPage - Loading:', loading);
+    
+    if (user && !loading) {
+      console.log('AuthPage - User role:', user.role);
+      console.log('AuthPage - Determining redirect...');
+      
+      // Redirigir usuarios con roles de asesor, admin o superadmin al panel de asesor
+      if (['asesor', 'admin', 'superadmin'].includes(user.role)) {
+        console.log('AuthPage - Redirecting asesor/admin/superadmin to /advisor');
+        navigate('/advisor', { replace: true });
+      } else {
+        console.log('AuthPage - Redirecting franchisee to /dashboard');
+        navigate('/dashboard', { replace: true });
+      }
     }
-  });
+  }, [user, loading, navigate]);
 
-  const handleLogin = async (e: React.FormEvent, isRetry = false) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    if (!loginData.email || !loginData.password) {
-      showError('Por favor completa todos los campos');
-      return;
+    console.log('AuthPage - Starting sign in process');
+    const result = await signIn(email, password);
+    
+    // Solo mostrar error si hay uno, el éxito se maneja en useAuth
+    if (result?.error) {
+      console.log('AuthPage - Sign in error:', result.error);
     }
     
-    try {
-      setLoading(true);
-      setConnectionStatus('good');
-      setAuthProgress(isRetry ? 'Reintentando con más tiempo...' : 'Iniciando sesión...');
-      setShowRetryOptions(false);
-      
-      const result = await fastSignIn(loginData.email, loginData.password, isRetry);
-      
-      if (result.error) {
-        if (result.canRetry) {
-          setConnectionStatus('slow');
-          setShowRetryOptions(true);
-          setAuthProgress('');
-        } else if (result.error.includes('timeout')) {
-          setConnectionStatus('poor');
-          setAuthProgress('');
-        }
-      } else if (result.success) {
-        setAuthProgress('¡Éxito!');
-        setShowRetryOptions(false);
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setConnectionStatus('poor');
-      setAuthProgress('');
-      showError('Error inesperado al iniciar sesión');
-    } finally {
-      setLoading(false);
-    }
+    setIsLoading(false);
   };
 
-  const handleSignup = async (e: React.FormEvent, isRetry = false) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    if (!signupData.email || !signupData.password || !signupData.fullName) {
-      showError('Por favor completa todos los campos');
-      return;
-    }
+    await signUp(email, password, fullName);
     
-    if (signupData.password.length < 6) {
-      showError('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      setConnectionStatus('good');
-      setAuthProgress(isRetry ? 'Reintentando con más tiempo...' : 'Creando cuenta...');
-      setShowRetryOptions(false);
-      
-      const result = await fastSignUp(signupData.email, signupData.password, signupData.fullName, isRetry);
-      
-      if (result.error) {
-        if (result.canCreateEmergency) {
-          setConnectionStatus('slow');
-          setShowRetryOptions(true);
-          setAuthProgress('');
-        } else if (result.error.includes('timeout')) {
-          setConnectionStatus('poor');
-          setAuthProgress('');
-        }
-      } else if (result.success) {
-        if (result.recoveryMode) {
-          setConnectionStatus('slow');
-          setAuthProgress('Cuenta creada en modo de emergencia');
-        } else {
-          setAuthProgress('¡Cuenta creada con éxito!');
-        }
-        setShowRetryOptions(false);
-      }
-    } catch (error) {
-      console.error('Signup error:', error);
-      setConnectionStatus('poor');
-      setAuthProgress('');
-      showError('Error inesperado al crear la cuenta');
-    } finally {
-      setLoading(false);
-    }
+    setIsLoading(false);
   };
 
-  const handleEmergencySignup = async () => {
-    if (!signupData.email || !signupData.password || !signupData.fullName) {
-      showError('Por favor completa todos los campos primero');
-      return;
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsResettingPassword(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/auth`,
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Se ha enviado un enlace de recuperación a tu correo electrónico');
+      setResetEmail('');
     }
-    
-    try {
-      setLoading(true);
-      setAuthProgress('Creando cuenta de emergencia...');
-      
-      const result = await createEmergencyAccount(signupData.email, signupData.password, signupData.fullName);
-      
-      if (result.success) {
-        setConnectionStatus('slow');
-        setAuthProgress('¡Cuenta de emergencia creada!');
-        setShowRetryOptions(false);
-      }
-    } catch (error) {
-      console.error('Emergency signup error:', error);
-      showError('Error al crear cuenta de emergencia');
-    } finally {
-      setLoading(false);
-    }
+
+    setIsResettingPassword(false);
   };
 
-  const ConnectionStatusAlert = () => {
-    if (connectionStatus === 'good' && !authProgress) return null;
-    
-    const getStatusConfig = () => {
-      switch (connectionStatus) {
-        case 'slow':
-          return {
-            icon: <Wifi className="h-4 w-4 text-yellow-600" />,
-            borderColor: 'border-yellow-400',
-            title: 'Conexión lenta detectada',
-            description: 'Se activó el modo de recuperación para garantizar el acceso.'
-          };
-        case 'poor':
-          return {
-            icon: <WifiOff className="h-4 w-4 text-red-600" />,
-            borderColor: 'border-red-400',
-            title: 'Problemas de conexión',
-            description: 'Usa el botón de emergencia para acceso inmediato.'
-          };
-        default:
-          return {
-            icon: <Clock className="h-4 w-4 text-blue-600" />,
-            borderColor: 'border-blue-400',
-            title: authProgress,
-            description: ''
-          };
-      }
-    };
-
-    const config = getStatusConfig();
-    
+  if (loading) {
+    console.log('AuthPage - Showing loading state');
     return (
-      <Alert className={`mb-4 ${config.borderColor}`}>
-        <div className="flex items-center">
-          {config.icon}
-          <AlertCircle className="h-4 w-4 ml-2" />
-        </div>
-        <AlertDescription className="ml-6">
-          <div className="font-medium">{config.title}</div>
-          {config.description && <div className="text-sm mt-1">{config.description}</div>}
-        </AlertDescription>
-      </Alert>
-    );
-  };
-
-  const RetryOptions = ({ isLogin = false }) => {
-    if (!showRetryOptions) return null;
-    
-    return (
-      <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
-        <div className="text-sm font-medium text-gray-700 mb-2">Opciones disponibles:</div>
-        <div className="space-y-2">
-          <Button
-            onClick={(e) => isLogin ? handleLogin(e, true) : handleSignup(e, true)}
-            variant="outline"
-            size="sm"
-            className="w-full"
-            disabled={loading}
-          >
-            <Clock className="h-4 w-4 mr-2" />
-            Intentar con más tiempo ({isLogin ? '20s' : '25s'})
-          </Button>
-          {!isLogin && (
-            <Button
-              onClick={handleEmergencySignup}
-              variant="outline"
-              size="sm"
-              className="w-full text-green-700 border-green-300 hover:bg-green-50"
-              disabled={loading}
-            >
-              <Zap className="h-4 w-4 mr-2" />
-              Crear cuenta de emergencia (acceso inmediato)
-            </Button>
-          )}
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
-  };
+  }
+
+  console.log('AuthPage - Rendering auth form');
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center">Acceso McDonald's</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ConnectionStatusAlert />
-          
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-              <TabsTrigger value="signup">Crear Cuenta</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <form onSubmit={(e) => handleLogin(e, false)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={loginData.email}
-                    onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                    placeholder="tu@email.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                    placeholder="********"
-                    required
-                  />
-                </div>
-                <Button disabled={loading} className="w-full">
-                  {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-                </Button>
-                <RetryOptions isLogin={true} />
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <form onSubmit={(e) => handleSignup(e, false)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Nombre Completo</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    value={signupData.fullName}
-                    onChange={(e) => setSignupData({ ...signupData, fullName: e.target.value })}
-                    placeholder="Tu Nombre Completo"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={signupData.email}
-                    onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
-                    placeholder="tu@email.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Contraseña</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={signupData.password}
-                    onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                    placeholder="********"
-                    minLength={6}
-                    required
-                  />
-                </div>
-                <Button disabled={loading} className="w-full">
-                  {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
-                </Button>
-                <RetryOptions isLogin={false} />
-              </form>
-            </TabsContent>
-          </Tabs>
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-yellow-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-red-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <Store className="text-white w-8 h-8" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Portal de Franquiciados</h1>
+          <p className="text-gray-600 mt-2">Gestiona tu restaurante McDonald's</p>
+        </div>
 
-          <div className="mt-6 space-y-3">
-            <div className="flex justify-center space-x-2 flex-wrap gap-2">
-              <Button
-                variant="link"
-                onClick={() => window.location.href = '/auth-improved'}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                ⚡ Sistema Mejorado
-              </Button>
-              <Button
-                variant="link"
-                onClick={() => window.location.href = '/debug-auth'}
-                className="text-sm text-orange-600 hover:text-orange-800"
-              >
-                🔧 Debug
-              </Button>
-              <Button
-                variant="link"
-                onClick={() => window.location.href = '/emergency-access'}
-                className="text-sm text-red-600 hover:text-red-800 font-bold"
-              >
-                🚨 ACCESO DE EMERGENCIA
-              </Button>
-            </div>
-            
-            <div className="text-xs text-gray-500 text-center space-y-2">
-              <div className="p-2 bg-blue-50 rounded text-blue-700">
-                <div className="font-medium">Sistema optimizado:</div>
-                <div>✓ Timeouts extendidos (15-25s)</div>
-                <div>✓ Modo de emergencia automático</div>
-                <div>✓ Acceso inmediato disponible</div>
-              </div>
-              <p className="text-gray-400">
-                ¿Problemas? Usa el botón de emergencia para acceso inmediato
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-center">Acceso para Franquiciados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
+                <TabsTrigger value="signup">Registrarse</TabsTrigger>
+                <TabsTrigger value="reset">Recuperar</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="signin">
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder="tu.email@ejemplo.com"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Contraseña</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder="Tu contraseña"
+                    />
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-red-600 hover:bg-red-700"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Iniciando sesión...
+                      </>
+                    ) : (
+                      'Iniciar Sesión'
+                    )}
+                  </Button>
+                  
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('reset')}
+                      className="text-sm text-red-600 hover:text-red-700 underline"
+                    >
+                      ¿Has olvidado tu contraseña?
+                    </button>
+                  </div>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="signup">
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Nombre Completo</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      placeholder="Tu nombre completo"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signupEmail">Email</Label>
+                    <Input
+                      id="signupEmail"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder="tu.email@ejemplo.com"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signupPassword">Contraseña</Label>
+                    <Input
+                      id="signupPassword"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder="Mínimo 6 caracteres"
+                      minLength={6}
+                    />
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-red-600 hover:bg-red-700"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creando cuenta...
+                      </>
+                    ) : (
+                      'Crear Cuenta de Franquiciado'
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="reset">
+                <form onSubmit={handlePasswordReset} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="resetEmail">Email</Label>
+                    <Input
+                      id="resetEmail"
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                      placeholder="tu.email@ejemplo.com"
+                    />
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-red-600 hover:bg-red-700"
+                    disabled={isResettingPassword}
+                  >
+                    {isResettingPassword ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enviando enlace...
+                      </>
+                    ) : (
+                      'Enviar enlace de recuperación'
+                    )}
+                  </Button>
+                  
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('signin')}
+                      className="text-sm text-gray-600 hover:text-gray-700 underline"
+                    >
+                      Volver al inicio de sesión
+                    </button>
+                  </div>
+                </form>
+              </TabsContent>
+            </Tabs>
+
+            <div className="mt-6 pt-4 border-t text-center">
+              <p className="text-sm text-gray-600">
+                ¿Eres asesor de McDonald's?{' '}
+                <button
+                  onClick={() => navigate('/advisor-auth')}
+                  className="text-blue-600 hover:text-blue-700 underline font-medium"
+                >
+                  Accede aquí
+                </button>
               </p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

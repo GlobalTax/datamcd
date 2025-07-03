@@ -14,7 +14,7 @@ interface FranchiseeActivityHistoryProps {
 export const FranchiseeActivityHistory: React.FC<FranchiseeActivityHistoryProps> = ({
   franchiseeId
 }) => {
-  const { activities, loading } = useFranchiseeActivity(franchiseeId);
+  const { activityLogs, loading } = useFranchiseeActivity(franchiseeId);
 
   const getActivityIcon = (activityType: string) => {
     switch (activityType) {
@@ -74,9 +74,9 @@ export const FranchiseeActivityHistory: React.FC<FranchiseeActivityHistoryProps>
       <CardContent>
         {loading ? (
           <p className="text-sm text-gray-500">Cargando actividad...</p>
-        ) : activities.length > 0 ? (
+        ) : activityLogs.length > 0 ? (
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {activities.map((log) => (
+            {activityLogs.map((log) => (
               <div key={log.id} className="p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center">
@@ -85,8 +85,8 @@ export const FranchiseeActivityHistory: React.FC<FranchiseeActivityHistoryProps>
                     </div>
                     <div className="ml-3">
                       <p className="font-medium text-sm">{formatActivityType(log.activity_type)}</p>
-                      {log.description && (
-                        <p className="text-xs text-gray-600">{log.description}</p>
+                      {log.activity_description && (
+                        <p className="text-xs text-gray-600">{log.activity_description}</p>
                       )}
                     </div>
                   </div>
@@ -94,6 +94,19 @@ export const FranchiseeActivityHistory: React.FC<FranchiseeActivityHistoryProps>
                     {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: es })}
                   </span>
                 </div>
+                
+                {(log.entity_type || log.entity_id) && (
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    {log.entity_type && (
+                      <Badge variant="outline" className="text-xs">
+                        {log.entity_type}
+                      </Badge>
+                    )}
+                    {log.entity_id && (
+                      <span className="font-mono">{log.entity_id}</span>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

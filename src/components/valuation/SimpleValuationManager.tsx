@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useFastAuth } from '@/hooks/useFastAuth';
 import { useValuationManager } from '@/hooks/useValuationManager';
 import { Building2, RefreshCw, Zap } from 'lucide-react';
-import { showSuccess, showError } from '@/utils/notifications';
+import { toast } from 'sonner';
 import RestaurantSelectorCard from './RestaurantSelectorCard';
 import ValuationActions from './ValuationActions';
 import ValuationStatusCard from './ValuationStatusCard';
@@ -63,7 +63,7 @@ const SimpleValuationManager = ({
       setSelectedRestaurantId(restaurantId);
       setSelectedRestaurantName(restaurant.name);
       onRestaurantSelected(restaurantId, restaurant.name);
-      showSuccess(`Restaurante seleccionado: ${restaurant.name}`);
+      toast.success(`Restaurante seleccionado: ${restaurant.name}`);
     }
   };
 
