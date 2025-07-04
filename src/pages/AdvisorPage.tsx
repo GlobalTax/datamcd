@@ -14,6 +14,9 @@ import { useBaseRestaurants } from '@/hooks/useBaseRestaurants';
 import { AdvancedDashboard } from '@/components/advisor/AdvancedDashboard';
 import { NotificationCenter } from '@/components/advisor/NotificationCenter';
 import { AdvancedReports } from '@/components/advisor/AdvancedReports';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { ConnectionStatus } from '@/components/common/ConnectionStatus';
+import { LoadingFallback } from '@/components/common/LoadingFallback';
 
 const AdvisorPage = () => {
   const { user, signOut, loading } = useAuth();
@@ -22,14 +25,7 @@ const AdvisorPage = () => {
   const { restaurants, loading: restaurantsLoading, refetch: refetchRestaurants } = useBaseRestaurants();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 bg-red-600 rounded-xl animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando...</p>
-        </div>
-      </div>
-    );
+    return <LoadingFallback message="Cargando panel de asesor..." />;
   }
 
   if (!user || !['asesor', 'admin', 'superadmin'].includes(user.role)) {
@@ -51,8 +47,10 @@ const AdvisorPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background">
+        <ConnectionStatus />
+        {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -186,62 +184,72 @@ const AdvisorPage = () => {
           </TabsList>
 
           <TabsContent value="dashboard">
-            <AdvancedDashboard />
+            <ErrorBoundary>
+              <AdvancedDashboard />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="notifications">
-            <NotificationCenter />
+            <ErrorBoundary>
+              <NotificationCenter />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="advanced_reports">
-            <AdvancedReports />
+            <ErrorBoundary>
+              <AdvancedReports />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="advisors">
-            <Card className="border-0 shadow-lg bg-white">
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-900">Gestión de Asesores y Administradores</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AdvisorManagement />
-              </CardContent>
-            </Card>
+            <ErrorBoundary>
+              <Card className="border-0 shadow-lg bg-card">
+                <CardHeader>
+                  <CardTitle className="text-xl text-foreground">Gestión de Asesores y Administradores</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AdvisorManagement />
+                </CardContent>
+              </Card>
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="restaurants">
-            <Card className="border-0 shadow-lg bg-white">
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-900">Gestión de Restaurantes Base</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {restaurantsLoading ? (
-                  <div className="text-center py-12">
-                    <div className="w-8 h-8 bg-red-600 rounded-xl animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600">Cargando restaurantes...</p>
-                  </div>
-                ) : (
-                  <BaseRestaurantsTable 
-                    restaurants={restaurants} 
-                    onRefresh={refetchRestaurants}
-                  />
-                )}
-              </CardContent>
-            </Card>
+            <ErrorBoundary>
+              <Card className="border-0 shadow-lg bg-card">
+                <CardHeader>
+                  <CardTitle className="text-xl text-foreground">Gestión de Restaurantes Base</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {restaurantsLoading ? (
+                    <LoadingFallback variant="card" message="Cargando restaurantes..." />
+                  ) : (
+                    <BaseRestaurantsTable 
+                      restaurants={restaurants} 
+                      onRefresh={refetchRestaurants}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="reports">
-            <Card className="border-0 shadow-lg bg-white">
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-900">Reportes y Análisis</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AdvisorReports />
-              </CardContent>
-            </Card>
+            <ErrorBoundary>
+              <Card className="border-0 shadow-lg bg-card">
+                <CardHeader>
+                  <CardTitle className="text-xl text-foreground">Reportes y Análisis</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AdvisorReports />
+                </CardContent>
+              </Card>
+            </ErrorBoundary>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
 
