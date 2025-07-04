@@ -1,99 +1,106 @@
-
-import { useProfitLossCalculations } from '@/hooks/useProfitLossData';
+import { useState } from 'react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
 
 export const useDataExport = () => {
-  const { formatCurrency } = useProfitLossCalculations();
+  const [isExporting, setIsExporting] = useState(false);
 
-  const exportToCSV = (data: any[], filename: string, headers: string[]) => {
-    console.log('Exporting data to CSV:', { filename, rowCount: data.length });
-    
+  const exportToPDF = async (elementId: string, filename: string) => {
     try {
-      const csvContent = [
-        headers.join(','),
-        ...data.map(row => 
-          headers.map(header => {
-            const value = row[header.toLowerCase().replace(/ /g, '_')];
-            if (typeof value === 'number') {
-              return value.toString();
-            }
-            return `"${value || ''}"`;
-          }).join(',')
-        )
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      
-      if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      setIsExporting(true);
+      const element = document.getElementById(elementId);
+      if (!element) {
+        toast.error('Elemento no encontrado para exportar');
+        return;
       }
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`${filename}.pdf`);
+      toast.success('PDF exportado correctamente');
     } catch (error) {
-      console.error('Error exporting to CSV:', error);
-      throw new Error('Error al exportar los datos');
+      console.error('Error exporting PDF:', error);
+      toast.error('Error al exportar PDF');
+    } finally {
+      setIsExporting(false);
     }
   };
 
-  const exportRestaurantsData = (restaurants: any[]) => {
-    const headers = [
-      'Nombre',
-      'Site Number',
-      'Ciudad',
-      'Dirección',
-      'Tipo',
-      'Renta Mensual',
-      'Facturación Último Año',
-      'Tarifa Franquicia',
-      'Tarifa Publicidad',
-      'Estado'
-    ];
-
-    const exportData = restaurants.map(restaurant => ({
-      nombre: restaurant.base_restaurant?.restaurant_name || '',
-      site_number: restaurant.base_restaurant?.site_number || '',
-      ciudad: restaurant.base_restaurant?.city || '',
-      dirección: restaurant.base_restaurant?.address || '',
-      tipo: restaurant.base_restaurant?.restaurant_type || '',
-      renta_mensual: restaurant.monthly_rent || 0,
-      facturación_último_año: restaurant.last_year_revenue || 0,
-      tarifa_franquicia: restaurant.franchise_fee_percentage || 0,
-      tarifa_publicidad: restaurant.advertising_fee_percentage || 0,
-      estado: restaurant.status || ''
-    }));
-
-    exportToCSV(exportData, 'restaurantes', headers);
+  const exportToExcel = async (data: any[], filename: string, sheetName = 'Datos') => {
+    try {
+      setIsExporting(true);
+      
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      
+      XLSX.writeFile(wb, `${filename}.xlsx`);
+      toast.success('Excel exportado correctamente');
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      toast.error('Error al exportar Excel');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  const exportProfitLossData = (data: any[]) => {
-    const headers = [
-      'Mes',
-      'Año',
-      'Ingresos Totales',
-      'Costos Totales',
-      'Beneficio Operativo',
-      'Margen %'
-    ];
-
-    const exportData = data.map(item => ({
-      mes: item.month,
-      año: item.year,
-      ingresos_totales: item.total_revenue || 0,
-      costos_totales: (item.total_cost_of_sales || 0) + (item.total_labor || 0) + (item.total_operating_expenses || 0),
-      beneficio_operativo: item.operating_income || 0,
-      'margen_%': item.total_revenue > 0 ? ((item.operating_income / item.total_revenue) * 100).toFixed(2) : 0
+  const exportEmployeesToExcel = (employees: any[], filename = 'empleados') => {
+    const formattedData = employees.map(emp => ({
+      'Número': emp.employee_number,
+      'Nombre': emp.first_name,
+      'Apellidos': emp.last_name,
+      'Email': emp.email || '',
+      'Teléfono': emp.phone || '',
+      'Puesto': emp.position,
+      'Departamento': emp.department || '',
+      'Tipo Contrato': emp.contract_type,
+      'Fecha Contratación': new Date(emp.hire_date).toLocaleDateString('es-ES'),
+      'Salario Base': emp.base_salary || 0,
+      'Horas Semanales': emp.weekly_hours || 0,
+      'Vacaciones/Año': emp.vacation_days_per_year,
+      'Vacaciones Usadas': emp.vacation_days_used,
+      'Estado': emp.status
     }));
 
-    exportToCSV(exportData, 'profit_loss', headers);
+    exportToExcel(formattedData, filename, 'Empleados');
+  };
+
+  const exportRestaurantsData = (data: any[], filename = 'restaurantes') => {
+    exportToExcel(data, filename, 'Restaurantes');
   };
 
   return {
-    exportToCSV,
-    exportRestaurantsData,
-    exportProfitLossData
+    isExporting,
+    exportToPDF,
+    exportToExcel,
+    exportEmployeesToExcel,
+    exportRestaurantsData
   };
 };
