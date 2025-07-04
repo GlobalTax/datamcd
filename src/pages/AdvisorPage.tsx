@@ -9,8 +9,8 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import AdvisorManagement from '@/components/AdvisorManagement';
 import { FranchiseesManagement } from '@/components/FranchiseesManagement';
 import { AdvisorReports } from '@/components/AdvisorReports';
-import { BaseRestaurantsTable } from '@/components/BaseRestaurantsTable';
-import { useBaseRestaurants } from '@/hooks/useBaseRestaurants';
+import { UnifiedRestaurantsTable } from '@/components/UnifiedRestaurantsTable';
+import { useUnifiedRestaurants } from '@/hooks/useUnifiedRestaurants';
 import { AdvancedDashboard } from '@/components/advisor/AdvancedDashboard';
 import { NotificationCenter } from '@/components/advisor/NotificationCenter';
 import { AdvancedReports } from '@/components/advisor/AdvancedReports';
@@ -22,7 +22,7 @@ const AdvisorPage = () => {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { restaurants, loading: restaurantsLoading, refetch: refetchRestaurants } = useBaseRestaurants();
+  const { restaurants, loading: restaurantsLoading, refetch: refetchRestaurants, stats } = useUnifiedRestaurants();
 
   if (loading) {
     return <LoadingFallback message="Cargando panel de asesor..." />;
@@ -216,21 +216,12 @@ const AdvisorPage = () => {
 
           <TabsContent value="restaurants">
             <ErrorBoundary>
-              <Card className="border-0 shadow-lg bg-card">
-                <CardHeader>
-                  <CardTitle className="text-xl text-foreground">Gestión de Restaurantes Base</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {restaurantsLoading ? (
-                    <LoadingFallback variant="card" message="Cargando restaurantes..." />
-                  ) : (
-                    <BaseRestaurantsTable 
-                      restaurants={restaurants} 
-                      onRefresh={refetchRestaurants}
-                    />
-                  )}
-                </CardContent>
-              </Card>
+              <UnifiedRestaurantsTable 
+                restaurants={restaurants} 
+                loading={restaurantsLoading}
+                onRefresh={refetchRestaurants}
+                stats={stats}
+              />
             </ErrorBoundary>
           </TabsContent>
 
