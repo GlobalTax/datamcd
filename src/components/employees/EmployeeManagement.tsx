@@ -7,6 +7,7 @@ import { EmployeeList } from './EmployeeList';
 import { EmployeeForm } from './EmployeeForm';
 import { EmployeeStats as EmployeeStatsComponent } from './EmployeeStats';
 import { TimeTrackingView } from './TimeTrackingView';
+import { TimeOffView } from './TimeOffView';
 import { PayrollView } from './PayrollView';
 import { useEmployees } from '@/hooks/useEmployees';
 
@@ -21,7 +22,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
 }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [activeTab, setActiveTab] = useState('list');
-  const { employees, loading, stats, createEmployee, refetch } = useEmployees(restaurantId);
+  const { employees, loading, stats, createEmployee, updateEmployee, deleteEmployee, refetch } = useEmployees(restaurantId);
 
   const handleCreateEmployee = async (employeeData: any) => {
     const success = await createEmployee(employeeData, restaurantId);
@@ -103,6 +104,8 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
                 employees={employees}
                 loading={loading}
                 onRefresh={refetch}
+                onUpdateEmployee={updateEmployee}
+                onDeleteEmployee={deleteEmployee}
               />
             </CardContent>
           </Card>
@@ -114,7 +117,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
               <CardTitle>Control de Horarios</CardTitle>
             </CardHeader>
             <CardContent>
-              <TimeTrackingView employees={employees} />
+              <TimeTrackingView employees={employees} restaurantId={restaurantId} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -125,10 +128,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
               <CardTitle>Gestión de Vacaciones y Permisos</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12 text-gray-500">
-                <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p>Gestión de vacaciones en desarrollo</p>
-              </div>
+              <TimeOffView employees={employees} restaurantId={restaurantId} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -139,7 +139,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
               <CardTitle>Gestión de Nóminas</CardTitle>
             </CardHeader>
             <CardContent>
-              <PayrollView employees={employees} />
+              <PayrollView employees={employees} restaurantId={restaurantId} />
             </CardContent>
           </Card>
         </TabsContent>

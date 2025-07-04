@@ -4,31 +4,47 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Clock, Play, Square, Calendar } from 'lucide-react';
+import { Clock, Play, Square, Calendar, Edit } from 'lucide-react';
 import { Employee } from '@/types/employee';
+import { useTimeTracking } from '@/hooks/useTimeTracking';
 
 interface TimeTrackingViewProps {
   employees: Employee[];
+  restaurantId?: string;
 }
 
-export const TimeTrackingView: React.FC<TimeTrackingViewProps> = ({ employees }) => {
+export const TimeTrackingView: React.FC<TimeTrackingViewProps> = ({ employees, restaurantId }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedEmployee, setSelectedEmployee] = useState<string>('');
+  const { timeRecords, loading, fetchTimeRecords, clockIn, clockOut } = useTimeTracking(restaurantId);
 
-  const mockTimeData = [
-    {
-      id: '1',
-      employee: employees[0],
-      date: selectedDate,
-      clockIn: '09:00',
-      clockOut: '17:00',
-      breakStart: '13:00',
-      breakEnd: '14:00',
-      totalHours: 7,
-      overtimeHours: 0,
-      status: 'approved' as const
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date);
+    fetchTimeRecords(date, selectedEmployee);
+  };
+
+  const handleEmployeeChange = (employeeId: string) => {
+    setSelectedEmployee(employeeId);
+    fetchTimeRecords(selectedDate, employeeId);
+  };
+
+  const handleClockIn = async () => {
+    if (selectedEmployee) {
+      await clockIn(selectedEmployee);
     }
-  ];
+  };
+
+  const handleClockOut = async () => {
+    if (selectedEmployee) {
+      await clockOut(selectedEmployee);
+    }
+  };
+
+  const filteredTimeRecords = timeRecords.filter(record => {
+    const matchesDate = !selectedDate || record.date === selectedDate;
+    const matchesEmployee = !selectedEmployee || record.employee_id === selectedEmployee;
+    return matchesDate && matchesEmployee;
+  });
 
   const formatTime = (time: string) => {
     return time || '--:--';
@@ -56,7 +72,7 @@ export const TimeTrackingView: React.FC<TimeTrackingViewProps> = ({ employees })
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+            <Select value={selectedEmployee} onValueChange={handleEmployeeChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar empleado" />
               </SelectTrigger>
@@ -73,6 +89,7 @@ export const TimeTrackingView: React.FC<TimeTrackingViewProps> = ({ employees })
               <Button 
                 className="flex-1 bg-green-600 hover:bg-green-700"
                 disabled={!selectedEmployee}
+                onClick={handleClockIn}
               >
                 <Play className="w-4 h-4 mr-2" />
                 Entrada
@@ -80,6 +97,7 @@ export const TimeTrackingView: React.FC<TimeTrackingViewProps> = ({ employees })
               <Button 
                 className="flex-1 bg-red-600 hover:bg-red-700"
                 disabled={!selectedEmployee}
+                onClick={handleClockOut}
               >
                 <Square className="w-4 h-4 mr-2" />
                 Salida
@@ -113,15 +131,15 @@ export const TimeTrackingView: React.FC<TimeTrackingViewProps> = ({ employees })
           <div className="flex gap-4 mb-6">
             <div>
               <label className="block text-sm font-medium mb-2">Fecha</label>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              />
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => handleDateChange(e.target.value)}
+                />
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium mb-2">Empleado</label>
-              <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+              <Select value={selectedEmployee} onValueChange={handleEmployeeChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos los empleados" />
                 </SelectTrigger>
@@ -153,59 +171,69 @@ export const TimeTrackingView: React.FC<TimeTrackingViewProps> = ({ employees })
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockTimeData.length > 0 ? (
-                  mockTimeData.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {record.employee?.first_name} {record.employee?.last_name}
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-12">
+                      <div className="w-6 h-6 bg-red-600 rounded-xl animate-spin mx-auto mb-2"></div>
+                      Cargando registros...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredTimeRecords.length > 0 ? (
+                  filteredTimeRecords.map((record) => {
+                    const employee = employees.find(emp => emp.id === record.employee_id);
+                    return (
+                      <TableRow key={record.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {employee?.first_name} {employee?.last_name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {employee?.position}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {record.employee?.position}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono">
-                        {formatTime(record.clockIn)}
-                      </TableCell>
-                      <TableCell className="font-mono">
-                        {formatTime(record.clockOut)}
-                      </TableCell>
-                      <TableCell className="font-mono">
-                        {formatTime(record.breakStart)} - {formatTime(record.breakEnd)}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {record.totalHours.toFixed(1)}h
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {record.overtimeHours > 0 ? (
-                          <span className="text-orange-600">
-                            {record.overtimeHours.toFixed(1)}h
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {record.clock_in ? new Date(record.clock_in).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {record.clock_out ? new Date(record.clock_out).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {record.break_start ? new Date(record.break_start).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'} - {record.break_end ? new Date(record.break_end).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {record.total_hours ? record.total_hours.toFixed(1) : '0.0'}h
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {record.overtime_hours && record.overtime_hours > 0 ? (
+                            <span className="text-orange-600">
+                              {record.overtime_hours.toFixed(1)}h
+                            </span>
+                          ) : (
+                            '0h'
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            record.status === 'approved' 
+                              ? 'bg-green-100 text-green-800'
+                              : record.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {record.status === 'approved' ? 'Aprobado' :
+                             record.status === 'pending' ? 'Pendiente' : 'Rechazado'}
                           </span>
-                        ) : (
-                          '0h'
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          record.status === 'approved' 
-                            ? 'bg-green-100 text-green-800'
-                            : record.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {record.status === 'approved' ? 'Aprobado' :
-                           record.status === 'pending' ? 'Pendiente' : 'Rechazado'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm">
-                          Editar
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 ) : (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-12 text-gray-500">

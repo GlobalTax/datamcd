@@ -8,22 +8,32 @@ import { Edit, Trash2, Mail, Phone, Search, Filter, Download, FileSpreadsheet } 
 import { Employee } from '@/types/employee';
 import { toast } from 'sonner';
 import { useDataExport } from '@/hooks/useDataExport';
+import { EmployeeEditDialog } from './EmployeeEditDialog';
+import { EmployeeDeleteDialog } from './EmployeeDeleteDialog';
 
 interface EmployeeListProps {
   employees: Employee[];
   loading: boolean;
   onRefresh: () => void;
+  onUpdateEmployee: (employeeId: string, data: any) => Promise<boolean>;
+  onDeleteEmployee: (employeeId: string) => Promise<boolean>;
 }
 
 export const EmployeeList: React.FC<EmployeeListProps> = ({
   employees,
   loading,
-  onRefresh
+  onRefresh,
+  onUpdateEmployee,
+  onDeleteEmployee
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const { exportToPDF, exportEmployeesToExcel, isExporting } = useDataExport();
+  
+  // Edit/Delete state
+  const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
+  const [deleteEmployee, setDeleteEmployee] = useState<Employee | null>(null);
 
   const getStatusBadge = (status: Employee['status']) => {
     const variants = {
@@ -236,14 +246,14 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => toast.info('Edición de empleado en desarrollo')}
+                      onClick={() => setEditEmployee(employee)}
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => toast.info('Eliminación de empleado en desarrollo')}
+                      onClick={() => setDeleteEmployee(employee)}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -261,6 +271,22 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
           <p>No se encontraron empleados que coincidan con los filtros.</p>
         </div>
       )}
+
+      {/* Edit Dialog */}
+      <EmployeeEditDialog
+        employee={editEmployee}
+        open={!!editEmployee}
+        onOpenChange={(open) => !open && setEditEmployee(null)}
+        onUpdate={onUpdateEmployee}
+      />
+
+      {/* Delete Dialog */}
+      <EmployeeDeleteDialog
+        employee={deleteEmployee}
+        open={!!deleteEmployee}
+        onOpenChange={(open) => !open && setDeleteEmployee(null)}
+        onDelete={onDeleteEmployee}
+      />
     </div>
   );
 };

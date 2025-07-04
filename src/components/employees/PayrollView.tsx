@@ -5,16 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, FileText, Download, Calendar } from 'lucide-react';
+import { DollarSign, FileText, Download, Calendar, Play } from 'lucide-react';
 import { Employee } from '@/types/employee';
+import { usePayroll } from '@/hooks/usePayroll';
 
 interface PayrollViewProps {
   employees: Employee[];
+  restaurantId?: string;
 }
 
-export const PayrollView: React.FC<PayrollViewProps> = ({ employees }) => {
+export const PayrollView: React.FC<PayrollViewProps> = ({ employees, restaurantId }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [selectedEmployee, setSelectedEmployee] = useState<string>('');
+  const { payrollRecords, loading, fetchPayrollRecords, generatePayroll, updatePayrollStatus } = usePayroll(restaurantId);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-ES', {
@@ -23,37 +26,33 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees }) => {
     }).format(amount);
   };
 
-  // Mock payroll data
-  const mockPayrollData = employees.filter(emp => emp.status === 'active').map(employee => ({
-    id: `payroll-${employee.id}`,
-    employee_id: employee.id,
-    employee: employee,
-    period_start: `${selectedMonth}-01`,
-    period_end: `${selectedMonth}-31`,
-    regular_hours: 160,
-    overtime_hours: 8,
-    base_pay: employee.base_salary || 1500,
-    overtime_pay: (employee.hourly_rate || 10) * 8 * 1.5,
-    bonuses: 0,
-    commissions: 0,
-    social_security: (employee.base_salary || 1500) * 0.0635,
-    income_tax: (employee.base_salary || 1500) * 0.15,
-    other_deductions: 0,
-    gross_pay: (employee.base_salary || 1500) + ((employee.hourly_rate || 10) * 8 * 1.5),
-    net_pay: (employee.base_salary || 1500) + ((employee.hourly_rate || 10) * 8 * 1.5) - 
-             ((employee.base_salary || 1500) * 0.0635) - ((employee.base_salary || 1500) * 0.15),
-    status: 'draft' as const,
-    payment_date: null
-  }));
+  const handleMonthChange = (month: string) => {
+    setSelectedMonth(month);
+    fetchPayrollRecords(month);
+  };
+
+  const handleGeneratePayrolls = async () => {
+    const year = selectedMonth.split('-')[0];
+    const month = selectedMonth.split('-')[1];
+    const periodStart = `${year}-${month}-01`;
+    const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+    const periodEnd = `${year}-${month}-${lastDay.toString().padStart(2, '0')}`;
+
+    const activeEmployees = employees.filter(emp => emp.status === 'active');
+    
+    for (const employee of activeEmployees) {
+      await generatePayroll(employee.id, periodStart, periodEnd);
+    }
+  };
 
   const filteredPayroll = selectedEmployee 
-    ? mockPayrollData.filter(payroll => payroll.employee_id === selectedEmployee)
-    : mockPayrollData;
+    ? payrollRecords.filter(payroll => payroll.employee_id === selectedEmployee)
+    : payrollRecords;
 
   const totalGrossPay = filteredPayroll.reduce((sum, payroll) => sum + payroll.gross_pay, 0);
   const totalNetPay = filteredPayroll.reduce((sum, payroll) => sum + payroll.net_pay, 0);
   const totalDeductions = filteredPayroll.reduce((sum, payroll) => 
-    sum + payroll.social_security + payroll.income_tax + payroll.other_deductions, 0);
+    sum + (payroll.social_security || 0) + (payroll.income_tax || 0) + (payroll.other_deductions || 0), 0);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -146,7 +145,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees }) => {
               <Input
                 type="month"
                 value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                onChange={(e) => handleMonthChange(e.target.value)}
               />
             </div>
             <div className="flex-1">
@@ -166,7 +165,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees }) => {
               </Select>
             </div>
             <div className="flex items-end gap-2">
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleGeneratePayrolls}>
                 <FileText className="w-4 h-4 mr-2" />
                 Generar Nóminas
               </Button>
@@ -194,73 +193,83 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees }) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPayroll.map((payroll) => (
-                  <TableRow key={payroll.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">
-                          {payroll.employee.first_name} {payroll.employee.last_name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {payroll.employee.position}
-                        </div>
-                      </div>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-12">
+                      <div className="w-6 h-6 bg-red-600 rounded-xl animate-spin mx-auto mb-2"></div>
+                      Cargando nóminas...
                     </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>Regular: {payroll.regular_hours}h</div>
-                        {payroll.overtime_hours > 0 && (
-                          <div className="text-orange-600">
-                            Extra: {payroll.overtime_hours}h
+                  </TableRow>
+                ) : filteredPayroll.map((payroll) => {
+                  const employee = employees.find(emp => emp.id === payroll.employee_id);
+                  return (
+                    <TableRow key={payroll.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">
+                            {employee?.first_name} {employee?.last_name}
                           </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {formatCurrency(payroll.base_pay)}
-                    </TableCell>
-                    <TableCell>
-                      {payroll.overtime_pay > 0 ? (
+                          <div className="text-sm text-gray-500">
+                            {employee?.position}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         <div className="text-sm">
-                          <div className="text-orange-600">
-                            {formatCurrency(payroll.overtime_pay)}
-                          </div>
-                          {payroll.bonuses > 0 && (
-                            <div className="text-green-600">
-                              +{formatCurrency(payroll.bonuses)}
+                          <div>Regular: {payroll.regular_hours || 0}h</div>
+                          {(payroll.overtime_hours || 0) > 0 && (
+                            <div className="text-orange-600">
+                              Extra: {payroll.overtime_hours}h
                             </div>
                           )}
                         </div>
-                      ) : (
-                        formatCurrency(payroll.bonuses)
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium text-green-600">
-                      {formatCurrency(payroll.gross_pay)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-red-600">
-                        {formatCurrency(payroll.social_security + payroll.income_tax + payroll.other_deductions)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium text-blue-600">
-                      {formatCurrency(payroll.net_pay)}
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(payroll.status)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          Ver
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {formatCurrency(payroll.base_pay || 0)}
+                      </TableCell>
+                      <TableCell>
+                        {(payroll.overtime_pay || 0) > 0 ? (
+                          <div className="text-sm">
+                            <div className="text-orange-600">
+                              {formatCurrency(payroll.overtime_pay || 0)}
+                            </div>
+                            {(payroll.bonuses || 0) > 0 && (
+                              <div className="text-green-600">
+                                +{formatCurrency(payroll.bonuses || 0)}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          formatCurrency(payroll.bonuses || 0)
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium text-green-600">
+                        {formatCurrency(payroll.gross_pay)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-red-600">
+                          {formatCurrency((payroll.social_security || 0) + (payroll.income_tax || 0) + (payroll.other_deductions || 0))}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium text-blue-600">
+                        {formatCurrency(payroll.net_pay)}
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(payroll.status || 'draft')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="sm">
+                            Ver
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -269,7 +278,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees }) => {
             <div className="text-center py-12 text-gray-500">
               <DollarSign className="w-12 h-12 mx-auto mb-4 text-gray-400" />
               <p>No hay nóminas generadas para este período</p>
-              <Button className="mt-4">
+              <Button className="mt-4" onClick={handleGeneratePayrolls}>
                 <FileText className="w-4 h-4 mr-2" />
                 Generar Nóminas
               </Button>
