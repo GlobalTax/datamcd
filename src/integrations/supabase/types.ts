@@ -9,6 +9,262 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      advisor_alert_instances: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_id: string
+          created_at: string
+          data: Json | null
+          franchisee_id: string | null
+          id: string
+          is_acknowledged: boolean | null
+          message: string
+          restaurant_id: string | null
+          severity: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_id: string
+          created_at?: string
+          data?: Json | null
+          franchisee_id?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          message: string
+          restaurant_id?: string | null
+          severity?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_id?: string
+          created_at?: string
+          data?: Json | null
+          franchisee_id?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          message?: string
+          restaurant_id?: string | null
+          severity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_alert_instances_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      advisor_alerts: {
+        Row: {
+          advisor_id: string
+          alert_type: string
+          conditions: Json
+          created_at: string
+          description: string | null
+          franchisee_id: string | null
+          id: string
+          is_active: boolean | null
+          restaurant_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          advisor_id: string
+          alert_type: string
+          conditions: Json
+          created_at?: string
+          description?: string | null
+          franchisee_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          restaurant_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          advisor_id?: string
+          alert_type?: string
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          franchisee_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          restaurant_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      advisor_communications: {
+        Row: {
+          advisor_id: string
+          content: string
+          created_at: string
+          franchisee_id: string
+          id: string
+          is_read: boolean | null
+          message_type: string
+          priority: string | null
+          read_at: string | null
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          advisor_id: string
+          content: string
+          created_at?: string
+          franchisee_id: string
+          id?: string
+          is_read?: boolean | null
+          message_type: string
+          priority?: string | null
+          read_at?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          advisor_id?: string
+          content?: string
+          created_at?: string
+          franchisee_id?: string
+          id?: string
+          is_read?: boolean | null
+          message_type?: string
+          priority?: string | null
+          read_at?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      advisor_report_templates: {
+        Row: {
+          advisor_id: string
+          configuration: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean | null
+          report_type: string
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          advisor_id: string
+          configuration: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          report_type: string
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          advisor_id?: string
+          configuration?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          report_type?: string
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      advisor_reports: {
+        Row: {
+          advisor_id: string
+          expires_at: string | null
+          generated_at: string
+          id: string
+          parameters: Json | null
+          report_data: Json
+          report_name: string
+          template_id: string | null
+        }
+        Insert: {
+          advisor_id: string
+          expires_at?: string | null
+          generated_at?: string
+          id?: string
+          parameters?: Json | null
+          report_data: Json
+          report_name: string
+          template_id?: string | null
+        }
+        Update: {
+          advisor_id?: string
+          expires_at?: string | null
+          generated_at?: string
+          id?: string
+          parameters?: Json | null
+          report_data?: Json
+          report_name?: string
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_reports_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      advisor_tasks: {
+        Row: {
+          advisor_id: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          franchisee_id: string
+          id: string
+          priority: string | null
+          restaurant_id: string | null
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          advisor_id: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          franchisee_id: string
+          id?: string
+          priority?: string | null
+          restaurant_id?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          advisor_id?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          franchisee_id?: string
+          id?: string
+          priority?: string | null
+          restaurant_id?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       annual_budgets: {
         Row: {
           apr: number | null
@@ -85,6 +341,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       base_restaurants: {
         Row: {
@@ -734,6 +1029,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      integration_configs: {
+        Row: {
+          advisor_id: string
+          api_endpoint: string | null
+          api_key_encrypted: string | null
+          config_name: string
+          configuration: Json
+          created_at: string
+          id: string
+          integration_type: string
+          is_active: boolean | null
+          last_sync: string | null
+          updated_at: string
+        }
+        Insert: {
+          advisor_id: string
+          api_endpoint?: string | null
+          api_key_encrypted?: string | null
+          config_name: string
+          configuration: Json
+          created_at?: string
+          id?: string
+          integration_type: string
+          is_active?: boolean | null
+          last_sync?: string | null
+          updated_at?: string
+        }
+        Update: {
+          advisor_id?: string
+          api_endpoint?: string | null
+          api_key_encrypted?: string | null
+          config_name?: string
+          configuration?: Json
+          created_at?: string
+          id?: string
+          integration_type?: string
+          is_active?: boolean | null
+          last_sync?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       monthly_tracking: {
         Row: {

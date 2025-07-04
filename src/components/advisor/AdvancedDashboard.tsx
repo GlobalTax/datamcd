@@ -1,416 +1,374 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { 
   TrendingUp, 
   TrendingDown, 
   AlertTriangle, 
-  CheckCircle, 
-  Clock, 
-  Euro,
-  Users,
-  Building,
+  Users, 
+  Store, 
+  DollarSign,
+  RefreshCw,
   Calendar,
-  Filter
+  Target
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
-interface DashboardMetrics {
-  totalRevenue: number;
+interface KPIData {
+  totalFranchisees: number;
+  totalRestaurants: number;
+  avgRevenue: number;
+  alertsCount: number;
+  tasksCount: number;
   revenueGrowth: number;
-  activeRestaurants: number;
-  activeFranchisees: number;
-  pendingPayments: number;
-  overdueContracts: number;
-  averagePerformance: number;
-  topPerformers: Array<{
-    name: string;
-    revenue: number;
-    growth: number;
-  }>;
-  monthlyTrends: Array<{
-    month: string;
-    revenue: number;
-    restaurants: number;
-    franchisees: number;
-  }>;
-  alerts: Array<{
-    id: string;
-    type: 'warning' | 'error' | 'info';
-    title: string;
-    description: string;
-    timestamp: string;
-  }>;
+}
+
+interface RecentActivity {
+  id: string;
+  type: 'task' | 'alert' | 'communication';
+  title: string;
+  description: string;
+  timestamp: string;
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
 }
 
 export const AdvancedDashboard: React.FC = () => {
-  const [metrics, setMetrics] = useState<DashboardMetrics>({
-    totalRevenue: 0,
-    revenueGrowth: 0,
-    activeRestaurants: 0,
-    activeFranchisees: 0,
-    pendingPayments: 0,
-    overdueContracts: 0,
-    averagePerformance: 0,
-    topPerformers: [],
-    monthlyTrends: [],
-    alerts: []
+  const { user } = useAuth();
+  const [kpiData, setKpiData] = useState<KPIData>({
+    totalFranchisees: 0,
+    totalRestaurants: 0,
+    avgRevenue: 0,
+    alertsCount: 0,
+    tasksCount: 0,
+    revenueGrowth: 0
   });
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeFilter, setTimeFilter] = useState('30d');
-  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchDashboardMetrics = async () => {
+  const fetchKPIData = async () => {
     try {
-      setRefreshing(true);
-
-      // Obtener restaurantes activos
-      const { data: restaurants } = await supabase
-        .from('base_restaurants')
-        .select('*');
-
-      // Obtener franquiciados activos
+      // Obtener total de franquiciados
       const { data: franchisees } = await supabase
         .from('franchisees')
-        .select('*');
+        .select('id');
 
-      // Obtener asignaciones
-      const { data: assignments } = await supabase
+      // Obtener total de restaurantes
+      const { data: restaurants } = await supabase
         .from('franchisee_restaurants')
-        .select(`
-          *,
-          base_restaurant:base_restaurants(*),
-          franchisee:franchisees(*)
-        `);
+        .select('id, last_year_revenue')
+        .eq('status', 'active');
 
-      // Calcular métricas
-      const totalRevenue = assignments?.reduce((sum, assignment) => 
-        sum + (assignment.last_year_revenue || 0), 0) || 0;
+      // Obtener alertas activas
+      const { data: alerts } = await supabase
+        .from('advisor_alert_instances')
+        .select('id')
+        .eq('is_acknowledged', false);
 
-      const revenueGrowth = Math.random() * 20 - 10; // Simulado por ahora
+      // Obtener tareas pendientes
+      const { data: tasks } = await supabase
+        .from('advisor_tasks')
+        .select('id')
+        .in('status', ['pending', 'in_progress']);
 
-      // Top performers basado en ingresos
-      const topPerformers = assignments
-        ?.filter(a => a.last_year_revenue)
-        .sort((a, b) => (b.last_year_revenue || 0) - (a.last_year_revenue || 0))
-        .slice(0, 5)
-        .map(assignment => ({
-          name: assignment.base_restaurant?.restaurant_name || 'Sin nombre',
-          revenue: assignment.last_year_revenue || 0,
-          growth: Math.random() * 30 - 10 // Simulado
-        })) || [];
+      // Calcular promedio de ingresos
+      const totalRevenue = restaurants?.reduce((sum, r) => sum + (r.last_year_revenue || 0), 0) || 0;
+      const avgRevenue = restaurants?.length ? totalRevenue / restaurants.length : 0;
 
-      // Tendencias mensuales (simulado por ahora)
-      const monthlyTrends = Array.from({ length: 6 }, (_, i) => {
-        const date = new Date();
-        date.setMonth(date.getMonth() - (5 - i));
-        return {
-          month: date.toLocaleDateString('es-ES', { month: 'short' }),
-          revenue: Math.floor(Math.random() * 1000000 + 500000),
-          restaurants: Math.floor(Math.random() * 10 + (restaurants?.length || 0) - 5),
-          franchisees: Math.floor(Math.random() * 5 + (franchisees?.length || 0) - 2)
-        };
+      setKpiData({
+        totalFranchisees: franchisees?.length || 0,
+        totalRestaurants: restaurants?.length || 0,
+        avgRevenue,
+        alertsCount: alerts?.length || 0,
+        tasksCount: tasks?.length || 0,
+        revenueGrowth: 8.2 // Mock data - sería calculado con datos históricos
       });
+    } catch (error) {
+      console.error('Error fetching KPI data:', error);
+    }
+  };
 
-      // Alertas simuladas
-      const alerts = [
+  const fetchRecentActivity = async () => {
+    try {
+      // Simular actividad reciente - en producción sería de las tablas reales
+      const mockActivity: RecentActivity[] = [
         {
           id: '1',
-          type: 'warning' as const,
-          title: 'Contratos próximos a vencer',
-          description: '3 contratos de franquicia vencen en los próximos 30 días',
-          timestamp: new Date().toISOString()
+          type: 'alert',
+          title: 'Bajo rendimiento detectado',
+          description: 'Restaurante Madrid Centro - Ventas 15% por debajo del objetivo',
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          priority: 'high'
         },
         {
           id: '2',
-          type: 'error' as const,
-          title: 'Pagos pendientes',
-          description: '2 franquiciados tienen pagos atrasados',
-          timestamp: new Date().toISOString()
+          type: 'task',
+          title: 'Auditoría programada',
+          description: 'Revisar procedimientos operativos - Restaurante Barcelona Este',
+          timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+          priority: 'normal'
         },
         {
           id: '3',
-          type: 'info' as const,
-          title: 'Nuevo restaurante registrado',
-          description: 'Se ha registrado un nuevo restaurante en Madrid',
-          timestamp: new Date().toISOString()
+          type: 'communication',
+          title: 'Consulta franquiciado',
+          description: 'Juan Pérez solicita información sobre nuevas promociones',
+          timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+          priority: 'low'
         }
       ];
-
-      setMetrics({
-        totalRevenue,
-        revenueGrowth,
-        activeRestaurants: restaurants?.length || 0,
-        activeFranchisees: franchisees?.length || 0,
-        pendingPayments: 2, // Simulado
-        overdueContracts: 3, // Simulado
-        averagePerformance: 85.5, // Simulado
-        topPerformers,
-        monthlyTrends,
-        alerts
-      });
-
+      setRecentActivity(mockActivity);
     } catch (error) {
-      console.error('Error fetching dashboard metrics:', error);
-      toast.error('Error al cargar las métricas del dashboard');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      console.error('Error fetching recent activity:', error);
     }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    await Promise.all([fetchKPIData(), fetchRecentActivity()]);
+    setLoading(false);
   };
 
   useEffect(() => {
-    fetchDashboardMetrics();
-  }, [timeFilter]);
+    loadData();
+  }, []);
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-ES', {
       style: 'currency',
       currency: 'EUR'
-    }).format(value);
+    }).format(amount);
   };
 
-  const getAlertIcon = (type: string) => {
-    switch (type) {
-      case 'warning': return <AlertTriangle className="w-4 h-4 text-warning" />;
-      case 'error': return <AlertTriangle className="w-4 h-4 text-destructive" />;
-      case 'info': return <CheckCircle className="w-4 h-4 text-primary" />;
-      default: return <CheckCircle className="w-4 h-4 text-muted-foreground" />;
+  const formatTimeAgo = (timestamp: string) => {
+    const diff = Date.now() - new Date(timestamp).getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 1) return 'Hace menos de 1 hora';
+    if (hours === 1) return 'Hace 1 hora';
+    return `Hace ${hours} horas`;
+  };
+
+  const getPriorityColor = (priority?: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-destructive text-destructive-foreground';
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'normal': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'low': return 'bg-muted text-muted-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
-  const CHART_COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'alert': return <AlertTriangle className="w-4 h-4 text-orange-600" />;
+      case 'task': return <Target className="w-4 h-4 text-blue-600" />;
+      case 'communication': return <Users className="w-4 h-4 text-green-600" />;
+      default: return <Calendar className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded-md w-1/3 mb-6"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-muted rounded-lg"></div>
-            ))}
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-96">
+        <RefreshCw className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header con filtros */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard Avanzado</h1>
-          <p className="text-muted-foreground">Métricas y análisis en tiempo real</p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Select value={timeFilter} onValueChange={setTimeFilter}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">Últimos 7 días</SelectItem>
-              <SelectItem value="30d">Últimos 30 días</SelectItem>
-              <SelectItem value="90d">Últimos 3 meses</SelectItem>
-              <SelectItem value="1y">Último año</SelectItem>
-            </SelectContent>
-          </Select>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-700">Franquiciados</p>
+                <p className="text-2xl font-bold text-blue-900">{kpiData.totalFranchisees}</p>
+              </div>
+              <Users className="w-8 h-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-green-700">Restaurantes</p>
+                <p className="text-2xl font-bold text-green-900">{kpiData.totalRestaurants}</p>
+              </div>
+              <Store className="w-8 h-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-purple-700">Ingresos Promedio</p>
+                <p className="text-xl font-bold text-purple-900">{formatCurrency(kpiData.avgRevenue)}</p>
+              </div>
+              <DollarSign className="w-8 h-8 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-orange-700">Alertas Activas</p>
+                <p className="text-2xl font-bold text-orange-900">{kpiData.alertsCount}</p>
+              </div>
+              <AlertTriangle className="w-8 h-8 text-orange-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-cyan-700">Tareas Pendientes</p>
+                <p className="text-2xl font-bold text-cyan-900">{kpiData.tasksCount}</p>
+              </div>
+              <Target className="w-8 h-8 text-cyan-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-emerald-700">Crecimiento</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-xl font-bold text-emerald-900">+{kpiData.revenueGrowth}%</p>
+                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Dashboard Content */}
+      <Tabs defaultValue="overview" className="space-y-4">
+        <div className="flex justify-between items-center">
+          <TabsList className="grid w-fit grid-cols-3">
+            <TabsTrigger value="overview">Resumen</TabsTrigger>
+            <TabsTrigger value="performance">Rendimiento</TabsTrigger>
+            <TabsTrigger value="alerts">Alertas</TabsTrigger>
+          </TabsList>
           
-          <Button 
-            onClick={fetchDashboardMetrics} 
-            disabled={refreshing}
-            variant="outline"
-            size="sm"
-          >
-            <Clock className="w-4 h-4 mr-2" />
-            {refreshing ? 'Actualizando...' : 'Actualizar'}
+          <Button onClick={loadData} variant="outline" size="sm">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Actualizar
           </Button>
         </div>
-      </div>
 
-      {/* KPIs principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-primary/10 to-primary/5">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Ingresos Totales</p>
-                <p className="text-3xl font-bold text-foreground">
-                  {formatCurrency(metrics.totalRevenue)}
-                </p>
-                <div className="flex items-center mt-2">
-                  {metrics.revenueGrowth >= 0 ? (
-                    <TrendingUp className="w-4 h-4 text-success mr-1" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4 text-destructive mr-1" />
-                  )}
-                  <span className={`text-sm font-medium ${
-                    metrics.revenueGrowth >= 0 ? 'text-success' : 'text-destructive'
-                  }`}>
-                    {metrics.revenueGrowth > 0 ? '+' : ''}{metrics.revenueGrowth.toFixed(1)}%
-                  </span>
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Actividad Reciente */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  Actividad Reciente
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentActivity.map((activity) => (
+                    <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                      {getActivityIcon(activity.type)}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="text-sm font-medium">{activity.title}</h4>
+                          {activity.priority && (
+                            <Badge className={getPriorityColor(activity.priority)} variant="outline">
+                              {activity.priority}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{activity.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatTimeAgo(activity.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                <Euro className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Restaurantes Activos</p>
-                <p className="text-3xl font-bold text-foreground">{metrics.activeRestaurants}</p>
-                <p className="text-sm text-muted-foreground mt-2">+2 este mes</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Building className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Franquiciados</p>
-                <p className="text-3xl font-bold text-foreground">{metrics.activeFranchisees}</p>
-                <p className="text-sm text-muted-foreground mt-2">+1 este mes</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <Users className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Rendimiento Promedio</p>
-                <p className="text-3xl font-bold text-foreground">{metrics.averagePerformance}%</p>
-                <div className="flex items-center mt-2">
-                  <TrendingUp className="w-4 h-4 text-success mr-1" />
-                  <span className="text-sm font-medium text-success">+2.1%</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Tendencias mensuales */}
-        <Card className="lg:col-span-2 border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Tendencias Mensuales
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={metrics.monthlyTrends}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="month" 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="hsl(var(--primary))" 
-                  fill="hsl(var(--primary))"
-                  fillOpacity={0.1}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Alertas y Notificaciones */}
-        <Card className="border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" />
-              Alertas Recientes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {metrics.alerts.map((alert) => (
-              <div key={alert.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                {getAlertIcon(alert.type)}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{alert.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{alert.description}</p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {new Date(alert.timestamp).toLocaleDateString('es-ES')}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Top Performers */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
-            Top 5 Restaurantes por Rendimiento
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {metrics.topPerformers.map((performer, index) => (
-              <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-sm font-bold text-primary-foreground">{index + 1}</span>
+            {/* Resumen de Estado */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Estado General del Sistema</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Franquiciados Activos</span>
+                    <Badge className="bg-green-100 text-green-800">
+                      {kpiData.totalFranchisees} activos
+                    </Badge>
                   </div>
-                  <div>
-                    <p className="font-medium text-foreground">{performer.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatCurrency(performer.revenue)}
-                    </p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Restaurantes Operativos</span>
+                    <Badge className="bg-blue-100 text-blue-800">
+                      {kpiData.totalRestaurants} operando
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Alertas Críticas</span>
+                    <Badge className={kpiData.alertsCount > 5 ? "bg-destructive text-destructive-foreground" : "bg-green-100 text-green-800"}>
+                      {kpiData.alertsCount} alertas
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Tareas Atrasadas</span>
+                    <Badge className="bg-orange-100 text-orange-800">
+                      2 atrasadas
+                    </Badge>
                   </div>
                 </div>
-                <Badge variant={performer.growth >= 0 ? "default" : "destructive"}>
-                  {performer.growth > 0 ? '+' : ''}{performer.growth.toFixed(1)}%
-                </Badge>
-              </div>
-            ))}
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+        </TabsContent>
+
+        <TabsContent value="performance">
+          <Card>
+            <CardHeader>
+              <CardTitle>Métricas de Rendimiento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Gráficos de rendimiento y análisis detallados se implementarán aquí.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="alerts">
+          <Card>
+            <CardHeader>
+              <CardTitle>Centro de Alertas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Sistema de alertas personalizables se implementará aquí.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

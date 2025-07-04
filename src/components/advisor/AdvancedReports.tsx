@@ -2,604 +2,451 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  LineChart, 
-  Line, 
-  AreaChart, 
-  Area, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  ScatterChart,
-  Scatter,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
-import { 
+  BarChart3, 
   FileText, 
   Download, 
-  Filter, 
-  Calendar as CalendarIcon,
+  Plus,
+  Search,
   TrendingUp,
-  BarChart3,
-  PieChart as PieChartIcon,
+  DollarSign,
   Target,
-  Euro,
-  Percent,
-  Users,
-  Building
+  Trash2
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
-import { es } from 'date-fns/locale';
 
-interface ReportData {
-  performanceMetrics: Array<{
-    restaurant: string;
-    revenue: number;
-    growth: number;
-    efficiency: number;
-    satisfaction: number;
-  }>;
-  financialTrends: Array<{
-    month: string;
-    revenue: number;
-    costs: number;
-    profit: number;
-    margin: number;
-  }>;
-  franchiseeComparison: Array<{
-    franchisee: string;
-    totalRevenue: number;
-    avgGrowth: number;
-    restaurantCount: number;
-    performance: number;
-  }>;
-  geographicDistribution: Array<{
-    region: string;
-    count: number;
-    revenue: number;
-    color: string;
-  }>;
+interface ReportTemplate {
+  id: string;
+  template_name: string;
+  description?: string;
+  report_type: 'kpi' | 'financial' | 'operational' | 'comparative';
+  configuration: any;
+  is_public: boolean;
+  created_at: string;
+}
+
+interface GeneratedReport {
+  id: string;
+  report_name: string;
+  report_data: any;
+  parameters?: any;
+  generated_at: string;
+  template?: ReportTemplate;
 }
 
 export const AdvancedReports: React.FC = () => {
-  const [reportData, setReportData] = useState<ReportData>({
-    performanceMetrics: [],
-    financialTrends: [],
-    franchiseeComparison: [],
-    geographicDistribution: []
-  });
+  const { user } = useAuth();
+  const [templates, setTemplates] = useState<ReportTemplate[]>([]);
+  const [reports, setReports] = useState<GeneratedReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState({
-    from: startOfMonth(subDays(new Date(), 30)),
-    to: endOfMonth(new Date())
-  });
-  const [selectedMetric, setSelectedMetric] = useState('revenue');
-  const [selectedRegion, setSelectedRegion] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [reportTypeFilter, setReportTypeFilter] = useState<string>('all');
 
-  const generateMockData = () => {
-    // Datos de rendimiento por restaurante
-    const performanceMetrics = [
-      { restaurant: 'McDonald\'s Goya', revenue: 125000, growth: 8.5, efficiency: 85, satisfaction: 4.2 },
-      { restaurant: 'McDonald\'s Centro', revenue: 98000, growth: -2.1, efficiency: 78, satisfaction: 3.8 },
-      { restaurant: 'McDonald\'s Malasaña', revenue: 110000, growth: 12.3, efficiency: 92, satisfaction: 4.5 },
-      { restaurant: 'McDonald\'s Serrano', revenue: 87000, growth: 5.7, efficiency: 82, satisfaction: 4.0 },
-      { restaurant: 'McDonald\'s Chamberí', revenue: 95000, growth: 3.2, efficiency: 80, satisfaction: 3.9 }
-    ];
-
-    // Tendencias financieras mensuales
-    const financialTrends = Array.from({ length: 12 }, (_, i) => {
-      const month = format(subDays(new Date(), (11 - i) * 30), 'MMM', { locale: es });
-      const revenue = Math.floor(Math.random() * 200000 + 300000);
-      const costs = Math.floor(revenue * (0.7 + Math.random() * 0.1));
-      return {
-        month,
-        revenue,
-        costs,
-        profit: revenue - costs,
-        margin: ((revenue - costs) / revenue * 100)
-      };
-    });
-
-    // Comparación de franquiciados
-    const franchiseeComparison = [
-      { franchisee: 'Juan Pérez S.L.', totalRevenue: 450000, avgGrowth: 8.2, restaurantCount: 3, performance: 87 },
-      { franchisee: 'María García e Hijos', totalRevenue: 380000, avgGrowth: 5.8, restaurantCount: 2, performance: 82 },
-      { franchisee: 'Inversiones Madrid S.A.', totalRevenue: 620000, avgGrowth: 12.1, restaurantCount: 4, performance: 91 },
-      { franchisee: 'Grupo Alimentario BCN', totalRevenue: 295000, avgGrowth: 3.5, restaurantCount: 2, performance: 75 }
-    ];
-
-    // Distribución geográfica
-    const geographicDistribution = [
-      { region: 'Madrid Centro', count: 8, revenue: 890000, color: '#dc2626' },
-      { region: 'Madrid Norte', count: 5, revenue: 520000, color: '#ea580c' },
-      { region: 'Barcelona', count: 6, revenue: 645000, color: '#ca8a04' },
-      { region: 'Valencia', count: 4, revenue: 380000, color: '#65a30d' },
-      { region: 'Sevilla', count: 3, revenue: 285000, color: '#059669' }
-    ];
-
-    setReportData({
-      performanceMetrics,
-      financialTrends,
-      franchiseeComparison,
-      geographicDistribution
-    });
-  };
-
-  const fetchReportData = async () => {
+  const fetchTemplates = async () => {
     try {
-      setLoading(true);
-      // Por ahora usamos datos simulados
-      generateMockData();
+      const { data, error } = await supabase
+        .from('advisor_report_templates')
+        .select('*')
+        .or(`advisor_id.eq.${user?.id},is_public.eq.true`)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTemplates((data || []).map(item => ({
+        ...item,
+        report_type: item.report_type as 'kpi' | 'financial' | 'operational' | 'comparative'
+      })));
     } catch (error) {
-      console.error('Error fetching report data:', error);
-      toast.error('Error al cargar los datos del reporte');
-    } finally {
-      setLoading(false);
+      console.error('Error fetching templates:', error);
+      toast.error('Error al cargar plantillas');
     }
   };
 
+  const fetchReports = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('advisor_reports')
+        .select(`
+          *,
+          template:advisor_report_templates(*)
+        `)
+        .eq('advisor_id', user?.id)
+        .order('generated_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      setReports((data || []).map(item => ({
+        ...item,
+        template: item.template ? {
+          ...item.template,
+          report_type: item.template.report_type as 'kpi' | 'financial' | 'operational' | 'comparative'
+        } : undefined
+      })));
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      toast.error('Error al cargar reportes');
+    }
+  };
+
+  const generateReport = async (templateId: string, templateName: string) => {
+    try {
+      // Simular generación de reporte con datos mock
+      const mockReportData = {
+        summary: {
+          totalFranchisees: 45,
+          totalRestaurants: 67,
+          totalRevenue: 2847392,
+          avgPerformance: 87.3
+        },
+        charts: [
+          {
+            type: 'revenue_trend',
+            data: [
+              { month: 'Ene', value: 245000 },
+              { month: 'Feb', value: 267000 },
+              { month: 'Mar', value: 298000 },
+              { month: 'Abr', value: 276000 },
+              { month: 'May', value: 315000 },
+              { month: 'Jun', value: 289000 }
+            ]
+          }
+        ],
+        tables: [
+          {
+            title: 'Top 5 Restaurantes por Ingresos',
+            headers: ['Restaurante', 'Ciudad', 'Ingresos', 'Crecimiento'],
+            rows: [
+              ['Madrid Centro', 'Madrid', '€45,678', '+12.3%'],
+              ['Barcelona Este', 'Barcelona', '€43,892', '+8.7%'],
+              ['Valencia Norte', 'Valencia', '€41,234', '+15.2%'],
+              ['Sevilla Centro', 'Sevilla', '€38,765', '+5.9%'],
+              ['Bilbao Plaza', 'Bilbao', '€36,543', '+9.1%']
+            ]
+          }
+        ]
+      };
+
+      const { error } = await supabase
+        .from('advisor_reports')
+        .insert({
+          template_id: templateId,
+          advisor_id: user?.id,
+          report_name: `${templateName} - ${new Date().toLocaleDateString('es-ES')}`,
+          report_data: mockReportData,
+          parameters: {
+            date_range: 'last_6_months',
+            include_comparisons: true
+          }
+        });
+
+      if (error) throw error;
+
+      toast.success('Reporte generado exitosamente');
+      fetchReports();
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast.error('Error al generar reporte');
+    }
+  };
+
+  const deleteReport = async (reportId: string) => {
+    try {
+      const { error } = await supabase
+        .from('advisor_reports')
+        .delete()
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      toast.success('Reporte eliminado exitosamente');
+      fetchReports();
+    } catch (error) {
+      console.error('Error deleting report:', error);
+      toast.error('Error al eliminar reporte');
+    }
+  };
+
+  const exportReport = (report: GeneratedReport) => {
+    // Simular exportación de reporte
+    const dataStr = JSON.stringify(report.report_data, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${report.report_name}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('Reporte exportado exitosamente');
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    await Promise.all([fetchTemplates(), fetchReports()]);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    fetchReportData();
-  }, [dateRange, selectedRegion]);
+    loadData();
+  }, []);
 
-  const exportToPDF = () => {
-    toast.success('Exportando reporte a PDF...');
-    // Implementar exportación a PDF
+  // Simular algunas plantillas por defecto
+  useEffect(() => {
+    if (templates.length === 0) {
+      const mockTemplates: ReportTemplate[] = [
+        {
+          id: '1',
+          template_name: 'Reporte de KPIs Mensual',
+          description: 'Métricas clave de rendimiento por restaurante',
+          report_type: 'kpi',
+          configuration: {},
+          is_public: true,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: '2',
+          template_name: 'Análisis Financiero Trimestral',
+          description: 'Ingresos, costos y rentabilidad por trimestre',
+          report_type: 'financial',
+          configuration: {},
+          is_public: true,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: '3',
+          template_name: 'Comparativa de Restaurantes',
+          description: 'Comparación de rendimiento entre ubicaciones',
+          report_type: 'comparative',
+          configuration: {},
+          is_public: true,
+          created_at: new Date().toISOString()
+        }
+      ];
+      setTemplates(mockTemplates);
+    }
+  }, [templates.length]);
+
+  const filteredTemplates = templates.filter(template => {
+    const matchesSearch = template.template_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         template.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = reportTypeFilter === 'all' || template.report_type === reportTypeFilter;
+    return matchesSearch && matchesType;
+  });
+
+  const getReportTypeIcon = (type: string) => {
+    switch (type) {
+      case 'kpi': return <Target className="w-4 h-4" />;
+      case 'financial': return <DollarSign className="w-4 h-4" />;
+      case 'operational': return <BarChart3 className="w-4 h-4" />;
+      case 'comparative': return <TrendingUp className="w-4 h-4" />;
+      default: return <FileText className="w-4 h-4" />;
+    }
   };
 
-  const exportToExcel = () => {
-    toast.success('Exportando reporte a Excel...');
-    // Implementar exportación a Excel
+  const getReportTypeLabel = (type: string) => {
+    switch (type) {
+      case 'kpi': return 'KPIs';
+      case 'financial': return 'Financiero';
+      case 'operational': return 'Operacional';
+      case 'comparative': return 'Comparativo';
+      default: return type;
+    }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(value);
+  const getReportTypeColor = (type: string) => {
+    switch (type) {
+      case 'kpi': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'financial': return 'bg-green-100 text-green-800 border-green-200';
+      case 'operational': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'comparative': return 'bg-orange-100 text-orange-800 border-orange-200';
+      default: return 'bg-muted text-muted-foreground';
+    }
   };
 
-  const getPerformanceColor = (value: number, threshold = 80) => {
-    if (value >= threshold) return 'text-success';
-    if (value >= threshold * 0.7) return 'text-warning';
-    return 'text-destructive';
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded-md w-1/3 mb-6"></div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-64 bg-muted rounded-lg"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      {/* Header con controles */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Reportes Avanzados</h1>
-          <p className="text-muted-foreground">Análisis detallado y métricas personalizables</p>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3">
-          <Select value={selectedMetric} onValueChange={setSelectedMetric}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="revenue">Ingresos</SelectItem>
-              <SelectItem value="growth">Crecimiento</SelectItem>
-              <SelectItem value="efficiency">Eficiencia</SelectItem>
-              <SelectItem value="satisfaction">Satisfacción</SelectItem>
-            </SelectContent>
-          </Select>
+      <Tabs defaultValue="templates" className="space-y-4">
+        <div className="flex justify-between items-center">
+          <TabsList className="grid w-fit grid-cols-2">
+            <TabsTrigger value="templates">Plantillas</TabsTrigger>
+            <TabsTrigger value="reports">Reportes Generados</TabsTrigger>
+          </TabsList>
           
-          <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las regiones</SelectItem>
-              <SelectItem value="madrid">Madrid</SelectItem>
-              <SelectItem value="barcelona">Barcelona</SelectItem>
-              <SelectItem value="valencia">Valencia</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Button onClick={exportToPDF} variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            PDF
-          </Button>
-          
-          <Button onClick={exportToExcel} variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Excel
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            Nueva Plantilla
           </Button>
         </div>
-      </div>
 
-      <Tabs defaultValue="performance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="performance" className="flex items-center gap-2">
-            <Target className="w-4 h-4" />
-            Rendimiento
-          </TabsTrigger>
-          <TabsTrigger value="financial" className="flex items-center gap-2">
-            <Euro className="w-4 h-4" />
-            Financiero
-          </TabsTrigger>
-          <TabsTrigger value="comparison" className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            Comparativas
-          </TabsTrigger>
-          <TabsTrigger value="geographic" className="flex items-center gap-2">
-            <Building className="w-4 h-4" />
-            Geográfico
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="performance" className="space-y-6">
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                Análisis de Rendimiento por Restaurante
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <ScatterChart data={reportData.performanceMetrics}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="efficiency" 
-                    name="Eficiencia %" 
-                    stroke="hsl(var(--muted-foreground))"
-                  />
-                  <YAxis 
-                    dataKey="revenue" 
-                    name="Ingresos" 
-                    stroke="hsl(var(--muted-foreground))"
-                  />
-                  <Tooltip 
-                    formatter={(value, name) => [
-                      name === 'revenue' ? formatCurrency(Number(value)) : `${value}%`,
-                      name === 'revenue' ? 'Ingresos' : 'Eficiencia'
-                    ]}
-                    labelFormatter={(label) => `Restaurante: ${label}`}
-                  />
-                  <Scatter 
-                    dataKey="revenue" 
-                    fill="hsl(var(--primary))" 
-                    fillOpacity={0.7}
-                  />
-                </ScatterChart>
-              </ResponsiveContainer>
+        <TabsContent value="templates" className="space-y-4">
+          {/* Filtros */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      placeholder="Buscar plantillas..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                
+                <Select value={reportTypeFilter} onValueChange={setReportTypeFilter}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Tipo de reporte" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los tipos</SelectItem>
+                    <SelectItem value="kpi">KPIs</SelectItem>
+                    <SelectItem value="financial">Financiero</SelectItem>
+                    <SelectItem value="operational">Operacional</SelectItem>
+                    <SelectItem value="comparative">Comparativo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Top Restaurantes por Ingresos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {reportData.performanceMetrics
-                    .sort((a, b) => b.revenue - a.revenue)
-                    .slice(0, 5)
-                    .map((restaurant, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary-foreground">{index + 1}</span>
-                        </div>
-                        <div>
-                          <p className="font-medium">{restaurant.restaurant}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Eficiencia: {restaurant.efficiency}%
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold">{formatCurrency(restaurant.revenue)}</p>
-                        <Badge variant={restaurant.growth >= 0 ? "default" : "destructive"}>
-                          {restaurant.growth > 0 ? '+' : ''}{restaurant.growth}%
-                        </Badge>
-                      </div>
+          {/* Grid de Plantillas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredTemplates.map((template) => (
+              <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      {getReportTypeIcon(template.report_type)}
+                      <CardTitle className="text-lg">{template.template_name}</CardTitle>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    {template.is_public && (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        Pública
+                      </Badge>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Badge className={getReportTypeColor(template.report_type)} variant="outline">
+                      {getReportTypeLabel(template.report_type)}
+                    </Badge>
+                  </div>
+                  
+                  {template.description && (
+                    <p className="text-sm text-muted-foreground">{template.description}</p>
+                  )}
+                  
+                  <div className="text-xs text-muted-foreground">
+                    Creado el {formatDate(template.created_at)}
+                  </div>
+                  
+                  <Button 
+                    onClick={() => generateReport(template.id, template.template_name)}
+                    className="w-full"
+                  >
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Generar Reporte
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
 
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Métricas de Satisfacción</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={reportData.performanceMetrics}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="restaurant" 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={10}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip />
-                    <Bar dataKey="satisfaction" fill="hsl(var(--secondary))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            {filteredTemplates.length === 0 && (
+              <div className="col-span-full">
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No hay plantillas</h3>
+                    <p className="text-muted-foreground">
+                      {searchTerm || reportTypeFilter !== 'all' 
+                        ? 'No se encontraron plantillas con los filtros aplicados'
+                        : 'Crea tu primera plantilla de reporte'
+                      }
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         </TabsContent>
 
-        <TabsContent value="financial" className="space-y-6">
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Tendencias Financieras Anuales
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <AreaChart data={reportData.financialTrends}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
-                  <YAxis stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip 
-                    formatter={(value) => formatCurrency(Number(value))}
-                    labelStyle={{ color: 'hsl(var(--foreground))' }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stackId="1"
-                    stroke="hsl(var(--primary))" 
-                    fill="hsl(var(--primary))"
-                    fillOpacity={0.8}
-                    name="Ingresos"
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="costs" 
-                    stackId="2"
-                    stroke="hsl(var(--destructive))" 
-                    fill="hsl(var(--destructive))"
-                    fillOpacity={0.8}
-                    name="Costos"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Márgenes de Beneficio</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={reportData.financialTrends}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
-                    <YAxis stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip 
-                      formatter={(value) => `${Number(value).toFixed(1)}%`}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="margin" 
-                      stroke="hsl(var(--success))" 
-                      strokeWidth={3}
-                      dot={{ fill: 'hsl(var(--success))' }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Resumen Financiero</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 rounded-lg bg-primary/10">
-                    <p className="text-2xl font-bold text-primary">
-                      {formatCurrency(reportData.financialTrends.reduce((sum, item) => sum + item.revenue, 0))}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Ingresos Totales</p>
-                  </div>
-                  <div className="text-center p-4 rounded-lg bg-success/10">
-                    <p className="text-2xl font-bold text-success">
-                      {formatCurrency(reportData.financialTrends.reduce((sum, item) => sum + item.profit, 0))}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Beneficio Total</p>
-                  </div>
-                </div>
-                <div className="text-center p-4 rounded-lg bg-muted/50">
-                  <p className="text-2xl font-bold">
-                    {(reportData.financialTrends.reduce((sum, item) => sum + item.margin, 0) / reportData.financialTrends.length).toFixed(1)}%
-                  </p>
-                  <p className="text-sm text-muted-foreground">Margen Promedio</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="comparison" className="space-y-6">
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Comparativa de Franquiciados
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {reportData.franchiseeComparison.map((franchisee, index) => (
-                  <div key={index} className="p-4 rounded-lg border bg-card">
-                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                      <div>
-                        <h3 className="font-semibold text-lg">{franchisee.franchisee}</h3>
-                        <p className="text-muted-foreground">
-                          {franchisee.restaurantCount} restaurante{franchisee.restaurantCount !== 1 ? 's' : ''}
+        <TabsContent value="reports" className="space-y-4">
+          <div className="space-y-3">
+            {reports.map((report) => (
+              <Card key={report.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      <FileText className="w-5 h-5 text-muted-foreground" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium">{report.report_name}</h4>
+                          {report.template && (
+                            <Badge className={getReportTypeColor(report.template.report_type)} variant="outline">
+                              {getReportTypeLabel(report.template.report_type)}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Generado el {formatDate(report.generated_at)}
                         </p>
                       </div>
-                      
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full lg:w-auto">
-                        <div className="text-center">
-                          <p className="text-xl font-bold">{formatCurrency(franchisee.totalRevenue)}</p>
-                          <p className="text-xs text-muted-foreground">Ingresos Totales</p>
-                        </div>
-                        <div className="text-center">
-                          <p className={`text-xl font-bold ${getPerformanceColor(franchisee.avgGrowth, 5)}`}>
-                            {franchisee.avgGrowth > 0 ? '+' : ''}{franchisee.avgGrowth}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">Crecimiento</p>
-                        </div>
-                        <div className="text-center">
-                          <p className={`text-xl font-bold ${getPerformanceColor(franchisee.performance)}`}>
-                            {franchisee.performance}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">Rendimiento</p>
-                        </div>
-                        <div className="text-center">
-                          <Badge variant={franchisee.performance >= 85 ? "default" : franchisee.performance >= 70 ? "secondary" : "destructive"}>
-                            {franchisee.performance >= 85 ? 'Excelente' : 
-                             franchisee.performance >= 70 ? 'Bueno' : 'Mejorable'}
-                          </Badge>
-                        </div>
-                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => exportReport(report)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Exportar
+                      </Button>
+                      <Button
+                        onClick={() => deleteReport(report.id)}
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                </CardContent>
+              </Card>
+            ))}
 
-        <TabsContent value="geographic" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChartIcon className="w-5 h-5" />
-                  Distribución por Región
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={reportData.geographicDistribution}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="count"
-                      label={({ region, percent }) => `${region} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {reportData.geographicDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Ingresos por Región</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={reportData.geographicDistribution}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="region" 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={10}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                    <Bar dataKey="revenue" fill="hsl(var(--primary))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            {reports.length === 0 && (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No hay reportes generados</h3>
+                  <p className="text-muted-foreground">
+                    Genera tu primer reporte usando una plantilla
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
-
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle>Detalle por Región</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {reportData.geographicDistribution.map((region, index) => (
-                  <div key={index} className="p-4 rounded-lg border bg-card">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div 
-                        className="w-4 h-4 rounded-full" 
-                        style={{ backgroundColor: region.color }}
-                      ></div>
-                      <h3 className="font-semibold">{region.region}</h3>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Restaurantes:</span>
-                        <span className="font-medium">{region.count}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Ingresos:</span>
-                        <span className="font-medium">{formatCurrency(region.revenue)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Promedio:</span>
-                        <span className="font-medium">
-                          {formatCurrency(region.revenue / region.count)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
