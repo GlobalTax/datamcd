@@ -4,18 +4,21 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Building, Users, FileText, LogOut, Store, BarChart3, TrendingUp, Building2 } from 'lucide-react';
+import { Building, Users, FileText, LogOut, Store, BarChart3, TrendingUp, Building2, Bell, Activity, Target, Monitor } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import AdvisorManagement from '@/components/AdvisorManagement';
 import { FranchiseesManagement } from '@/components/FranchiseesManagement';
 import { AdvisorReports } from '@/components/AdvisorReports';
 import { BaseRestaurantsTable } from '@/components/BaseRestaurantsTable';
 import { useBaseRestaurants } from '@/hooks/useBaseRestaurants';
+import { AdvancedDashboard } from '@/components/advisor/AdvancedDashboard';
+import { NotificationCenter } from '@/components/advisor/NotificationCenter';
+import { AdvancedReports } from '@/components/advisor/AdvancedReports';
 
 const AdvisorPage = () => {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('advisors');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const { restaurants, loading: restaurantsLoading, refetch: refetchRestaurants } = useBaseRestaurants();
 
   if (loading) {
@@ -137,36 +140,62 @@ const AdvisorPage = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-white border border-gray-200 p-1 rounded-xl">
+          <TabsList className="grid w-full grid-cols-6 bg-white border border-gray-200 p-1 rounded-xl">
             <TabsTrigger 
-              value="advisors" 
-              className="flex items-center gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-600 rounded-lg"
+              value="dashboard" 
+              className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg"
             >
-              <Users className="w-4 h-4" />
-              Asesores
+              <Activity className="w-4 h-4" />
+              Dashboard
             </TabsTrigger>
             <TabsTrigger 
-              value="franchisees" 
+              value="notifications" 
+              className="flex items-center gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-600 rounded-lg"
+            >
+              <Bell className="w-4 h-4" />
+              Alertas
+            </TabsTrigger>
+            <TabsTrigger 
+              value="advanced_reports" 
               className="flex items-center gap-2 data-[state=active]:bg-green-50 data-[state=active]:text-green-600 rounded-lg"
             >
-              <Building className="w-4 h-4" />
-              Franquiciados
+              <Target className="w-4 h-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger 
+              value="advisors" 
+              className="flex items-center gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-600 rounded-lg"
+            >
+              <Users className="w-4 h-4" />
+              Gestión
             </TabsTrigger>
             <TabsTrigger 
               value="restaurants" 
-              className="flex items-center gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-600 rounded-lg"
+              className="flex items-center gap-2 data-[state=active]:bg-orange-50 data-[state=active]:text-orange-600 rounded-lg"
             >
               <Store className="w-4 h-4" />
               Restaurantes
             </TabsTrigger>
             <TabsTrigger 
               value="reports" 
-              className="flex items-center gap-2 data-[state=active]:bg-orange-50 data-[state=active]:text-orange-600 rounded-lg"
+              className="flex items-center gap-2 data-[state=active]:bg-yellow-50 data-[state=active]:text-yellow-600 rounded-lg"
             >
               <FileText className="w-4 h-4" />
               Reportes
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard">
+            <AdvancedDashboard />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <NotificationCenter />
+          </TabsContent>
+
+          <TabsContent value="advanced_reports">
+            <AdvancedReports />
+          </TabsContent>
 
           <TabsContent value="advisors">
             <Card className="border-0 shadow-lg bg-white">
@@ -175,17 +204,6 @@ const AdvisorPage = () => {
               </CardHeader>
               <CardContent>
                 <AdvisorManagement />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="franchisees">
-            <Card className="border-0 shadow-lg bg-white">
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-900">Gestión de Franquiciados</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <FranchiseesManagement />
               </CardContent>
             </Card>
           </TabsContent>
