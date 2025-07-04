@@ -1001,9 +1001,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_auth_status: {
+        Args: { user_uuid: string }
+        Returns: Json
+      }
       manually_assign_restaurants_to_existing_franchisees: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      user_has_franchisee_data: {
+        Args: { user_uuid: string }
+        Returns: boolean
       }
     }
     Enums: {
