@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Trash2, Mail, Phone, Search, Filter } from 'lucide-react';
+import { Edit, Trash2, Mail, Phone, Search, Filter, Download, FileSpreadsheet } from 'lucide-react';
 import { Employee } from '@/types/employee';
 import { toast } from 'sonner';
+import { useDataExport } from '@/hooks/useDataExport';
 
 interface EmployeeListProps {
   employees: Employee[];
@@ -22,6 +23,7 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const { exportToPDF, exportEmployeesToExcel, isExporting } = useDataExport();
 
   const getStatusBadge = (status: Employee['status']) => {
     const variants = {
@@ -137,13 +139,35 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
         </Select>
       </div>
 
-      {/* Results count */}
-      <div className="text-sm text-gray-600">
-        Mostrando {filteredEmployees.length} de {employees.length} empleados
+      {/* Results count and export buttons */}
+      <div className="flex justify-between items-center">
+        <div className="text-sm text-gray-600">
+          Mostrando {filteredEmployees.length} de {employees.length} empleados
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportEmployeesToExcel(filteredEmployees)}
+            disabled={isExporting || filteredEmployees.length === 0}
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-2" />
+            Exportar Excel
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportToPDF('employees-table', 'lista-empleados')}
+            disabled={isExporting || filteredEmployees.length === 0}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Exportar PDF
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
+      <div id="employees-table" className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
