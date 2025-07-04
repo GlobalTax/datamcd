@@ -13,7 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3 } from 'lucide-react';
+import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -27,6 +27,11 @@ const menuItems = [
     title: "Restaurantes",
     url: "/restaurant",
     icon: Building,
+  },
+  {
+    title: "Empleados",
+    url: "/employees",
+    icon: Users,
   },
   {
     title: "Análisis",

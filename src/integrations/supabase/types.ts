@@ -155,6 +155,329 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_payroll: {
+        Row: {
+          base_pay: number | null
+          bonuses: number | null
+          commissions: number | null
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          gross_pay: number
+          id: string
+          income_tax: number | null
+          net_pay: number
+          notes: string | null
+          other_deductions: number | null
+          overtime_hours: number | null
+          overtime_pay: number | null
+          payment_date: string | null
+          period_end: string
+          period_start: string
+          regular_hours: number | null
+          social_security: number | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          base_pay?: number | null
+          bonuses?: number | null
+          commissions?: number | null
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          gross_pay: number
+          id?: string
+          income_tax?: number | null
+          net_pay: number
+          notes?: string | null
+          other_deductions?: number | null
+          overtime_hours?: number | null
+          overtime_pay?: number | null
+          payment_date?: string | null
+          period_end: string
+          period_start: string
+          regular_hours?: number | null
+          social_security?: number | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          base_pay?: number | null
+          bonuses?: number | null
+          commissions?: number | null
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          gross_pay?: number
+          id?: string
+          income_tax?: number | null
+          net_pay?: number
+          notes?: string | null
+          other_deductions?: number | null
+          overtime_hours?: number | null
+          overtime_pay?: number | null
+          payment_date?: string | null
+          period_end?: string
+          period_start?: string
+          regular_hours?: number | null
+          social_security?: number | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_payroll_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_payroll_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_time_off: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          days_requested: number
+          employee_id: string
+          end_date: string
+          id: string
+          reason: string | null
+          start_date: string
+          status: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          days_requested: number
+          employee_id: string
+          end_date: string
+          id?: string
+          reason?: string | null
+          start_date: string
+          status?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          days_requested?: number
+          employee_id?: string
+          end_date?: string
+          id?: string
+          reason?: string | null
+          start_date?: string
+          status?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_time_off_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_time_off_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_time_tracking: {
+        Row: {
+          break_end: string | null
+          break_start: string | null
+          clock_in: string | null
+          clock_out: string | null
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          overtime_hours: number | null
+          status: string | null
+          total_hours: number | null
+          updated_at: string
+        }
+        Insert: {
+          break_end?: string | null
+          break_start?: string | null
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          date: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          overtime_hours?: number | null
+          status?: string | null
+          total_hours?: number | null
+          updated_at?: string
+        }
+        Update: {
+          break_end?: string | null
+          break_start?: string | null
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          date?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          overtime_hours?: number | null
+          status?: string | null
+          total_hours?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_time_tracking_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employees: {
+        Row: {
+          bank_account: string | null
+          base_salary: number | null
+          contract_end_date: string | null
+          contract_start_date: string
+          contract_type: string
+          created_at: string
+          created_by: string | null
+          department: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          employee_number: string
+          first_name: string
+          hire_date: string
+          hourly_rate: number | null
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          position: string
+          restaurant_id: string
+          salary_frequency: string | null
+          schedule_type: string | null
+          sick_days_used: number | null
+          social_security_number: string | null
+          status: string
+          termination_date: string | null
+          updated_at: string
+          vacation_days_pending: number | null
+          vacation_days_per_year: number | null
+          vacation_days_used: number | null
+          weekly_hours: number | null
+        }
+        Insert: {
+          bank_account?: string | null
+          base_salary?: number | null
+          contract_end_date?: string | null
+          contract_start_date: string
+          contract_type: string
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employee_number: string
+          first_name: string
+          hire_date: string
+          hourly_rate?: number | null
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          position: string
+          restaurant_id: string
+          salary_frequency?: string | null
+          schedule_type?: string | null
+          sick_days_used?: number | null
+          social_security_number?: string | null
+          status?: string
+          termination_date?: string | null
+          updated_at?: string
+          vacation_days_pending?: number | null
+          vacation_days_per_year?: number | null
+          vacation_days_used?: number | null
+          weekly_hours?: number | null
+        }
+        Update: {
+          bank_account?: string | null
+          base_salary?: number | null
+          contract_end_date?: string | null
+          contract_start_date?: string
+          contract_type?: string
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employee_number?: string
+          first_name?: string
+          hire_date?: string
+          hourly_rate?: number | null
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          position?: string
+          restaurant_id?: string
+          salary_frequency?: string | null
+          schedule_type?: string | null
+          sick_days_used?: number | null
+          social_security_number?: string | null
+          status?: string
+          termination_date?: string | null
+          updated_at?: string
+          vacation_days_pending?: number | null
+          vacation_days_per_year?: number | null
+          vacation_days_used?: number | null
+          weekly_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       franchisee_access_log: {
         Row: {
           franchisee_id: string

@@ -20,6 +20,7 @@ import FranchiseeDetailPage from "./pages/FranchiseeDetailPage";
 import ValuationApp from "./pages/ValuationApp";
 import SettingsPage from "./pages/SettingsPage";
 import AnnualBudgetPage from "./pages/AnnualBudgetPage";
+import EmployeePage from "./pages/EmployeePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -125,6 +126,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['franchisee']}>
                     <ValuationApp />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/employees"
+                element={
+                  <ProtectedRoute allowedRoles={['franchisee']}>
+                    <EmployeePage />
                   </ProtectedRoute>
                 }
               />
