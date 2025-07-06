@@ -122,18 +122,15 @@ export const UserCreationPanel: React.FC<UserCreationPanelProps> = ({ onUserCrea
                     <>
                       <SelectItem value="superadmin">Super Admin</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="asesor">Asesor</SelectItem>
                       <SelectItem value="franchisee">Franquiciado</SelectItem>
-                      <SelectItem value="manager">Gerente</SelectItem>
-                      <SelectItem value="asistente">Asistente</SelectItem>
+                      <SelectItem value="staff">Personal</SelectItem>
                     </>
                   )}
                   {user?.role === 'admin' && (
                     <>
-                      <SelectItem value="asesor">Asesor</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="franchisee">Franquiciado</SelectItem>
-                      <SelectItem value="manager">Gerente</SelectItem>
-                      <SelectItem value="asistente">Asistente</SelectItem>
+                      <SelectItem value="staff">Personal</SelectItem>
                     </>
                   )}
                 </SelectContent>

@@ -26,32 +26,32 @@ const AdvisorManagement = () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .in('role', ['admin', 'asesor', 'superadmin'])
+        .in('role', ['admin', 'superadmin'])
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching advisors:', error);
-        toast.error('Error al cargar asesores');
+        toast.error('Error al cargar administradores');
         return;
       }
 
       // Mantener los roles como están en la base de datos
       const typedAdvisors = (data || []).map(advisorData => ({
         ...advisorData,
-        role: advisorData.role as 'admin' | 'asesor' | 'superadmin'
+        role: advisorData.role as 'admin' | 'superadmin'
       }));
 
       setAdvisors(typedAdvisors);
     } catch (error) {
       console.error('Error in fetchAdvisors:', error);
-      toast.error('Error al cargar asesores');
+      toast.error('Error al cargar administradores');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteAdvisor = async (advisorId: string, advisorName: string) => {
-    if (!confirm(`¿Estás seguro de que quieres eliminar el asesor ${advisorName}?`)) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar el administrador ${advisorName}?`)) {
       return;
     }
 
@@ -63,15 +63,15 @@ const AdvisorManagement = () => {
 
       if (error) {
         console.error('Error deleting advisor:', error);
-        toast.error('Error al eliminar asesor');
+        toast.error('Error al eliminar administrador');
         return;
       }
 
-      toast.success('Asesor eliminado exitosamente');
+      toast.success('Administrador eliminado exitosamente');
       fetchAdvisors();
     } catch (error) {
       console.error('Error in handleDeleteAdvisor:', error);
-      toast.error('Error al eliminar asesor');
+      toast.error('Error al eliminar administrador');
     }
   };
 
@@ -81,8 +81,6 @@ const AdvisorManagement = () => {
         return 'bg-red-100 text-red-800';
       case 'admin':
         return 'bg-blue-100 text-blue-800';
-      case 'asesor':
-        return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -94,8 +92,6 @@ const AdvisorManagement = () => {
         return 'Super Admin';
       case 'admin':
         return 'Admin';
-      case 'asesor':
-        return 'Asesor';
       default:
         return role;
     }
@@ -103,17 +99,17 @@ const AdvisorManagement = () => {
 
   const canDeleteAdvisor = (advisorRole: string) => {
     if (user?.role === 'superadmin') return true;
-    if (user?.role === 'admin' && advisorRole === 'asesor') return true;
+    if (user?.role === 'admin' && advisorRole === 'admin') return true;
     return false;
   };
 
-  if (!user || !['superadmin', 'admin', 'asesor'].includes(user.role)) {
+  if (!user || !['superadmin', 'admin'].includes(user.role)) {
     return (
       <Card>
         <CardContent className="p-6">
           <div className="text-center text-gray-500">
             <Shield className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p>No tienes permisos para gestionar asesores</p>
+            <p>No tienes permisos para gestionar administradores</p>
           </div>
         </CardContent>
       </Card>
@@ -129,7 +125,7 @@ const AdvisorManagement = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5" />
-              Lista de Asesores
+              Lista de Administradores
             </CardTitle>
             <Button
               onClick={fetchAdvisors}
@@ -145,7 +141,7 @@ const AdvisorManagement = () => {
         <CardContent>
           {loading ? (
             <div className="text-center py-8">
-              <p>Cargando asesores...</p>
+              <p>Cargando administradores...</p>
             </div>
           ) : (
             <Table>

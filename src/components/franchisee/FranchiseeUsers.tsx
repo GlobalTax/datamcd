@@ -86,7 +86,7 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
 
         const typedUsers = (userProfiles || []).map(userData => ({
           ...userData,
-          role: userData.role as 'admin' | 'franchisee' | 'manager' | 'asesor' | 'asistente' | 'superadmin'
+          role: userData.role as 'admin' | 'franchisee' | 'staff' | 'superadmin'
         }));
 
         console.log('Found users for franchisee:', typedUsers);
@@ -143,14 +143,10 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
         return 'bg-red-100 text-red-800';
       case 'superadmin':
         return 'bg-red-100 text-red-800';
-      case 'manager':
-        return 'bg-blue-100 text-blue-800';
       case 'franchisee':
         return 'bg-green-100 text-green-800';
-      case 'asesor':
-        return 'bg-purple-100 text-purple-800';
-      case 'asistente':
-        return 'bg-orange-100 text-orange-800';
+      case 'staff':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -162,21 +158,17 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
         return 'Administrador';
       case 'superadmin':
         return 'Super Admin';
-      case 'manager':
-        return 'Gerente';
       case 'franchisee':
         return 'Franquiciado';
-      case 'asesor':
-        return 'Asesor';
-      case 'asistente':
-        return 'Asistente';
+      case 'staff':
+        return 'Personal';
       default:
         return role;
     }
   };
 
   // Solo admins pueden gestionar usuarios
-  if (!user || !['admin', 'asesor', 'superadmin'].includes(user.role)) {
+  if (!user || !['admin', 'superadmin'].includes(user.role)) {
     return null;
   }
 

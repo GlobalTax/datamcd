@@ -3,7 +3,7 @@ export interface User {
   id: string;
   email: string;
   full_name?: string;
-  role: 'franchisee' | 'asesor' | 'admin' | 'superadmin' | 'manager' | 'asistente';
+  role: 'franchisee' | 'admin' | 'superadmin' | 'staff';
   phone?: string;
   created_at?: string;
   updated_at?: string;
@@ -48,6 +48,16 @@ export interface Restaurant {
   status: 'active' | 'inactive' | 'pending' | 'closed';
   square_meters?: number;
   seating_capacity?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FranchiseeStaff {
+  id: string;
+  user_id: string;
+  franchisee_id: string;
+  position?: string;
+  permissions?: any;
   created_at: string;
   updated_at: string;
 }

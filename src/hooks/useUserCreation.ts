@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
-export type UserRole = 'admin' | 'franchisee' | 'manager' | 'asesor' | 'asistente' | 'superadmin';
+export type UserRole = 'admin' | 'franchisee' | 'staff' | 'superadmin';
 
 export const useUserCreation = () => {
   const { user } = useAuth();
@@ -23,7 +23,7 @@ export const useUserCreation = () => {
     }
 
     // Verificar permisos
-    if (!['admin', 'asesor', 'superadmin'].includes(user.role)) {
+    if (!['admin', 'superadmin'].includes(user.role)) {
       toast.error('No tienes permisos de administrador');
       return false;
     }
@@ -146,6 +146,25 @@ export const useUserCreation = () => {
             return false;
           }
         }
+      }
+
+      // Si es staff, manejar la asignación a franquiciado
+      if (role === 'staff' && existingFranchiseeId) {
+        const { error: staffError } = await supabase
+          .from('franchisee_staff')
+          .insert({
+            user_id: signUpData.user.id,
+            franchisee_id: existingFranchiseeId,
+            position: 'Empleado'
+          });
+
+        if (staffError) {
+          console.error('Error creating staff assignment:', staffError);
+          toast.error('Usuario creado pero error al asignar como staff');
+          return false;
+        }
+
+        console.log('Usuario asignado como staff del franquiciado:', existingFranchiseeId);
       }
 
       toast.success(`Usuario ${fullName} creado exitosamente`);

@@ -974,6 +974,51 @@ export type Database = {
           },
         ]
       }
+      franchisee_staff: {
+        Row: {
+          created_at: string
+          franchisee_id: string
+          id: string
+          permissions: Json | null
+          position: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          franchisee_id: string
+          id?: string
+          permissions?: Json | null
+          position?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          franchisee_id?: string
+          id?: string
+          permissions?: Json | null
+          position?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchisee_staff_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franchisee_staff_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       franchisees: {
         Row: {
           address: string | null
@@ -1671,6 +1716,10 @@ export type Database = {
       }
       user_has_franchisee_data: {
         Args: { user_uuid: string }
+        Returns: boolean
+      }
+      user_is_staff_of_franchisee: {
+        Args: { franchisee_uuid: string }
         Returns: boolean
       }
     }
