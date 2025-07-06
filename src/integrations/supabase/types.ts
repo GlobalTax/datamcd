@@ -2022,6 +2022,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_effective_franchisee_for_advisor: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_auth_status: {
         Args: { user_uuid: string }
         Returns: Json

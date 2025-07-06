@@ -39,9 +39,18 @@ const DashboardPage = () => {
   // Obtener el franquiciado efectivo (impersonado o real)
   const effectiveFranchisee = getEffectiveFranchisee(franchisee);
 
-  console.log('DashboardPage - Fast loading state:', {
-    user: user ? { id: user.id, role: user.role } : null,
-    franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
+  console.log('DASHBOARD DEBUG:', {
+    userRole: user?.role,
+    userId: user?.id,
+    isImpersonating,
+    originalFranchisee: franchisee ? { 
+      id: franchisee.id, 
+      name: franchisee.franchisee_name 
+    } : null,
+    effectiveFranchisee: effectiveFranchisee ? { 
+      id: effectiveFranchisee.id, 
+      name: effectiveFranchisee.franchisee_name 
+    } : null,
     restaurantsCount: restaurants?.length || 0,
     loading,
     isUsingCache

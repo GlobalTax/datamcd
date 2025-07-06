@@ -60,10 +60,20 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut, franchisee } = useAuth();
-  const { getEffectiveFranchisee, isImpersonating } = useImpersonation();
+  const { getEffectiveFranchisee, isImpersonating, impersonatedFranchisee } = useImpersonation();
 
   // Obtener el franquiciado efectivo para mostrar en el sidebar
   const effectiveFranchisee = getEffectiveFranchisee(franchisee);
+
+  // Log de debugging detallado
+  console.log('SIDEBAR DEBUG:', {
+    userId: user?.id,
+    userRole: user?.role,
+    isImpersonating,
+    impersonatedFranchisee: impersonatedFranchisee?.franchisee_name,
+    originalFranchisee: franchisee?.franchisee_name,
+    effectiveFranchisee: effectiveFranchisee?.franchisee_name
+  });
 
   const handleSignOut = async () => {
     await signOut();

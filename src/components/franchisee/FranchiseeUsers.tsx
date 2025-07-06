@@ -38,9 +38,15 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
     try {
       setLoading(true);
       
-      console.log('Fetching users for franchisee:', franchiseeId, franchiseeName);
+      console.log('DEBUG: Fetching users for franchisee:', {
+        franchiseeId,
+        franchiseeName,
+        userRole: user?.role
+      });
       
-      // Obtener el usuario directo del franquiciado
+      let userIds: string[] = [];
+      
+      // 1. Obtener el usuario directo del franquiciado
       const { data: franchiseeData, error: franchiseeError } = await supabase
         .from('franchisees')
         .select('user_id')
@@ -53,12 +59,9 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
         return;
       }
 
-      let userIds: string[] = [];
-      
-      // 1. Incluir el usuario asociado directamente al franquiciado si existe
       if (franchiseeData?.user_id) {
         userIds.push(franchiseeData.user_id);
-        console.log('Added direct franchisee user:', franchiseeData.user_id);
+        console.log('DEBUG: Added direct franchisee user:', franchiseeData.user_id);
       }
 
       // 2. Buscar usuarios staff asociados al franquiciado
@@ -75,35 +78,49 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
             userIds.push(staff.user_id);
           }
         });
-        console.log('Added staff users:', staffUsers.length);
+        console.log('DEBUG: Added staff users:', staffUsers.length);
       }
 
-      // 3. Solo si no encontramos usuarios directos, buscar por similitud de nombre (pero con cuidado)
-      if (userIds.length === 0) {
-        const sanitizedName = sanitizeSearchTerm(franchiseeName);
-        if (sanitizedName.length > 3) { // Solo buscar si el nombre tiene más de 3 caracteres
-          // Buscar por partes del nombre para evitar problemas con comas
-          const nameParts = sanitizedName.split(' ').filter(part => part.length > 2);
+      // 3. Solo buscar por nombre si no encontramos usuarios y es necesario
+      if (userIds.length === 0 && franchiseeName) {
+        console.log('DEBUG: No direct users found, searching by name parts');
+        
+        // Dividir el nombre en palabras de al menos 3 caracteres
+        const searchTerms = franchiseeName
+          .toLowerCase()
+          .split(/[\s,]+/) // Dividir por espacios y comas
+          .filter(term => term.length >= 3)
+          .slice(0, 3); // Máximo 3 términos para evitar consultas muy complejas
+
+        console.log('DEBUG: Search terms:', searchTerms);
+
+        for (const term of searchTerms) {
+          const cleanTerm = term.replace(/[^\w\s]/g, ''); // Remover caracteres especiales
           
-          for (const part of nameParts) {
+          if (cleanTerm.length >= 3) {
             const { data: relatedProfiles, error: profilesError } = await supabase
               .from('profiles')
-              .select('id')
-              .ilike('full_name', `%${part}%`);
+              .select('id, full_name, email')
+              .ilike('full_name', `%${cleanTerm}%`)
+              .limit(10); // Limitar resultados
 
             if (!profilesError && relatedProfiles) {
+              console.log(`DEBUG: Found ${relatedProfiles.length} profiles matching "${cleanTerm}"`);
               relatedProfiles.forEach(profile => {
                 if (!userIds.includes(profile.id)) {
                   userIds.push(profile.id);
                 }
               });
+            } else if (profilesError) {
+              console.error('Error searching profiles by name:', profilesError);
             }
           }
-          console.log('Added profiles by name similarity:', userIds.length);
         }
       }
 
-      // 4. Obtener perfiles completos de todos los usuarios identificados
+      // 4. Obtener perfiles completos
+      console.log('DEBUG: Final user IDs to fetch:', userIds);
+      
       if (userIds.length > 0) {
         const { data: userProfiles, error: usersError } = await supabase
           .from('profiles')
@@ -122,10 +139,10 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
           role: userData.role as 'admin' | 'franchisee' | 'staff' | 'superadmin' | 'asesor'
         }));
 
-        console.log('Found users for franchisee:', typedUsers);
+        console.log('DEBUG: Final users found:', typedUsers);
         setUsers(typedUsers);
       } else {
-        console.log('No users found for franchisee');
+        console.log('DEBUG: No users found for franchisee');
         setUsers([]);
       }
     } catch (error) {
