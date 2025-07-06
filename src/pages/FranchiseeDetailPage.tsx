@@ -120,7 +120,7 @@ export default function FranchiseeDetailPage() {
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          {canImpersonate && franchisee.hasAccount && (
+          {canImpersonate && (
             <Button 
               onClick={handleAccessPanel}
               className="bg-blue-600 hover:bg-blue-700 text-white"
