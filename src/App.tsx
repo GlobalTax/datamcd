@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RobustAuthProvider } from "@/hooks/auth/useRobustAuth";
+import { ImpersonationProvider } from "@/hooks/useImpersonation";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
@@ -29,7 +30,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <RobustAuthProvider>
-        <TooltipProvider>
+        <ImpersonationProvider>
+          <TooltipProvider>
           <BrowserRouter>
             <Toaster />
             <Routes>
@@ -148,7 +150,8 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </TooltipProvider>
+          </TooltipProvider>
+        </ImpersonationProvider>
       </RobustAuthProvider>
     </QueryClientProvider>
   );

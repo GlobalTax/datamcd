@@ -2,6 +2,8 @@
 import React from 'react';
 import { useFastAuth } from '@/hooks/useFastAuth';
 import { useNavigate } from 'react-router-dom';
+import { useImpersonation } from '@/hooks/useImpersonation';
+import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
@@ -32,6 +34,10 @@ type DisplayRestaurant = {
 const DashboardPage = () => {
   const { user, franchisee, restaurants, loading, isUsingCache } = useFastAuth();
   const navigate = useNavigate();
+  const { getEffectiveFranchisee, isImpersonating } = useImpersonation();
+
+  // Obtener el franquiciado efectivo (impersonado o real)
+  const effectiveFranchisee = getEffectiveFranchisee(franchisee);
 
   console.log('DashboardPage - Fast loading state:', {
     user: user ? { id: user.id, role: user.role } : null,
@@ -53,7 +59,7 @@ const DashboardPage = () => {
     address: r.base_restaurant?.address || 'Dirección',
     siteNumber: r.base_restaurant?.site_number || 'N/A',
     site_number: r.base_restaurant?.site_number || 'N/A',
-    franchiseeName: franchisee?.franchisee_name || 'Franquiciado',
+    franchiseeName: effectiveFranchisee?.franchisee_name || 'Franquiciado',
     franchise_start_date: r.franchise_start_date,
     franchise_end_date: r.franchise_end_date,
     restaurant_type: r.base_restaurant?.restaurant_type || 'traditional',
@@ -106,6 +112,7 @@ const DashboardPage = () => {
       <div className="min-h-screen flex w-full bg-gray-50">
         <AppSidebar />
         <SidebarInset className="flex-1">
+          <ImpersonationBanner />
           <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-white px-6">
             <SidebarTrigger className="-ml-1" />
             <div className="flex-1">

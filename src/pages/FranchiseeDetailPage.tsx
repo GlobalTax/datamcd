@@ -4,9 +4,12 @@ import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Building, Mail, Phone, MapPin, User, Clock, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft, Building, Mail, Phone, MapPin, User, Clock, Wifi, WifiOff, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFranchiseeDetail } from '@/hooks/useFranchiseeDetail';
+import { useImpersonation } from '@/hooks/useImpersonation';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 import { FranchiseeRestaurantsTable } from '@/components/FranchiseeRestaurantsTable';
 import { UserCreationPanel } from '@/components/admin/UserCreationPanel';
 import { FranchiseeAccessHistory } from '@/components/franchisee/FranchiseeAccessHistory';
@@ -20,6 +23,11 @@ export default function FranchiseeDetailPage() {
   const navigate = useNavigate();
   const { franchisee, restaurants, loading, error, refetch } = useFranchiseeDetail(franchiseeId);
   const franchiseeUsersRef = useRef<FranchiseeUsersRef>(null);
+  const { user } = useAuth();
+  const { startImpersonation } = useImpersonation();
+
+  // Verificar si el usuario es asesor/admin
+  const canImpersonate = user && ['asesor', 'admin', 'superadmin'].includes(user.role);
 
   // Mostrar mensaje de carga
   if (loading) {
@@ -89,6 +97,14 @@ export default function FranchiseeDetailPage() {
     franchiseeUsersRef.current?.refresh();
   };
 
+  const handleAccessPanel = () => {
+    if (!franchisee || !canImpersonate) return;
+    
+    startImpersonation(franchisee);
+    toast.success(`Accediendo al panel de ${franchisee.franchisee_name}`);
+    navigate('/dashboard');
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -103,7 +119,18 @@ export default function FranchiseeDetailPage() {
             <p className="text-gray-600">Detalle del franquiciado</p>
           </div>
         </div>
-        {getStatusBadge()}
+        <div className="flex items-center space-x-3">
+          {canImpersonate && franchisee.hasAccount && (
+            <Button 
+              onClick={handleAccessPanel}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Acceder al Panel
+            </Button>
+          )}
+          {getStatusBadge()}
+        </div>
       </div>
 
       {/* Información básica del franquiciado */}

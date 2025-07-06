@@ -16,6 +16,7 @@ import {
 import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useImpersonation } from '@/hooks/useImpersonation';
 
 const menuItems = [
   {
@@ -58,7 +59,11 @@ const menuItems = [
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, franchisee } = useAuth();
+  const { getEffectiveFranchisee, isImpersonating } = useImpersonation();
+
+  // Obtener el franquiciado efectivo para mostrar en el sidebar
+  const effectiveFranchisee = getEffectiveFranchisee(franchisee);
 
   const handleSignOut = async () => {
     await signOut();
@@ -107,11 +112,13 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-4 border-t">
         <div className="space-y-3">
-          <div className="px-3 py-2 bg-gray-50 rounded-lg">
+          <div className={`px-3 py-2 rounded-lg ${isImpersonating ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
             <p className="text-sm font-medium text-gray-900 truncate">
-              {user?.full_name || user?.email}
+              {isImpersonating ? effectiveFranchisee?.franchisee_name : (user?.full_name || user?.email)}
             </p>
-            <p className="text-xs text-gray-500">Franquiciado</p>
+            <p className={`text-xs ${isImpersonating ? 'text-blue-600' : 'text-gray-500'}`}>
+              {isImpersonating ? 'Franquiciado (Vista Asesor)' : 'Franquiciado'}
+            </p>
           </div>
           
           <div className="flex gap-2">
