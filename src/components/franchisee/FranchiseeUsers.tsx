@@ -27,6 +27,13 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Función para limpiar nombres y evitar caracteres problemáticos en consultas
+  const sanitizeSearchTerm = (term: string): string => {
+    if (!term) return '';
+    // Remover caracteres que pueden romper las consultas SQL
+    return term.replace(/[,;()]/g, ' ').trim();
+  };
+
   const fetchFranchiseeUsers = async () => {
     try {
       setLoading(true);
@@ -48,29 +55,55 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
 
       let userIds: string[] = [];
       
-      // Incluir el usuario asociado directamente al franquiciado si existe
+      // 1. Incluir el usuario asociado directamente al franquiciado si existe
       if (franchiseeData?.user_id) {
         userIds.push(franchiseeData.user_id);
+        console.log('Added direct franchisee user:', franchiseeData.user_id);
       }
 
-      // Buscar usuarios que podrían estar relacionados con este franquiciado
-      // por nombre o email similar
-      const { data: relatedProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .or(`full_name.ilike.%${franchiseeName}%,email.ilike.%${franchiseeName.toLowerCase()}%`);
+      // 2. Buscar usuarios staff asociados al franquiciado
+      const { data: staffUsers, error: staffError } = await supabase
+        .from('franchisee_staff')
+        .select('user_id')
+        .eq('franchisee_id', franchiseeId);
 
-      if (profilesError) {
-        console.error('Error fetching related profiles:', profilesError);
-      } else if (relatedProfiles) {
-        relatedProfiles.forEach(profile => {
-          if (!userIds.includes(profile.id)) {
-            userIds.push(profile.id);
+      if (staffError) {
+        console.error('Error fetching staff users:', staffError);
+      } else if (staffUsers) {
+        staffUsers.forEach(staff => {
+          if (staff.user_id && !userIds.includes(staff.user_id)) {
+            userIds.push(staff.user_id);
           }
         });
+        console.log('Added staff users:', staffUsers.length);
       }
 
-      // Obtener perfiles completos de todos los usuarios identificados
+      // 3. Solo si no encontramos usuarios directos, buscar por similitud de nombre (pero con cuidado)
+      if (userIds.length === 0) {
+        const sanitizedName = sanitizeSearchTerm(franchiseeName);
+        if (sanitizedName.length > 3) { // Solo buscar si el nombre tiene más de 3 caracteres
+          // Buscar por partes del nombre para evitar problemas con comas
+          const nameParts = sanitizedName.split(' ').filter(part => part.length > 2);
+          
+          for (const part of nameParts) {
+            const { data: relatedProfiles, error: profilesError } = await supabase
+              .from('profiles')
+              .select('id')
+              .ilike('full_name', `%${part}%`);
+
+            if (!profilesError && relatedProfiles) {
+              relatedProfiles.forEach(profile => {
+                if (!userIds.includes(profile.id)) {
+                  userIds.push(profile.id);
+                }
+              });
+            }
+          }
+          console.log('Added profiles by name similarity:', userIds.length);
+        }
+      }
+
+      // 4. Obtener perfiles completos de todos los usuarios identificados
       if (userIds.length > 0) {
         const { data: userProfiles, error: usersError } = await supabase
           .from('profiles')
@@ -86,7 +119,7 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
 
         const typedUsers = (userProfiles || []).map(userData => ({
           ...userData,
-          role: userData.role as 'admin' | 'franchisee' | 'staff' | 'superadmin'
+          role: userData.role as 'admin' | 'franchisee' | 'staff' | 'superadmin' | 'asesor'
         }));
 
         console.log('Found users for franchisee:', typedUsers);
@@ -143,6 +176,8 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
         return 'bg-red-100 text-red-800';
       case 'superadmin':
         return 'bg-red-100 text-red-800';
+      case 'asesor':
+        return 'bg-purple-100 text-purple-800';
       case 'franchisee':
         return 'bg-green-100 text-green-800';
       case 'staff':
@@ -158,6 +193,8 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
         return 'Administrador';
       case 'superadmin':
         return 'Super Admin';
+      case 'asesor':
+        return 'Asesor';
       case 'franchisee':
         return 'Franquiciado';
       case 'staff':
@@ -167,8 +204,8 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
     }
   };
 
-  // Solo admins pueden gestionar usuarios
-  if (!user || !['admin', 'superadmin'].includes(user.role)) {
+  // Solo admins y asesores pueden gestionar usuarios
+  if (!user || !['admin', 'superadmin', 'asesor'].includes(user.role)) {
     return null;
   }
 

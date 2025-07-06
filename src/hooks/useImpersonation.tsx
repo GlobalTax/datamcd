@@ -44,11 +44,16 @@ export const ImpersonationProvider: React.FC<ImpersonationProviderProps> = ({ ch
     setImpersonatedFranchisee(franchisee);
     sessionStorage.setItem('impersonatedFranchisee', JSON.stringify(franchisee));
     
-    // Log de auditoría
+    // Log de auditoría detallado
     console.log('Impersonation started:', {
       impersonatedFranchisee: franchisee.franchisee_name,
+      franchiseeId: franchisee.id,
+      userId: franchisee.user_id,
       timestamp: new Date().toISOString()
     });
+    
+    // Log para debugging
+    console.log('Full franchisee data for impersonation:', franchisee);
   };
 
   const stopImpersonation = () => {
@@ -64,7 +69,18 @@ export const ImpersonationProvider: React.FC<ImpersonationProviderProps> = ({ ch
   };
 
   const getEffectiveFranchisee = (userFranchisee?: Franchisee | null): Franchisee | null => {
-    return impersonatedFranchisee || userFranchisee || null;
+    const effectiveFranchisee = impersonatedFranchisee || userFranchisee || null;
+    
+    // Log para debugging cuando hay impersonación activa
+    if (impersonatedFranchisee) {
+      console.log('Using impersonated franchisee:', {
+        name: impersonatedFranchisee.franchisee_name,
+        id: impersonatedFranchisee.id,
+        userId: impersonatedFranchisee.user_id
+      });
+    }
+    
+    return effectiveFranchisee;
   };
 
   const isImpersonating = Boolean(impersonatedFranchisee);
