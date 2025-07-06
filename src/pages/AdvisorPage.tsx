@@ -8,6 +8,7 @@ import { Building, Users, FileText, LogOut, Store, BarChart3, TrendingUp, Buildi
 import { Navigate, useNavigate } from 'react-router-dom';
 import AdvisorManagement from '@/components/AdvisorManagement';
 import { FranchiseesManagement } from '@/components/FranchiseesManagement';
+import { useFranchisees } from '@/hooks/useFranchisees';
 import { AdvisorReports } from '@/components/AdvisorReports';
 import { UnifiedRestaurantsTable } from '@/components/UnifiedRestaurantsTable';
 import { useUnifiedRestaurants } from '@/hooks/useUnifiedRestaurants';
@@ -23,6 +24,7 @@ const AdvisorPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const { restaurants, loading: restaurantsLoading, refetch: refetchRestaurants, stats } = useUnifiedRestaurants();
+  const { franchisees, loading: franchiseesLoading } = useFranchisees();
 
   if (loading) {
     return <LoadingFallback message="Cargando panel de asesor..." />;
@@ -99,7 +101,7 @@ const AdvisorPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Franquiciados</p>
-                  <p className="text-3xl font-bold text-gray-900">45</p>
+                  <p className="text-3xl font-bold text-gray-900">{franchiseesLoading ? '...' : franchisees.length}</p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                   <Building className="w-6 h-6 text-green-600" />
@@ -138,13 +140,20 @@ const AdvisorPage = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-white border border-gray-200 p-1 rounded-xl">
+          <TabsList className="grid w-full grid-cols-7 bg-white border border-gray-200 p-1 rounded-xl">
             <TabsTrigger 
               value="dashboard" 
               className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg"
             >
               <Activity className="w-4 h-4" />
               Dashboard
+            </TabsTrigger>
+            <TabsTrigger 
+              value="franchisees" 
+              className="flex items-center gap-2 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600 rounded-lg"
+            >
+              <Building className="w-4 h-4" />
+              Franquiciados
             </TabsTrigger>
             <TabsTrigger 
               value="notifications" 
@@ -186,6 +195,12 @@ const AdvisorPage = () => {
           <TabsContent value="dashboard">
             <ErrorBoundary>
               <AdvancedDashboard />
+            </ErrorBoundary>
+          </TabsContent>
+
+          <TabsContent value="franchisees">
+            <ErrorBoundary>
+              <FranchiseesManagement />
             </ErrorBoundary>
           </TabsContent>
 
