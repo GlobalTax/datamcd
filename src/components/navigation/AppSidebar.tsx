@@ -15,8 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
-import { useImpersonation } from '@/hooks/useImpersonation';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 
 const menuItems = [
   {
@@ -59,21 +58,19 @@ const menuItems = [
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signOut, franchisee } = useAuth();
-  const { getEffectiveFranchisee, isImpersonating, impersonatedFranchisee } = useImpersonation();
-
-  // Obtener el franquiciado efectivo para mostrar en el sidebar
-  const effectiveFranchisee = getEffectiveFranchisee(franchisee);
+  const { 
+    user, 
+    signOut, 
+    franchisee,
+    isImpersonating, 
+    impersonatedFranchisee,
+    effectiveFranchisee,
+    getDebugInfo
+  } = useUnifiedAuth();
 
   // Log de debugging detallado
-  console.log('SIDEBAR DEBUG:', {
-    userId: user?.id,
-    userRole: user?.role,
-    isImpersonating,
-    impersonatedFranchisee: impersonatedFranchisee?.franchisee_name,
-    originalFranchisee: franchisee?.franchisee_name,
-    effectiveFranchisee: effectiveFranchisee?.franchisee_name
-  });
+  const debugInfo = getDebugInfo();
+  console.log('SIDEBAR DEBUG:', debugInfo);
 
   const handleSignOut = async () => {
     await signOut();

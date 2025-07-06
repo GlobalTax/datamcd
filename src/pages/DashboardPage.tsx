@@ -1,8 +1,7 @@
 
 import React from 'react';
-import { useFastAuth } from '@/hooks/useFastAuth';
 import { useNavigate } from 'react-router-dom';
-import { useImpersonation } from '@/hooks/useImpersonation';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
@@ -32,29 +31,23 @@ type DisplayRestaurant = {
 };
 
 const DashboardPage = () => {
-  const { user, franchisee, restaurants, loading, isUsingCache } = useFastAuth();
-  const navigate = useNavigate();
-  const { getEffectiveFranchisee, isImpersonating } = useImpersonation();
-
-  // Obtener el franquiciado efectivo (impersonado o real)
-  const effectiveFranchisee = getEffectiveFranchisee(franchisee);
-
-  console.log('DASHBOARD DEBUG:', {
-    userRole: user?.role,
-    userId: user?.id,
+  const { 
+    user, 
+    franchisee, 
+    restaurants, 
+    loading, 
+    connectionStatus,
     isImpersonating,
-    originalFranchisee: franchisee ? { 
-      id: franchisee.id, 
-      name: franchisee.franchisee_name 
-    } : null,
-    effectiveFranchisee: effectiveFranchisee ? { 
-      id: effectiveFranchisee.id, 
-      name: effectiveFranchisee.franchisee_name 
-    } : null,
-    restaurantsCount: restaurants?.length || 0,
-    loading,
-    isUsingCache
-  });
+    effectiveFranchisee,
+    getDebugInfo
+  } = useUnifiedAuth();
+  const navigate = useNavigate();
+  
+  // Simular isUsingCache para compatibilidad
+  const isUsingCache = connectionStatus === 'offline';
+
+  const debugInfo = getDebugInfo();
+  console.log('DASHBOARD DEBUG:', debugInfo);
 
   // Transformar datos para el componente
   const displayRestaurants: DisplayRestaurant[] = restaurants.map(r => ({
