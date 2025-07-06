@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Edit, Trash2, Building, Grid, List, Eye, AlertCircle, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Trash2, Building, Grid, List, Eye, AlertCircle, RefreshCw, Users } from 'lucide-react';
 import {
   Pagination,
   PaginationContent,
@@ -24,6 +24,7 @@ import { RestaurantAssignmentDialog } from './RestaurantAssignmentDialog';
 import { useNavigate } from 'react-router-dom';
 import { FranchiseeFiltersComponent } from './FranchiseeFilters';
 import { useFranchiseeFilters } from '@/hooks/useFranchiseeFilters';
+import { MassUserCreationDialog } from './MassUserCreationDialog';
 
 const ITEMS_PER_PAGE = 40;
 
@@ -34,6 +35,7 @@ export const FranchiseesManagement: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isMassCreateModalOpen, setIsMassCreateModalOpen] = useState(false);
   const [selectedFranchisee, setSelectedFranchisee] = useState<Franchisee | null>(null);
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -41,6 +43,9 @@ export const FranchiseesManagement: React.FC = () => {
 
   // Usar el hook de filtros
   const { filters, setFilters, filteredFranchisees, clearFilters } = useFranchiseeFilters(franchisees);
+  
+  // Contar franquiciados sin cuenta
+  const franchiseesWithoutAccount = franchisees.filter(f => !f.user_id).length;
 
   const [formData, setFormData] = useState({
     franchisee_name: '',
@@ -306,6 +311,18 @@ export const FranchiseesManagement: React.FC = () => {
               <List className="w-4 h-4" />
             </Button>
           </div>
+          
+          {franchiseesWithoutAccount > 0 && (
+            <Button
+              onClick={() => setIsMassCreateModalOpen(true)}
+              variant="outline"
+              className="border-yellow-600 text-yellow-600 hover:bg-yellow-50"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Crear Perfiles Masivos ({franchiseesWithoutAccount})
+            </Button>
+          )}
+          
           <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
               <Button className="bg-red-600 hover:bg-red-700">
@@ -712,6 +729,14 @@ export const FranchiseesManagement: React.FC = () => {
         isOpen={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
         selectedFranchisee={selectedFranchisee}
+      />
+
+      {/* Modal de Creación Masiva */}
+      <MassUserCreationDialog
+        isOpen={isMassCreateModalOpen}
+        onClose={() => setIsMassCreateModalOpen(false)}
+        franchisees={franchisees}
+        onRefresh={onRefresh}
       />
     </div>
   );
