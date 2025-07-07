@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useNavigate } from 'react-router-dom';
-import { useImpersonation } from '@/hooks/useImpersonation';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
+import { AuthDebugPanel } from '@/components/debug/AuthDebugPanel';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
@@ -33,20 +33,29 @@ type DisplayRestaurant = {
 };
 
 const OptimizedDashboardPage = () => {
-  const { user, franchisee, restaurants, loading, connectionStatus, isUsingCache } = useOptimizedAuth();
+  const { 
+    user, 
+    franchisee, 
+    restaurants, 
+    loading, 
+    connectionStatus,
+    isImpersonating,
+    effectiveFranchisee,
+    getDebugInfo
+  } = useUnifiedAuth();
   const navigate = useNavigate();
-  const { getEffectiveFranchisee } = useImpersonation();
 
-  // Obtener el franquiciado efectivo (impersonado o real)
-  const effectiveFranchisee = getEffectiveFranchisee(franchisee);
-
-  console.log('OptimizedDashboardPage - Estado actual:', {
+  // Debug completo del estado
+  const debugInfo = getDebugInfo();
+  console.log('OptimizedDashboardPage - Estado completo:', debugInfo);
+  console.log('OptimizedDashboardPage - Datos específicos:', {
     user: user ? { id: user.id, role: user.role, email: user.email } : null,
     franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
+    effectiveFranchisee: effectiveFranchisee ? { id: effectiveFranchisee.id, name: effectiveFranchisee.franchisee_name } : null,
     restaurantsCount: restaurants?.length || 0,
     loading,
     connectionStatus,
-    isUsingCache
+    isImpersonating
   });
 
   // Transformar datos para el componente
@@ -99,26 +108,33 @@ const OptimizedDashboardPage = () => {
 
   const getConnectionStatusDisplay = () => {
     switch (connectionStatus) {
-      case 'connecting':
+      case 'reconnecting':
         return {
           icon: <RefreshCw className="w-4 h-4 animate-spin" />,
-          text: 'Conectando...',
+          text: 'Reconectando...',
           color: 'text-blue-600',
           bg: 'bg-blue-100'
         };
-      case 'connected':
+      case 'online':
         return {
           icon: <Database className="w-4 h-4" />,
-          text: 'Datos Reales',
+          text: 'En Línea',
           color: 'text-green-600',
           bg: 'bg-green-100'
         };
-      case 'fallback':
+      case 'offline':
         return {
           icon: <WifiOff className="w-4 h-4" />,
-          text: 'Datos Temporales',
-          color: 'text-orange-600',
-          bg: 'bg-orange-100'
+          text: 'Sin Conexión',
+          color: 'text-red-600',
+          bg: 'bg-red-100'
+        };
+      default:
+        return {
+          icon: <AlertTriangle className="w-4 h-4" />,
+          text: 'Estado Desconocido',
+          color: 'text-gray-600',
+          bg: 'bg-gray-100'
         };
     }
   };
@@ -153,19 +169,25 @@ const OptimizedDashboardPage = () => {
                   {statusDisplay.icon}
                   <span>{statusDisplay.text}</span>
                 </div>
-                {connectionStatus === 'connected' && (
+                {connectionStatus === 'online' && (
                   <div className="flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs">
                     <Zap className="w-3 h-3" />
-                    <span>Supabase Live</span>
+                    <span>Sistema Unificado</span>
+                  </div>
+                )}
+                {isImpersonating && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                    <Users className="w-3 h-3" />
+                    <span>Impersonando</span>
                   </div>
                 )}
               </div>
               <p className="text-sm text-gray-500">
-                {connectionStatus === 'connected' 
-                  ? `Datos en tiempo real desde Supabase - Usuario: ${user?.email}` 
-                  : connectionStatus === 'fallback'
-                    ? 'Usando datos temporales - Problema de conexión con Supabase'
-                    : 'Conectando con la base de datos...'
+                {connectionStatus === 'online' 
+                  ? `Sistema unificado activo - Usuario: ${user?.email}` 
+                  : connectionStatus === 'offline'
+                    ? 'Sin conexión con la base de datos'
+                    : 'Reconectando con la base de datos...'
                 }
               </p>
             </div>
@@ -214,23 +236,22 @@ const OptimizedDashboardPage = () => {
               )}
 
               {/* Alerta si no hay franquiciado pero sí usuario */}
-              {user && !franchisee && connectionStatus === 'connected' && (
+              {user && !franchisee && connectionStatus === 'online' && (
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800">
-                    Tu usuario ({user.email}) existe en Supabase pero no tiene un franquiciado asignado. 
+                    Tu usuario ({user.email}) existe pero no tiene un franquiciado asignado. 
                     Contacta con tu asesor para que te asigne un franquiciado.
                   </AlertDescription>
                 </Alert>
               )}
 
               {/* Alerta de estado de conexión */}
-              {connectionStatus === 'fallback' && (
+              {connectionStatus === 'offline' && (
                 <Alert className="border-red-200 bg-red-50">
                   <AlertTriangle className="h-4 w-4 text-red-600" />
                   <AlertDescription className="text-red-800">
-                    No se pudo conectar con Supabase. Mostrando datos temporales. 
-                    Verifica tu conexión a internet y la configuración de Supabase.
+                    Sin conexión con la base de datos. Algunos datos pueden no estar actualizados.
                     <Button 
                       onClick={() => window.location.reload()} 
                       variant="link" 
@@ -238,6 +259,20 @@ const OptimizedDashboardPage = () => {
                     >
                       Intentar reconectar
                     </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Debug info para desarrollo */}
+              {restaurants.length === 0 && user && (
+                <Alert className="border-blue-200 bg-blue-50">
+                  <AlertTriangle className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    No se encontraron restaurantes. Estado actual:
+                    <br />• Usuario: {user.email} (ID: {user.id})
+                    <br />• Franquiciado: {franchisee ? `${franchisee.franchisee_name} (ID: ${franchisee.id})` : 'No encontrado'}
+                    <br />• Conexión: {connectionStatus}
+                    <br />• Restaurantes: {restaurants.length}
                   </AlertDescription>
                 </Alert>
               )}
@@ -252,7 +287,7 @@ const OptimizedDashboardPage = () => {
                   <CardContent>
                     <div className="text-2xl font-bold">{metrics.totalRestaurants}</div>
                     <p className="text-xs text-muted-foreground">
-                      {connectionStatus === 'connected' ? 'Desde Supabase' : 'Datos temporales'}
+                      {connectionStatus === 'online' ? 'En línea' : 'Sin conexión'}
                     </p>
                   </CardContent>
                 </Card>
@@ -295,11 +330,14 @@ const OptimizedDashboardPage = () => {
               <DashboardSummary 
                 totalRestaurants={metrics.totalRestaurants} 
                 displayRestaurants={displayRestaurants}
-                isTemporaryData={connectionStatus === 'fallback'}
+                isTemporaryData={connectionStatus === 'offline'}
               />
             </div>
           </main>
         </SidebarInset>
+        
+        {/* Panel de debugging */}
+        <AuthDebugPanel />
       </div>
     </SidebarProvider>
   );

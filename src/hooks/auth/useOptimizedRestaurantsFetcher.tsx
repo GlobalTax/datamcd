@@ -20,7 +20,7 @@ export const useOptimizedRestaurantsFetcher = () => {
         setTimeout(() => reject(new Error('Optimized restaurants query timeout')), 12000)
       );
       
-      // Consulta optimizada que usa los índices nuevos
+      // Consulta simplificada para evitar errores 400
       const queryPromise = supabase
         .from('franchisee_restaurants')
         .select(`
@@ -33,7 +33,7 @@ export const useOptimizedRestaurantsFetcher = () => {
           advertising_fee_percentage,
           status,
           notes,
-          base_restaurant:base_restaurants!inner(
+          base_restaurant!inner(
             id,
             site_number,
             restaurant_name,
@@ -58,7 +58,14 @@ export const useOptimizedRestaurantsFetcher = () => {
       console.log('useOptimizedRestaurantsFetcher - Restaurants found:', restaurants?.length || 0);
       return restaurants || [];
     } catch (error) {
-      console.log('useOptimizedRestaurantsFetcher - Error or timeout:', error);
+      console.error('useOptimizedRestaurantsFetcher - Error detallado:', {
+        error: error.message,
+        franchiseeId,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Fallback con datos de prueba en caso de error
+      console.log('useOptimizedRestaurantsFetcher - Retornando fallback vacío');
       return [];
     } finally {
       setIsLoading(false);

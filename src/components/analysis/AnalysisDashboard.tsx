@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useDataExport } from '@/hooks/useDataExport';
 import { toast } from 'sonner';
 import { DashboardHeader } from './DashboardHeader';
@@ -9,8 +8,7 @@ import { DashboardKPIs } from './DashboardKPIs';
 import { DashboardTabs } from './DashboardTabs';
 
 export const AnalysisDashboard = () => {
-  const { franchisee } = useAuth();
-  const { restaurants } = useFranchiseeRestaurants();
+  const { effectiveFranchisee, restaurants } = useUnifiedAuth();
   const { exportRestaurantsData } = useDataExport();
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('all');
@@ -28,7 +26,7 @@ export const AnalysisDashboard = () => {
     }
   };
 
-  if (!franchisee) {
+  if (!effectiveFranchisee) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-gray-600">Cargando datos del franquiciado...</p>
@@ -39,7 +37,7 @@ export const AnalysisDashboard = () => {
   return (
     <div className="space-y-6">
       <DashboardHeader
-        franchiseeName={franchisee.franchisee_name}
+        franchiseeName={effectiveFranchisee.franchisee_name}
         selectedYear={selectedYear}
         selectedRestaurant={selectedRestaurant}
         restaurants={restaurants}
