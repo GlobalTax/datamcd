@@ -1,11 +1,11 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useUnifiedAuth } from "@/hooks/auth/useUnifiedAuth";
 
 export const DebugSection = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading } = useUnifiedAuth();
 
   if (!user) return null;
 

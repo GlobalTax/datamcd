@@ -2,11 +2,11 @@
 import { Button } from "@/components/ui/button";
 import { Store, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useUnifiedAuth } from "@/hooks/auth/useUnifiedAuth";
 
 export const IndexHeader = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
 
   const handleUserRedirect = () => {
     console.log('IndexHeader - Manual navigation button clicked for user role:', user?.role);
