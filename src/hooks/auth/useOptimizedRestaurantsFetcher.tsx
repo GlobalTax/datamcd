@@ -20,20 +20,12 @@ export const useOptimizedRestaurantsFetcher = () => {
         setTimeout(() => reject(new Error('Optimized restaurants query timeout')), 12000)
       );
       
-      // Consulta simplificada para evitar errores 400
+      // Consulta corregida con la sintaxis correcta
       const queryPromise = supabase
         .from('franchisee_restaurants')
         .select(`
-          id,
-          franchisee_id,
-          base_restaurant_id,
-          monthly_rent,
-          last_year_revenue,
-          franchise_fee_percentage,
-          advertising_fee_percentage,
-          status,
-          notes,
-          base_restaurant:base_restaurant_id(
+          *,
+          base_restaurant:base_restaurant_id (
             id,
             site_number,
             restaurant_name,
