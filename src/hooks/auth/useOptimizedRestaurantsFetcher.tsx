@@ -33,7 +33,7 @@ export const useOptimizedRestaurantsFetcher = () => {
           advertising_fee_percentage,
           status,
           notes,
-          base_restaurant!inner(
+          base_restaurant:base_restaurant_id(
             id,
             site_number,
             restaurant_name,
