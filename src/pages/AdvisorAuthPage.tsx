@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { Loader2, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -19,7 +19,7 @@ const AdvisorAuthPage = () => {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
   
-  const { signIn, user, loading } = useAuth();
+  const { signIn, user, loading } = useUnifiedAuth();
   const navigate = useNavigate();
 
   useEffect(() => {

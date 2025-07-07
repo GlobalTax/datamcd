@@ -8,7 +8,7 @@ import { ArrowLeft, Building, Mail, Phone, MapPin, User, Clock, Wifi, WifiOff, E
 import { useNavigate } from 'react-router-dom';
 import { useFranchiseeDetail } from '@/hooks/useFranchiseeDetail';
 import { useImpersonation } from '@/hooks/useImpersonation';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { toast } from 'sonner';
 import { FranchiseeRestaurantsTable } from '@/components/FranchiseeRestaurantsTable';
 import { UserCreationPanel } from '@/components/admin/UserCreationPanel';
@@ -23,7 +23,7 @@ export default function FranchiseeDetailPage() {
   const navigate = useNavigate();
   const { franchisee, restaurants, loading, error, refetch } = useFranchiseeDetail(franchiseeId);
   const franchiseeUsersRef = useRef<FranchiseeUsersRef>(null);
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { startImpersonation } = useImpersonation();
 
   // Verificar si el usuario es asesor/admin

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ import { ConnectionStatus } from '@/components/common/ConnectionStatus';
 import { LoadingFallback } from '@/components/common/LoadingFallback';
 
 const AdvisorPage = () => {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading } = useUnifiedAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const { restaurants, loading: restaurantsLoading, refetch: refetchRestaurants, stats } = useUnifiedRestaurants();

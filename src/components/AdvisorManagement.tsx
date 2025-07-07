@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { User } from '@/types/auth';
 
 const AdvisorManagement = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [advisors, setAdvisors] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 

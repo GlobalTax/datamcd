@@ -2,12 +2,12 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Database, FileSpreadsheet, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
 import { useNavigate } from 'react-router-dom';
 
 export const HistoricalDataTab: React.FC = () => {
-  const { franchisee } = useAuth();
+  const { franchisee } = useUnifiedAuth();
   const { restaurants } = useFranchiseeRestaurants();
   const navigate = useNavigate();
 

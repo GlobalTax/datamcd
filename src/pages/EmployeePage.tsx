@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users } from 'lucide-react';
 
 const EmployeePage = () => {
-  const { user, restaurants } = useAuth();
+  const { user, restaurants } = useUnifiedAuth();
   const [selectedRestaurantId, setSelectedRestaurantId] = useState<string>(
     restaurants?.[0]?.id || ''
   );

@@ -14,7 +14,7 @@ import {
   Search,
   Settings,
 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -40,7 +40,7 @@ interface AlertInstance {
 }
 
 export const NotificationCenter: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [alertRules, setAlertRules] = useState<AlertRule[]>([]);
   const [alertInstances, setAlertInstances] = useState<AlertInstance[]>([]);
   const [loading, setLoading] = useState(true);

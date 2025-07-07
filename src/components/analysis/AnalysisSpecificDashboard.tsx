@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
 import { AnalysisTabs } from './AnalysisTabs';
 
 export const AnalysisSpecificDashboard: React.FC = () => {
-  const { franchisee } = useAuth();
+  const { franchisee } = useUnifiedAuth();
   const { restaurants, loading } = useFranchiseeRestaurants();
   
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());

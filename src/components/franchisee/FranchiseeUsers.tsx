@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
   franchiseeId, 
   franchiseeName 
 }, ref) => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 

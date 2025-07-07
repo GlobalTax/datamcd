@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useOptimizedFranchiseeRestaurants } from '@/hooks/useOptimizedFranchiseeRestaurants';
 import { useRestaurantUpdate } from '@/hooks/useRestaurantUpdate';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
@@ -10,7 +10,7 @@ import RestaurantCard from '@/components/restaurant/RestaurantCard';
 import EmptyRestaurantsState from '@/components/restaurant/EmptyRestaurantsState';
 
 const RestaurantManagementPage = () => {
-  const { user, franchisee } = useAuth();
+  const { user, franchisee } = useUnifiedAuth();
   const { restaurants, loading, refetch } = useOptimizedFranchiseeRestaurants();
   const { updateRestaurant, isUpdating } = useRestaurantUpdate();
   const [editingRestaurant, setEditingRestaurant] = useState<string | null>(null);
