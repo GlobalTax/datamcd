@@ -3,11 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProfitLossData, ProfitLossFormData, ProfitLossTemplate } from '@/types/profitLoss';
 import { toast } from 'sonner';
-import { useAuth } from './useAuth';
+import { useUnifiedAuth } from './auth/useUnifiedAuth';
 
 export const useProfitLossData = (restaurantId?: string, year?: number) => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
 
   // Fetch P&L data
   const {
