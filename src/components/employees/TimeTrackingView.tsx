@@ -15,34 +15,34 @@ interface TimeTrackingViewProps {
 
 export const TimeTrackingView: React.FC<TimeTrackingViewProps> = ({ employees, restaurantId }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedEmployee, setSelectedEmployee] = useState<string>('');
+  const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
   const { timeRecords, loading, fetchTimeRecords, clockIn, clockOut } = useTimeTracking(restaurantId);
 
   const handleDateChange = (date: string) => {
     setSelectedDate(date);
-    fetchTimeRecords(date, selectedEmployee);
+    fetchTimeRecords(date, selectedEmployee === 'all' ? undefined : selectedEmployee);
   };
 
   const handleEmployeeChange = (employeeId: string) => {
     setSelectedEmployee(employeeId);
-    fetchTimeRecords(selectedDate, employeeId);
+    fetchTimeRecords(selectedDate, employeeId === 'all' ? undefined : employeeId);
   };
 
   const handleClockIn = async () => {
-    if (selectedEmployee) {
+    if (selectedEmployee && selectedEmployee !== 'all') {
       await clockIn(selectedEmployee);
     }
   };
 
   const handleClockOut = async () => {
-    if (selectedEmployee) {
+    if (selectedEmployee && selectedEmployee !== 'all') {
       await clockOut(selectedEmployee);
     }
   };
 
   const filteredTimeRecords = timeRecords.filter(record => {
     const matchesDate = !selectedDate || record.date === selectedDate;
-    const matchesEmployee = !selectedEmployee || record.employee_id === selectedEmployee;
+    const matchesEmployee = selectedEmployee === 'all' || !selectedEmployee || record.employee_id === selectedEmployee;
     return matchesDate && matchesEmployee;
   });
 
@@ -88,7 +88,7 @@ export const TimeTrackingView: React.FC<TimeTrackingViewProps> = ({ employees, r
             <div className="flex gap-2">
               <Button 
                 className="flex-1 bg-green-600 hover:bg-green-700"
-                disabled={!selectedEmployee}
+                disabled={!selectedEmployee || selectedEmployee === 'all'}
                 onClick={handleClockIn}
               >
                 <Play className="w-4 h-4 mr-2" />
@@ -96,7 +96,7 @@ export const TimeTrackingView: React.FC<TimeTrackingViewProps> = ({ employees, r
               </Button>
               <Button 
                 className="flex-1 bg-red-600 hover:bg-red-700"
-                disabled={!selectedEmployee}
+                disabled={!selectedEmployee || selectedEmployee === 'all'}
                 onClick={handleClockOut}
               >
                 <Square className="w-4 h-4 mr-2" />
@@ -144,7 +144,7 @@ export const TimeTrackingView: React.FC<TimeTrackingViewProps> = ({ employees, r
                   <SelectValue placeholder="Todos los empleados" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los empleados</SelectItem>
+                  <SelectItem value="all">Todos los empleados</SelectItem>
                   {employees.map(employee => (
                     <SelectItem key={employee.id} value={employee.id}>
                       {employee.first_name} {employee.last_name}
