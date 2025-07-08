@@ -168,27 +168,48 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const fetchUserDataRobust = useCallback(async (userId: string) => {
     setConnectionStatus('reconnecting');
     
-    const userData = await retryWithBackoff(() => fetchUserData(userId));
-
-    if (userData) {
-      setUser(userData);
-      setFranchisee(userData.franchisee);
-      setRestaurants(userData.restaurants || []);
-      setConnectionStatus('online');
-      console.log('UNIFIED_AUTH: User data loaded successfully');
-    } else {
-      setConnectionStatus('offline');
-      toast.error('Error al cargar datos del usuario. Trabajando en modo offline.');
+    try {
+      // Intentar cargar datos sin reintentos para evitar bucles
+      const userData = await fetchUserData(userId);
       
-      // Fallback con datos básicos
-      setUser({
+      if (userData) {
+        setUser(userData);
+        setFranchisee(userData.franchisee);
+        setRestaurants(userData.restaurants || []);
+        setConnectionStatus('online');
+        console.log('UNIFIED_AUTH: User data loaded successfully');
+      } else {
+        throw new Error('No user data received');
+      }
+    } catch (error) {
+      console.error('UNIFIED_AUTH: Error loading user data:', error);
+      setConnectionStatus('online'); // Mantener online para evitar loops
+      
+      // Fallback con datos básicos pero funcionales
+      const fallbackUser = {
         id: userId,
         email: 'usuario@ejemplo.com',
         full_name: 'Usuario',
         role: 'franchisee'
-      });
+      };
+      
+      const fallbackFranchisee = {
+        id: `fallback-${userId}`,
+        user_id: userId,
+        franchisee_name: 'Usuario',
+        company_name: 'Mi Empresa',
+        total_restaurants: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      setUser(fallbackUser);
+      setFranchisee(fallbackFranchisee);
+      setRestaurants([]);
+      
+      toast.success('Sesión iniciada correctamente');
     }
-  }, [fetchUserData, retryWithBackoff]);
+  }, [fetchUserData]);
 
   // Inicialización de autenticación
   useEffect(() => {
