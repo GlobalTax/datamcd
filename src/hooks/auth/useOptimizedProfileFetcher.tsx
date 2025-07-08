@@ -10,9 +10,9 @@ export const useOptimizedProfileFetcher = () => {
     setIsLoading(true);
     
     try {
-      // Timeout aumentado y consulta optimizada para usar los nuevos índices
+      // Timeout aumentado para evitar franquiciados temporales
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Optimized query timeout after 10 seconds')), 10000)
+        setTimeout(() => reject(new Error('Optimized query timeout after 15 seconds')), 15000)
       );
       
       // Consulta optimizada que usa el índice idx_profiles_id

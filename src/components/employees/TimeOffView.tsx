@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Calendar, Plus, Check, X, Clock } from 'lucide-react';
 import { Employee, EmployeeTimeOff } from '@/types/employee';
 import { useTimeOff } from '@/hooks/useTimeOff';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 
 interface TimeOffViewProps {
   employees: Employee[];
@@ -19,7 +19,7 @@ interface TimeOffViewProps {
 }
 
 export const TimeOffView: React.FC<TimeOffViewProps> = ({ employees, restaurantId }) => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { timeOffRequests, loading, createTimeOffRequest, approveTimeOffRequest, rejectTimeOffRequest } = useTimeOff(restaurantId);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');

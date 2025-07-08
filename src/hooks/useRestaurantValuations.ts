@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { RestaurantValuation, ValuationScenario } from '@/types/restaurantValuation';
 import { toast } from 'sonner';
 import {
@@ -14,7 +14,7 @@ import {
 } from '@/services/restaurantValuationService';
 
 export const useRestaurantValuations = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [valuations, setValuations] = useState<RestaurantValuation[]>([]);
   const [scenarios, setScenarios] = useState<ValuationScenario[]>([]);
   const [loading, setLoading] = useState(false);

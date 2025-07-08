@@ -15,9 +15,9 @@ export const useOptimizedRestaurantsFetcher = () => {
         return [];
       }
 
-      // Timeout aumentado para consultas complejas con JOIN
+      // Timeout aumentado para evitar franquiciados temporales
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Optimized restaurants query timeout')), 12000)
+        setTimeout(() => reject(new Error('Optimized restaurants query timeout')), 18000)
       );
       
       // Consulta corregida con la sintaxis correcta

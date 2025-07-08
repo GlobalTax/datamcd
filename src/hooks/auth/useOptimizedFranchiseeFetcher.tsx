@@ -10,9 +10,9 @@ export const useOptimizedFranchiseeFetcher = () => {
     setIsLoading(true);
     
     try {
-      // Timeout aumentado para permitir que las consultas optimizadas se completen
+      // Timeout aumentado para evitar franquiciados temporales
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Optimized franchisee query timeout')), 10000)
+        setTimeout(() => reject(new Error('Optimized franchisee query timeout')), 15000)
       );
       
       // Consulta optimizada que usa el índice idx_franchisees_user_id_optimized
