@@ -22,6 +22,7 @@ import ValuationApp from "./pages/ValuationApp";
 import SettingsPage from "./pages/SettingsPage";
 import AnnualBudgetPage from "./pages/AnnualBudgetPage";
 import EmployeePage from "./pages/EmployeePage";
+import OrquestPage from "./pages/OrquestPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -136,6 +137,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['franchisee']}>
                     <EmployeePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/orquest"
+                element={
+                  <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin']}>
+                    <OrquestPage />
                   </ProtectedRoute>
                 }
               />
