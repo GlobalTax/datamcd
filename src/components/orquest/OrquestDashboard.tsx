@@ -6,10 +6,12 @@ import { OrquestServicesTable } from './OrquestServicesTable';
 import { OrquestEmployeesTable } from './OrquestEmployeesTable';
 import { OrquestConfigDialog } from './OrquestConfigDialog';
 import { useOrquest } from '@/hooks/useOrquest';
-import { RefreshCw, Settings, MapPin, Users } from 'lucide-react';
+import { useOrquestConfig } from '@/hooks/useOrquestConfig';
+import { RefreshCw, Settings, MapPin, Users, AlertCircle } from 'lucide-react';
 
 export const OrquestDashboard: React.FC = () => {
   const { services, employees, loading, syncWithOrquest, syncEmployeesOnly } = useOrquest();
+  const { isConfigured } = useOrquestConfig();
   const [configOpen, setConfigOpen] = React.useState(false);
 
   const handleSync = async () => {
@@ -45,20 +47,45 @@ export const OrquestDashboard: React.FC = () => {
           <Button
             variant="outline"
             onClick={handleSyncEmployees}
-            disabled={loading}
+            disabled={loading || !isConfigured()}
           >
             <Users className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Sync Empleados
           </Button>
           <Button
             onClick={handleSync}
-            disabled={loading}
+            disabled={loading || !isConfigured()}
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Sincronizar Todo
           </Button>
         </div>
       </div>
+
+      {!isConfigured() && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600" />
+              <div className="flex-1">
+                <h3 className="font-medium text-amber-800">Configuración requerida</h3>
+                <p className="text-sm text-amber-700">
+                  Debes configurar las credenciales de Orquest antes de poder sincronizar datos.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfigOpen(true)}
+                className="border-amber-300 text-amber-700 hover:bg-amber-100"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Configurar Ahora
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <Card>
