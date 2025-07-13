@@ -18,6 +18,7 @@ import { AdvancedReports } from '@/components/advisor/AdvancedReports';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { ConnectionStatus } from '@/components/common/ConnectionStatus';
 import { LoadingFallback } from '@/components/common/LoadingFallback';
+import { OrquestDashboard } from '@/components/orquest/OrquestDashboard';
 
 const AdvisorPage = () => {
   const { user, signOut, loading } = useUnifiedAuth();
@@ -140,7 +141,7 @@ const AdvisorPage = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 bg-white border border-gray-200 p-1 rounded-xl">
+          <TabsList className="grid w-full grid-cols-8 bg-white border border-gray-200 p-1 rounded-xl">
             <TabsTrigger 
               value="dashboard" 
               className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg"
@@ -189,6 +190,13 @@ const AdvisorPage = () => {
             >
               <FileText className="w-4 h-4" />
               Reportes
+            </TabsTrigger>
+            <TabsTrigger 
+              value="orquest" 
+              className="flex items-center gap-2 data-[state=active]:bg-cyan-50 data-[state=active]:text-cyan-600 rounded-lg"
+            >
+              <Monitor className="w-4 h-4" />
+              Orquest
             </TabsTrigger>
           </TabsList>
 
@@ -250,6 +258,12 @@ const AdvisorPage = () => {
                   <AdvisorReports />
                 </CardContent>
               </Card>
+            </ErrorBoundary>
+          </TabsContent>
+
+          <TabsContent value="orquest">
+            <ErrorBoundary>
+              <OrquestDashboard />
             </ErrorBoundary>
           </TabsContent>
         </Tabs>
