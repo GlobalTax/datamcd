@@ -24,7 +24,7 @@ export const OrquestDashboard: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold">Orquest</h1>
           <p className="text-muted-foreground">
-            Gestión y sincronización de servicios Orquest
+            Sincronización con API de McDonald's España (PRE-MCD)
           </p>
         </div>
         <div className="flex gap-2">

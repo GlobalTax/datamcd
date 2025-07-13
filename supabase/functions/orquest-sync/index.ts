@@ -9,11 +9,11 @@ const corsHeaders = {
 
 interface OrquestService {
   id: string;
-  nombre?: string;
-  latitud?: number;
-  longitud?: number;
-  zona_horaria?: string;
-  datos_completos?: any;
+  name?: string;
+  lat?: number;
+  lon?: number;
+  timeZone?: string;
+  [key: string]: any;
 }
 
 serve(async (req) => {
@@ -28,13 +28,15 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const orquestApiKey = Deno.env.get('ORQUEST_API_KEY');
-    const orquestBaseUrl = Deno.env.get('ORQUEST_BASE_URL') || 'https://api.orquest.com';
+    const orquestBaseUrl = Deno.env.get('ORQUEST_BASE_URL') || 'https://pre-mc.orquest.es';
+    const businessId = Deno.env.get('ORQUEST_BUSINESS_ID') || 'MCDONALDS_ES';
 
     console.log('Environment check:', {
       hasSupabaseUrl: !!supabaseUrl,
       hasSupabaseKey: !!supabaseKey,
       hasOrquestKey: !!orquestApiKey,
-      orquestBaseUrl
+      orquestBaseUrl,
+      businessId
     });
 
     if (!orquestApiKey) {
@@ -78,17 +80,16 @@ serve(async (req) => {
     let servicesUpdated = 0;
 
     if (action === 'sync_all') {
+      const servicesEndpoint = `${orquestBaseUrl}/importer/api/v2/businesses/${businessId}/services`;
       console.log('Starting sync with Orquest API');
-      console.log('Calling endpoint:', `${orquestBaseUrl}/services`);
+      console.log('Calling endpoint:', servicesEndpoint);
       
       try {
         // Llamada a la API de Orquest para obtener servicios
-        const orquestResponse = await fetch(`${orquestBaseUrl}/services`, {
+        const orquestResponse = await fetch(servicesEndpoint, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${orquestApiKey}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
           },
           // Agregar timeout
           signal: AbortSignal.timeout(30000), // 30 segundos
@@ -130,11 +131,11 @@ serve(async (req) => {
               .from('servicios_orquest')
               .upsert({
                 id: service.id,
-                nombre: service.nombre || null,
-                latitud: service.latitud || null,
-                longitud: service.longitud || null,
-                zona_horaria: service.zona_horaria || null,
-                datos_completos: service.datos_completos || null,
+                nombre: service.name || null,
+                latitud: service.lat || null,
+                longitud: service.lon || null,
+                zona_horaria: service.timeZone || null,
+                datos_completos: service,
                 updated_at: new Date().toISOString(),
               });
 
