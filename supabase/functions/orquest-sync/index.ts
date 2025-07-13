@@ -30,10 +30,21 @@ serve(async (req) => {
     const orquestApiKey = Deno.env.get('ORQUEST_API_KEY');
     const orquestBaseUrl = Deno.env.get('ORQUEST_BASE_URL') || 'https://api.orquest.com';
 
+    console.log('Environment check:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseKey,
+      hasOrquestKey: !!orquestApiKey,
+      orquestBaseUrl
+    });
+
     if (!orquestApiKey) {
       console.error('ORQUEST_API_KEY not configured');
       return new Response(
-        JSON.stringify({ error: 'Orquest API key not configured' }), 
+        JSON.stringify({ 
+          success: false,
+          error: 'Orquest API key not configured',
+          services_updated: 0 
+        }), 
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -41,54 +52,129 @@ serve(async (req) => {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const { action } = await req.json();
+    // Validar que el request tiene body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (error) {
+      console.error('Invalid JSON in request body:', error);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Invalid JSON in request body',
+          services_updated: 0 
+        }), 
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
+    const { action } = requestBody;
+    console.log('Action requested:', action);
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
     let servicesUpdated = 0;
 
     if (action === 'sync_all') {
       console.log('Starting sync with Orquest API');
+      console.log('Calling endpoint:', `${orquestBaseUrl}/services`);
       
-      // Llamada a la API de Orquest para obtener servicios
-      const orquestResponse = await fetch(`${orquestBaseUrl}/services`, {
-        headers: {
-          'Authorization': `Bearer ${orquestApiKey}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      try {
+        // Llamada a la API de Orquest para obtener servicios
+        const orquestResponse = await fetch(`${orquestBaseUrl}/services`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${orquestApiKey}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          // Agregar timeout
+          signal: AbortSignal.timeout(30000), // 30 segundos
+        });
 
-      if (!orquestResponse.ok) {
-        throw new Error(`Orquest API error: ${orquestResponse.status}`);
-      }
+        console.log('Orquest API response status:', orquestResponse.status);
+        console.log('Orquest API response headers:', Object.fromEntries(orquestResponse.headers.entries()));
 
-      const orquestServices: OrquestService[] = await orquestResponse.json();
-      console.log(`Received ${orquestServices.length} services from Orquest`);
-
-      // Actualizar servicios en Supabase
-      for (const service of orquestServices) {
-        try {
-          const { error } = await supabase
-            .from('servicios_orquest')
-            .upsert({
-              id: service.id,
-              nombre: service.nombre,
-              latitud: service.latitud,
-              longitud: service.longitud,
-              zona_horaria: service.zona_horaria,
-              datos_completos: service.datos_completos,
-              updated_at: new Date().toISOString(),
-            });
-
-          if (error) {
-            console.error('Error upserting service:', service.id, error);
-          } else {
-            servicesUpdated++;
-            console.log('Service updated:', service.id);
-          }
-        } catch (error) {
-          console.error('Error processing service:', service.id, error);
+        if (!orquestResponse.ok) {
+          const errorText = await orquestResponse.text();
+          console.error('Orquest API error response:', errorText);
+          throw new Error(`Orquest API error: ${orquestResponse.status} - ${errorText}`);
         }
+
+        const responseText = await orquestResponse.text();
+        console.log('Orquest API raw response:', responseText);
+
+        let orquestServices: OrquestService[];
+        try {
+          orquestServices = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('Error parsing Orquest response as JSON:', parseError);
+          throw new Error('Invalid JSON response from Orquest API');
+        }
+
+        if (!Array.isArray(orquestServices)) {
+          console.error('Orquest response is not an array:', typeof orquestServices);
+          throw new Error('Expected array of services from Orquest API');
+        }
+
+        console.log(`Received ${orquestServices.length} services from Orquest`);
+
+        // Actualizar servicios en Supabase
+        for (const service of orquestServices) {
+          try {
+            console.log('Processing service:', service.id);
+            
+            const { error } = await supabase
+              .from('servicios_orquest')
+              .upsert({
+                id: service.id,
+                nombre: service.nombre || null,
+                latitud: service.latitud || null,
+                longitud: service.longitud || null,
+                zona_horaria: service.zona_horaria || null,
+                datos_completos: service.datos_completos || null,
+                updated_at: new Date().toISOString(),
+              });
+
+            if (error) {
+              console.error('Error upserting service:', service.id, error);
+            } else {
+              servicesUpdated++;
+              console.log('Service updated:', service.id);
+            }
+          } catch (error) {
+            console.error('Error processing service:', service.id, error);
+          }
+        }
+      } catch (fetchError) {
+        console.error('Error calling Orquest API:', fetchError);
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: `Failed to sync with Orquest API: ${fetchError.message}`,
+            services_updated: servicesUpdated,
+          }), 
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
       }
+    } else {
+      console.log('Unknown action:', action);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: `Unknown action: ${action}`,
+          services_updated: 0,
+        }), 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const response = {
