@@ -16,6 +16,21 @@ interface OrquestService {
   [key: string]: any;
 }
 
+interface OrquestEmployee {
+  id: string;
+  serviceId: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  position?: string;
+  department?: string;
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  [key: string]: any;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -78,8 +93,9 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     let servicesUpdated = 0;
+    let employeesUpdated = 0;
 
-    if (action === 'sync_all') {
+    if (action === 'sync_all' || action === 'sync_employees') {
       const servicesEndpoint = `${orquestBaseUrl}/importer/api/v2/businesses/${businessId}/services`;
       console.log('Starting sync with Orquest API');
       console.log('Calling endpoint:', servicesEndpoint);
@@ -123,30 +139,109 @@ serve(async (req) => {
         console.log(`Received ${orquestServices.length} services from Orquest`);
 
         // Actualizar servicios en Supabase
-        for (const service of orquestServices) {
-          try {
-            console.log('Processing service:', service.id);
-            
-            const { error } = await supabase
-              .from('servicios_orquest')
-              .upsert({
-                id: service.id,
-                nombre: service.name || null,
-                latitud: service.lat || null,
-                longitud: service.lon || null,
-                zona_horaria: service.timeZone || null,
-                datos_completos: service,
-                updated_at: new Date().toISOString(),
+        if (action === 'sync_all') {
+          for (const service of orquestServices) {
+            try {
+              console.log('Processing service:', service.id);
+              
+              const { error } = await supabase
+                .from('servicios_orquest')
+                .upsert({
+                  id: service.id,
+                  nombre: service.name || null,
+                  latitud: service.lat || null,
+                  longitud: service.lon || null,
+                  zona_horaria: service.timeZone || null,
+                  datos_completos: service,
+                  updated_at: new Date().toISOString(),
+                });
+
+              if (error) {
+                console.error('Error upserting service:', service.id, error);
+              } else {
+                servicesUpdated++;
+                console.log('Service updated:', service.id);
+              }
+            } catch (error) {
+              console.error('Error processing service:', service.id, error);
+            }
+          }
+        }
+
+        // Sincronizar empleados si se solicita
+        if (action === 'sync_employees' || action === 'sync_all') {
+          console.log('Starting employee sync');
+          
+          // Para cada servicio, sincronizar sus empleados
+          for (const service of orquestServices) {
+            try {
+              const employeesEndpoint = `${orquestBaseUrl}/importer/api/v2/businesses/${businessId}/services/${service.id}/employees`;
+              console.log(`Fetching employees for service ${service.id}:`, employeesEndpoint);
+              
+              const employeesResponse = await fetch(employeesEndpoint, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${orquestApiKey}`,
+                },
+                signal: AbortSignal.timeout(30000),
               });
 
-            if (error) {
-              console.error('Error upserting service:', service.id, error);
-            } else {
-              servicesUpdated++;
-              console.log('Service updated:', service.id);
+              if (!employeesResponse.ok) {
+                console.error(`Error fetching employees for service ${service.id}:`, employeesResponse.status);
+                continue;
+              }
+
+              const employeesText = await employeesResponse.text();
+              let orquestEmployees: OrquestEmployee[];
+              
+              try {
+                orquestEmployees = JSON.parse(employeesText);
+              } catch (parseError) {
+                console.error(`Error parsing employees response for service ${service.id}:`, parseError);
+                continue;
+              }
+
+              if (!Array.isArray(orquestEmployees)) {
+                console.log(`No employees found for service ${service.id}`);
+                continue;
+              }
+
+              console.log(`Processing ${orquestEmployees.length} employees for service ${service.id}`);
+
+              // Actualizar empleados en Supabase
+              for (const employee of orquestEmployees) {
+                try {
+                  const { error } = await supabase
+                    .from('orquest_employees')
+                    .upsert({
+                      id: employee.id,
+                      service_id: service.id,
+                      nombre: employee.firstName || null,
+                      apellidos: employee.lastName || null,
+                      email: employee.email || null,
+                      telefono: employee.phone || null,
+                      puesto: employee.position || null,
+                      departamento: employee.department || null,
+                      fecha_alta: employee.startDate ? new Date(employee.startDate).toISOString().split('T')[0] : null,
+                      fecha_baja: employee.endDate ? new Date(employee.endDate).toISOString().split('T')[0] : null,
+                      estado: employee.status || 'active',
+                      datos_completos: employee,
+                      updated_at: new Date().toISOString(),
+                    });
+
+                  if (error) {
+                    console.error('Error upserting employee:', employee.id, error);
+                  } else {
+                    employeesUpdated++;
+                    console.log('Employee updated:', employee.id);
+                  }
+                } catch (error) {
+                  console.error('Error processing employee:', employee.id, error);
+                }
+              }
+            } catch (error) {
+              console.error(`Error syncing employees for service ${service.id}:`, error);
             }
-          } catch (error) {
-            console.error('Error processing service:', service.id, error);
           }
         }
       } catch (fetchError) {
@@ -181,6 +276,7 @@ serve(async (req) => {
     const response = {
       success: true,
       services_updated: servicesUpdated,
+      employees_updated: employeesUpdated,
       last_sync: new Date().toISOString(),
     };
 

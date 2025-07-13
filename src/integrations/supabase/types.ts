@@ -1193,6 +1193,96 @@ export type Database = {
           },
         ]
       }
+      orquest_employee_mapping: {
+        Row: {
+          created_at: string | null
+          id: string
+          local_employee_id: string | null
+          orquest_employee_id: string | null
+          service_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          local_employee_id?: string | null
+          orquest_employee_id?: string | null
+          service_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          local_employee_id?: string | null
+          orquest_employee_id?: string | null
+          service_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orquest_employee_mapping_local_employee_id_fkey"
+            columns: ["local_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orquest_employee_mapping_orquest_employee_id_fkey"
+            columns: ["orquest_employee_id"]
+            isOneToOne: false
+            referencedRelation: "orquest_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orquest_employees: {
+        Row: {
+          apellidos: string | null
+          datos_completos: Json | null
+          departamento: string | null
+          email: string | null
+          estado: string | null
+          fecha_alta: string | null
+          fecha_baja: string | null
+          id: string
+          nombre: string | null
+          puesto: string | null
+          service_id: string | null
+          telefono: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          apellidos?: string | null
+          datos_completos?: Json | null
+          departamento?: string | null
+          email?: string | null
+          estado?: string | null
+          fecha_alta?: string | null
+          fecha_baja?: string | null
+          id: string
+          nombre?: string | null
+          puesto?: string | null
+          service_id?: string | null
+          telefono?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          apellidos?: string | null
+          datos_completos?: Json | null
+          departamento?: string | null
+          email?: string | null
+          estado?: string | null
+          fecha_alta?: string | null
+          fecha_baja?: string | null
+          id?: string
+          nombre?: string | null
+          puesto?: string | null
+          service_id?: string | null
+          telefono?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

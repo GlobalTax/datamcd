@@ -17,6 +17,7 @@ export interface OrquestConfig {
 export interface OrquestSyncResponse {
   success: boolean;
   services_updated: number;
+  employees_updated?: number;
   last_sync: string;
   error?: string;
 }

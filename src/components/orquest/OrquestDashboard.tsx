@@ -3,20 +3,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OrquestServicesTable } from './OrquestServicesTable';
+import { OrquestEmployeesTable } from './OrquestEmployeesTable';
 import { OrquestConfigDialog } from './OrquestConfigDialog';
 import { useOrquest } from '@/hooks/useOrquest';
-import { RefreshCw, Settings, MapPin } from 'lucide-react';
+import { RefreshCw, Settings, MapPin, Users } from 'lucide-react';
 
 export const OrquestDashboard: React.FC = () => {
-  const { services, loading, syncWithOrquest } = useOrquest();
+  const { services, employees, loading, syncWithOrquest, syncEmployeesOnly } = useOrquest();
   const [configOpen, setConfigOpen] = React.useState(false);
 
   const handleSync = async () => {
     await syncWithOrquest();
   };
 
+  const handleSyncEmployees = async () => {
+    await syncEmployeesOnly();
+  };
+
   const activeServices = services.filter(s => s.datos_completos !== null);
   const totalServices = services.length;
+  const totalEmployees = employees.length;
+  const activeEmployees = employees.filter(emp => emp.estado === 'active').length;
 
   return (
     <div className="space-y-6">
@@ -36,16 +43,24 @@ export const OrquestDashboard: React.FC = () => {
             Configurar
           </Button>
           <Button
+            variant="outline"
+            onClick={handleSyncEmployees}
+            disabled={loading}
+          >
+            <Users className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Sync Empleados
+          </Button>
+          <Button
             onClick={handleSync}
             disabled={loading}
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Sincronizar
+            Sincronizar Todo
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -72,6 +87,36 @@ export const OrquestDashboard: React.FC = () => {
             <div className="text-2xl font-bold">{activeServices.length}</div>
             <p className="text-xs text-muted-foreground">
               Con datos completos
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Empleados
+            </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalEmployees}</div>
+            <p className="text-xs text-muted-foreground">
+              Empleados sincronizados
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Empleados Activos
+            </CardTitle>
+            <Badge variant="default" className="h-4 w-4 rounded-full p-0 bg-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activeEmployees}</div>
+            <p className="text-xs text-muted-foreground">
+              Estado activo
             </p>
           </CardContent>
         </Card>
@@ -106,6 +151,18 @@ export const OrquestDashboard: React.FC = () => {
         </CardHeader>
         <CardContent>
           <OrquestServicesTable services={services} loading={loading} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Empleados Orquest</CardTitle>
+          <CardDescription>
+            Lista de todos los empleados sincronizados con Orquest
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <OrquestEmployeesTable employees={employees} loading={loading} />
         </CardContent>
       </Card>
 
