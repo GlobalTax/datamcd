@@ -29,7 +29,7 @@ export const useOrquestConfig = () => {
         .select('*')
         .eq('integration_type', 'orquest')
         .eq('advisor_id', user.data.user.id)
-        .single();
+        .maybeSingle();
 
       if (fetchError && fetchError.code !== 'PGRST116') {
         throw fetchError;
