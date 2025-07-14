@@ -1088,6 +1088,7 @@ export type Database = {
           config_name: string
           configuration: Json
           created_at: string
+          franchisee_id: string | null
           id: string
           integration_type: string
           is_active: boolean | null
@@ -1101,6 +1102,7 @@ export type Database = {
           config_name: string
           configuration: Json
           created_at?: string
+          franchisee_id?: string | null
           id?: string
           integration_type: string
           is_active?: boolean | null
@@ -1114,13 +1116,22 @@ export type Database = {
           config_name?: string
           configuration?: Json
           created_at?: string
+          franchisee_id?: string | null
           id?: string
           integration_type?: string
           is_active?: boolean | null
           last_sync?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "integration_configs_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       monthly_tracking: {
         Row: {

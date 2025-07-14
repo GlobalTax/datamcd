@@ -8,13 +8,13 @@ interface OrquestConfig {
   business_id: string;
 }
 
-export const useOrquestConfig = () => {
+export const useOrquestConfig = (franchiseeId?: string) => {
   const [config, setConfig] = useState<OrquestConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchConfig = async () => {
+  const fetchConfig = async (targetFranchiseeId?: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -24,11 +24,16 @@ export const useOrquestConfig = () => {
         throw new Error('Usuario no autenticado');
       }
 
+      if (!targetFranchiseeId) {
+        setConfig(null);
+        return;
+      }
+
       const { data, error: fetchError } = await supabase
         .from('integration_configs')
         .select('*')
         .eq('integration_type', 'orquest')
-        .eq('advisor_id', user.data.user.id)
+        .eq('franchisee_id', targetFranchiseeId)
         .maybeSingle();
 
       if (fetchError && fetchError.code !== 'PGRST116') {
@@ -54,7 +59,7 @@ export const useOrquestConfig = () => {
     }
   };
 
-  const saveConfig = async (newConfig: OrquestConfig) => {
+  const saveConfig = async (newConfig: OrquestConfig, targetFranchiseeId?: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -64,8 +69,13 @@ export const useOrquestConfig = () => {
         throw new Error('Usuario no autenticado');
       }
 
+      if (!targetFranchiseeId) {
+        throw new Error('Se requiere un franquiciado para guardar la configuración');
+      }
+
       const configData = {
         advisor_id: user.data.user.id,
+        franchisee_id: targetFranchiseeId,
         integration_type: 'orquest',
         config_name: 'Orquest API Configuration',
         configuration: newConfig as any,
@@ -76,7 +86,7 @@ export const useOrquestConfig = () => {
       const { error } = await supabase
         .from('integration_configs')
         .upsert(configData, {
-          onConflict: 'advisor_id,integration_type'
+          onConflict: 'franchisee_id,integration_type'
         });
 
       if (error) throw error;
@@ -108,8 +118,10 @@ export const useOrquestConfig = () => {
   };
 
   useEffect(() => {
-    fetchConfig();
-  }, []);
+    if (franchiseeId) {
+      fetchConfig(franchiseeId);
+    }
+  }, [franchiseeId]);
 
   return {
     config,
