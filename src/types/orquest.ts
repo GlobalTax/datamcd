@@ -28,3 +28,50 @@ export interface OrquestWebhookPayload {
   data: OrquestService;
   timestamp: string;
 }
+
+// Nuevos tipos para medidas
+export interface OrquestMeasure {
+  id: string;
+  service_id: string;
+  measure_type: string;
+  value: number;
+  from_time: string;
+  to_time: string;
+  measure_category: 'real' | 'forecast' | 'projection';
+  business_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrquestMeasureType {
+  id: string;
+  measure_type: string;
+  display_name: string;
+  description: string | null;
+  unit: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface OrquestMeasurePayload {
+  value: number;
+  from: string;
+  to: string;
+  measure: string;
+}
+
+export interface OrquestMeasuresSyncResponse {
+  success: boolean;
+  measures_updated: number;
+  measures_sent: number;
+  last_sync: string;
+  error?: string;
+}
+
+export interface OrquestMeasuresQueryParams {
+  service_id: string;
+  from_date: string;
+  to_date: string;
+  measure_types?: string[];
+  category?: 'real' | 'forecast' | 'projection';
+}

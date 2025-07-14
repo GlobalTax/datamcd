@@ -1380,8 +1380,39 @@ export type Database = {
         }
         Relationships: []
       }
+      orquest_measure_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean | null
+          measure_type: string
+          unit: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean | null
+          measure_type: string
+          unit?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean | null
+          measure_type?: string
+          unit?: string | null
+        }
+        Relationships: []
+      }
       orquest_measures: {
         Row: {
+          business_id: string | null
           created_at: string | null
           franchisee_id: string | null
           from_time: string
@@ -1395,6 +1426,7 @@ export type Database = {
           value: number
         }
         Insert: {
+          business_id?: string | null
           created_at?: string | null
           franchisee_id?: string | null
           from_time: string
@@ -1408,6 +1440,7 @@ export type Database = {
           value: number
         }
         Update: {
+          business_id?: string | null
           created_at?: string | null
           franchisee_id?: string | null
           from_time?: string

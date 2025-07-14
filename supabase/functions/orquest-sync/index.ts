@@ -712,8 +712,7 @@ serve(async (req) => {
                   from_time: measure.fromTime || measure.from || startDate,
                   to_time: measure.toTime || measure.to || endDate,
                   measure_category: 'real',
-                  franchisee_id: franchiseeId,
-                  raw_data: measure,
+                  business_id: businessId,
                 });
 
               if (insertError) {

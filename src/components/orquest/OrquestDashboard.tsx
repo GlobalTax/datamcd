@@ -15,6 +15,7 @@ import { useOrquest } from '@/hooks/useOrquest';
 import { useOrquestConfig } from '@/hooks/useOrquestConfig';
 import { useOrquestMeasures } from '@/hooks/useOrquestMeasures';
 import { useOrquestMeasuresReceived } from '@/hooks/useOrquestMeasuresReceived';
+import { useOrquestMeasuresExtended } from '@/hooks/useOrquestMeasuresExtended';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { RefreshCw, Settings, MapPin, Users, AlertCircle, Send, TrendingUp, Download } from 'lucide-react';
 
@@ -31,6 +32,14 @@ export const OrquestDashboard: React.FC = () => {
   const { isConfigured } = useOrquestConfig(franchiseeId);
   const { measures, loading: measuresLoading } = useOrquestMeasures(franchiseeId);
   const { measures: receivedMeasures, loading: receivedMeasuresLoading } = useOrquestMeasuresReceived(franchiseeId);
+  const { 
+    measures: extendedMeasures, 
+    measureTypes, 
+    loading: extendedMeasuresLoading,
+    syncMeasuresFromOrquest,
+    formatMeasureValue,
+    getMeasureDisplayName
+  } = useOrquestMeasuresExtended(franchiseeId);
   const [configOpen, setConfigOpen] = React.useState(false);
   const [sendMeasuresOpen, setSendMeasuresOpen] = React.useState(false);
   const [sendForecastOpen, setSendForecastOpen] = React.useState(false);
