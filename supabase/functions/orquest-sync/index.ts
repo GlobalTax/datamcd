@@ -42,9 +42,72 @@ serve(async (req) => {
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const orquestApiKey = Deno.env.get('ORQUEST_API_KEY');
-    const orquestBaseUrl = Deno.env.get('ORQUEST_BASE_URL') || 'https://pre-mc.orquest.es';
-    const businessId = Deno.env.get('ORQUEST_BUSINESS_ID') || 'MCDONALDS_ES';
+    
+    // Validar que el request tiene body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (error) {
+      console.error('Invalid JSON in request body:', error);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Invalid JSON in request body',
+          services_updated: 0 
+        }), 
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const { action, franchiseeId } = requestBody;
+    console.log('Action requested:', action, 'for franchisee:', franchiseeId);
+
+    if (!franchiseeId) {
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'franchiseeId is required',
+          services_updated: 0 
+        }), 
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Obtener configuración de Orquest para este franquiciado
+    const { data: configData, error: configError } = await supabase
+      .from('integration_configs')
+      .select('configuration')
+      .eq('franchisee_id', franchiseeId)
+      .eq('integration_type', 'orquest')
+      .single();
+
+    if (configError || !configData) {
+      console.error('Orquest configuration not found for franchisee:', franchiseeId);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Orquest configuration not found for this franchisee',
+          services_updated: 0 
+        }), 
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const config = configData.configuration;
+    const orquestApiKey = config.api_key;
+    const orquestBaseUrl = config.base_url || 'https://pre-mc.orquest.es';
+    const businessId = config.business_id || 'MCDONALDS_ES';
 
     console.log('Environment check:', {
       hasSupabaseUrl: !!supabaseUrl,
@@ -69,29 +132,6 @@ serve(async (req) => {
       );
     }
 
-    // Validar que el request tiene body
-    let requestBody;
-    try {
-      requestBody = await req.json();
-    } catch (error) {
-      console.error('Invalid JSON in request body:', error);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Invalid JSON in request body',
-          services_updated: 0 
-        }), 
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    const { action } = requestBody;
-    console.log('Action requested:', action);
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
     let servicesUpdated = 0;
     let employeesUpdated = 0;
 

@@ -19,7 +19,7 @@ interface OrquestEmployee {
   updated_at: string | null;
 }
 
-export const useOrquest = () => {
+export const useOrquest = (franchiseeId?: string) => {
   const [services, setServices] = useState<OrquestService[]>([]);
   const [employees, setEmployees] = useState<OrquestEmployee[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,8 +82,12 @@ export const useOrquest = () => {
     try {
       setLoading(true);
       
+      if (!franchiseeId) {
+        throw new Error('franchiseeId is required for sync operations');
+      }
+      
       const { data, error: syncError } = await supabase.functions.invoke('orquest-sync', {
-        body: { action: 'sync_all' }
+        body: { action: 'sync_all', franchiseeId }
       });
 
       if (syncError) throw syncError;
@@ -118,8 +122,12 @@ export const useOrquest = () => {
     try {
       setLoading(true);
       
+      if (!franchiseeId) {
+        throw new Error('franchiseeId is required for sync operations');
+      }
+      
       const { data, error: syncError } = await supabase.functions.invoke('orquest-sync', {
-        body: { action: 'sync_employees' }
+        body: { action: 'sync_employees', franchiseeId }
       });
 
       if (syncError) throw syncError;

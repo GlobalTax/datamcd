@@ -16,13 +16,15 @@ import { useOrquestConfig } from '@/hooks/useOrquestConfig';
 interface OrquestConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  franchiseeId?: string;
 }
 
 export const OrquestConfigDialog: React.FC<OrquestConfigDialogProps> = ({
   open,
   onOpenChange,
+  franchiseeId,
 }) => {
-  const { config, saveConfig, loading } = useOrquestConfig();
+  const { config, saveConfig, loading } = useOrquestConfig(franchiseeId);
   const [apiKey, setApiKey] = React.useState('');
   const [baseUrl, setBaseUrl] = React.useState('https://pre-mc.orquest.es');
   const [businessId, setBusinessId] = React.useState('MCDONALDS_ES');

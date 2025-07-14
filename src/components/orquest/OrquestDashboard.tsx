@@ -7,11 +7,15 @@ import { OrquestEmployeesTable } from './OrquestEmployeesTable';
 import { OrquestConfigDialog } from './OrquestConfigDialog';
 import { useOrquest } from '@/hooks/useOrquest';
 import { useOrquestConfig } from '@/hooks/useOrquestConfig';
+import { useAuth } from '@/hooks/useAuth';
 import { RefreshCw, Settings, MapPin, Users, AlertCircle } from 'lucide-react';
 
 export const OrquestDashboard: React.FC = () => {
-  const { services, employees, loading, syncWithOrquest, syncEmployeesOnly } = useOrquest();
-  const { isConfigured } = useOrquestConfig();
+  const { franchisee } = useAuth();
+  const franchiseeId = franchisee?.id;
+  
+  const { services, employees, loading, syncWithOrquest, syncEmployeesOnly } = useOrquest(franchiseeId);
+  const { isConfigured } = useOrquestConfig(franchiseeId);
   const [configOpen, setConfigOpen] = React.useState(false);
 
   const handleSync = async () => {
@@ -195,7 +199,8 @@ export const OrquestDashboard: React.FC = () => {
 
       <OrquestConfigDialog 
         open={configOpen} 
-        onOpenChange={setConfigOpen} 
+        onOpenChange={setConfigOpen}
+        franchiseeId={franchiseeId}
       />
     </div>
   );
