@@ -24,11 +24,16 @@ export const OrquestConfigDialog: React.FC<OrquestConfigDialogProps> = ({
   onOpenChange,
   franchiseeId,
 }) => {
-  const { config, saveConfig, loading } = useOrquestConfig(franchiseeId);
+  const { config, saveConfig, loading, error } = useOrquestConfig(franchiseeId);
   const [apiKey, setApiKey] = React.useState('');
   const [baseUrl, setBaseUrl] = React.useState('https://pre-mc.orquest.es');
   const [businessId, setBusinessId] = React.useState('MCDONALDS_ES');
   const [enabled, setEnabled] = React.useState(true);
+  
+  // Detectar si estamos en modo fallback
+  const isInFallbackMode = franchiseeId?.startsWith('fallback-') || false;
+  const isValidUUID = franchiseeId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(franchiseeId);
+  const canSave = franchiseeId && isValidUUID && !isInFallbackMode && apiKey.trim();
 
   // Cargar configuración existente cuando se abre el diálogo
   React.useEffect(() => {
@@ -118,6 +123,48 @@ export const OrquestConfigDialog: React.FC<OrquestConfigDialogProps> = ({
             </Label>
           </div>
         </div>
+
+        {isInFallbackMode && (
+          <div className="rounded-md bg-red-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  No se puede guardar la configuración
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>
+                    El sistema está en modo de conectividad limitada. Por favor, verifica tu conexión a internet y recarga la página antes de continuar.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && !isInFallbackMode && (
+          <div className="rounded-md bg-red-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  Error al guardar configuración
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         <DialogFooter>
           <Button
@@ -130,7 +177,7 @@ export const OrquestConfigDialog: React.FC<OrquestConfigDialogProps> = ({
           <Button
             type="button"
             onClick={handleSave}
-            disabled={loading || !apiKey.trim()}
+            disabled={loading || !canSave}
           >
             {loading ? "Guardando..." : "Guardar Configuración"}
           </Button>

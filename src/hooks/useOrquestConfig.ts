@@ -59,6 +59,17 @@ export const useOrquestConfig = (franchiseeId?: string) => {
     }
   };
 
+  // Función para validar si es un UUID válido
+  const isValidUUID = (id: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
+  // Función para detectar si es un ID de fallback
+  const isFallbackId = (id: string): boolean => {
+    return id.startsWith('fallback-');
+  };
+
   const saveConfig = async (newConfig: OrquestConfig, targetFranchiseeId?: string) => {
     try {
       setLoading(true);
@@ -71,6 +82,16 @@ export const useOrquestConfig = (franchiseeId?: string) => {
 
       if (!targetFranchiseeId) {
         throw new Error('Se requiere un franquiciado para guardar la configuración');
+      }
+
+      // Validar si es un ID de fallback
+      if (isFallbackId(targetFranchiseeId)) {
+        throw new Error('No se puede guardar la configuración en modo fallback. Por favor, verifica tu conexión e intenta nuevamente.');
+      }
+
+      // Validar si es un UUID válido
+      if (!isValidUUID(targetFranchiseeId)) {
+        throw new Error('ID de franquiciado inválido. Por favor, recarga la página e intenta nuevamente.');
       }
 
       const configData = {

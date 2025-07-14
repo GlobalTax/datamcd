@@ -14,6 +14,11 @@ export const OrquestDashboard: React.FC = () => {
   const { franchisee } = useUnifiedAuth();
   const franchiseeId = franchisee?.id;
   
+  // Detectar si estamos en modo fallback
+  const isInFallbackMode = franchiseeId?.startsWith('fallback-') || false;
+  const isValidUUID = franchiseeId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(franchiseeId);
+  const canSaveConfig = franchiseeId && isValidUUID && !isInFallbackMode;
+  
   const { services, employees, loading, syncWithOrquest, syncEmployeesOnly } = useOrquest(franchiseeId);
   const { isConfigured } = useOrquestConfig(franchiseeId);
   const [configOpen, setConfigOpen] = React.useState(false);
@@ -66,7 +71,33 @@ export const OrquestDashboard: React.FC = () => {
         </div>
       </div>
 
-      {!isConfigured() && (
+      {isInFallbackMode && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <div className="flex-1">
+                <h3 className="font-medium text-red-800">Modo de conectividad limitada</h3>
+                <p className="text-sm text-red-700">
+                  Hay problemas de conectividad. Algunas funciones como guardar configuración están deshabilitadas. 
+                  Por favor, verifica tu conexión a internet e intenta recargar la página.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.reload()}
+                className="border-red-300 text-red-700 hover:bg-red-100"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Recargar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isInFallbackMode && !isConfigured() && (
         <Card className="border-amber-200 bg-amber-50">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -82,6 +113,7 @@ export const OrquestDashboard: React.FC = () => {
                 size="sm"
                 onClick={() => setConfigOpen(true)}
                 className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                disabled={!canSaveConfig}
               >
                 <Settings className="w-4 h-4 mr-2" />
                 Configurar Ahora
