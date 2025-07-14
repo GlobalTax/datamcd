@@ -13,7 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog } from 'lucide-react';
+import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 
@@ -57,6 +57,11 @@ const menuItems = [
     title: "Orquest",
     url: "/orquest",
     icon: Cog,
+  },
+  {
+    title: "Incidencias",
+    url: "/incidents",
+    icon: AlertTriangle,
   },
 ];
 

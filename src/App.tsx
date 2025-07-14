@@ -23,6 +23,7 @@ import SettingsPage from "./pages/SettingsPage";
 import AnnualBudgetPage from "./pages/AnnualBudgetPage";
 import EmployeePage from "./pages/EmployeePage";
 import OrquestPage from "./pages/OrquestPage";
+import IncidentManagementPage from "./pages/IncidentManagementPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -145,6 +146,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin']}>
                     <OrquestPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/incidents"
+                element={
+                  <ProtectedRoute allowedRoles={['franchisee', 'staff', 'asesor', 'admin', 'superadmin']}>
+                    <IncidentManagementPage />
                   </ProtectedRoute>
                 }
               />

@@ -1080,6 +1080,41 @@ export type Database = {
           },
         ]
       }
+      incident_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          incident_id: string
+          is_internal: boolean
+          user_id: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          id?: string
+          incident_id: string
+          is_internal?: boolean
+          user_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          incident_id?: string
+          is_internal?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_comments_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_configs: {
         Row: {
           advisor_id: string
@@ -1525,6 +1560,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      restaurant_incidents: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          description: string | null
+          estimated_resolution: string | null
+          id: string
+          incident_type: string
+          priority: string
+          reported_by: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          restaurant_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_resolution?: string | null
+          id?: string
+          incident_type?: string
+          priority?: string
+          reported_by: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          restaurant_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_resolution?: string | null
+          id?: string
+          incident_type?: string
+          priority?: string
+          reported_by?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          restaurant_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       restaurant_valuations: {
         Row: {
