@@ -2,22 +2,16 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrquestServicesTable } from './OrquestServicesTable';
 import { OrquestEmployeesTable } from './OrquestEmployeesTable';
-import { OrquestConfigDialog } from './OrquestConfigDialog';
-import { OrquestSendMeasuresDialog } from './OrquestSendMeasuresDialog';
 import { OrquestMeasuresTable } from './OrquestMeasuresTable';
-import { OrquestMeasuresReceivedTable } from './OrquestMeasuresReceivedTable';
-import { OrquestForecastsTable } from './OrquestForecastsTable';
-import { OrquestSendForecastDialog } from './OrquestSendForecastDialog';
-import { OrquestFetchMeasuresDialog } from './OrquestFetchMeasuresDialog';
+import { OrquestConfigDialog } from './OrquestConfigDialog';
 import { useOrquest } from '@/hooks/useOrquest';
 import { useOrquestConfig } from '@/hooks/useOrquestConfig';
-import { useOrquestMeasures } from '@/hooks/useOrquestMeasures';
-import { useOrquestMeasuresReceived } from '@/hooks/useOrquestMeasuresReceived';
 import { useOrquestMeasuresExtended } from '@/hooks/useOrquestMeasuresExtended';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
-import { RefreshCw, Settings, MapPin, Users, AlertCircle, Send, TrendingUp, Download } from 'lucide-react';
+import { RefreshCw, Settings, MapPin, Users, AlertCircle, BarChart3 } from 'lucide-react';
 
 export const OrquestDashboard: React.FC = () => {
   const { franchisee } = useUnifiedAuth();
@@ -30,8 +24,6 @@ export const OrquestDashboard: React.FC = () => {
   
   const { services, employees, loading, syncWithOrquest, syncEmployeesOnly } = useOrquest(franchiseeId);
   const { isConfigured } = useOrquestConfig(franchiseeId);
-  const { measures, loading: measuresLoading } = useOrquestMeasures(franchiseeId);
-  const { measures: receivedMeasures, loading: receivedMeasuresLoading } = useOrquestMeasuresReceived(franchiseeId);
   const { 
     measures: extendedMeasures, 
     measureTypes, 
@@ -41,9 +33,8 @@ export const OrquestDashboard: React.FC = () => {
     getMeasureDisplayName
   } = useOrquestMeasuresExtended(franchiseeId);
   const [configOpen, setConfigOpen] = React.useState(false);
-  const [sendMeasuresOpen, setSendMeasuresOpen] = React.useState(false);
-  const [sendForecastOpen, setSendForecastOpen] = React.useState(false);
-  const [fetchMeasuresOpen, setFetchMeasuresOpen] = React.useState(false);
+  const [selectedServiceId, setSelectedServiceId] = React.useState<string>('');
+  const [selectedDate, setSelectedDate] = React.useState<string>(new Date().toISOString().split('T')[0]);
 
   const handleSync = async () => {
     await syncWithOrquest();
@@ -53,17 +44,17 @@ export const OrquestDashboard: React.FC = () => {
     await syncEmployeesOnly();
   };
 
+  const handleSyncMeasures = async () => {
+    if (selectedServiceId && selectedDate) {
+      await syncMeasuresFromOrquest(selectedServiceId, selectedDate);
+    }
+  };
+
   const activeServices = services.filter(s => s.datos_completos !== null);
   const totalServices = services.length;
   const totalEmployees = employees.length;
   const activeEmployees = employees.filter(emp => emp.estado === 'active').length;
-  const totalMeasuresSent = measures.length;
-  const recentMeasures = measures.filter(m => {
-    const measureDate = new Date(m.sent_at);
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    return measureDate >= sevenDaysAgo;
-  }).length;
+  const totalMeasures = extendedMeasures.length;
 
   return (
     <div className="space-y-6">
@@ -81,30 +72,6 @@ export const OrquestDashboard: React.FC = () => {
           >
             <Settings className="w-4 h-4 mr-2" />
             Configurar
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setSendMeasuresOpen(true)}
-            disabled={loading || !isConfigured() || !canSaveConfig}
-          >
-            <Send className="w-4 h-4 mr-2" />
-            Enviar Medidas
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setSendForecastOpen(true)}
-            disabled={loading || !isConfigured() || !canSaveConfig}
-          >
-            <TrendingUp className="w-4 h-4 mr-2" />
-            Enviar Forecasts
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setFetchMeasuresOpen(true)}
-            disabled={loading || !isConfigured() || !canSaveConfig}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Obtener Medidas
           </Button>
           <Button
             variant="outline"
@@ -240,14 +207,14 @@ export const OrquestDashboard: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Medidas Enviadas
+              Medidas
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalMeasuresSent}</div>
+            <div className="text-2xl font-bold">{totalMeasures}</div>
             <p className="text-xs text-muted-foreground">
-              {recentMeasures} en los últimos 7 días
+              Registros sincronizados
             </p>
           </CardContent>
         </Card>
@@ -273,70 +240,69 @@ export const OrquestDashboard: React.FC = () => {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Servicios Orquest</CardTitle>
-          <CardDescription>
-            Lista de todos los servicios sincronizados con Orquest
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <OrquestServicesTable services={services} loading={loading} />
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="services" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="services">Servicios</TabsTrigger>
+          <TabsTrigger value="employees">Empleados</TabsTrigger>
+          <TabsTrigger value="measures">Medidas</TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Empleados Orquest</CardTitle>
-          <CardDescription>
-            Lista de todos los empleados sincronizados con Orquest
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <OrquestEmployeesTable employees={employees} loading={loading} />
-        </CardContent>
-      </Card>
+        <TabsContent value="services">
+          <Card>
+            <CardHeader>
+              <CardTitle>Servicios Orquest</CardTitle>
+              <CardDescription>
+                Lista de todos los servicios sincronizados con Orquest
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <OrquestServicesTable services={services} loading={loading} />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Medidas Enviadas a Orquest</CardTitle>
-          <CardDescription>
-            Historial de medidas de P&L enviadas a Orquest para análisis
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <OrquestMeasuresTable measures={measures} loading={measuresLoading} />
-        </CardContent>
-      </Card>
+        <TabsContent value="employees">
+          <Card>
+            <CardHeader>
+              <CardTitle>Empleados Orquest</CardTitle>
+              <CardDescription>
+                Lista de todos los empleados sincronizados con Orquest
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <OrquestEmployeesTable employees={employees} loading={loading} />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      <OrquestMeasuresReceivedTable
-        measures={receivedMeasures}
-        loading={receivedMeasuresLoading}
-      />
-
-      <OrquestForecastsTable />
+        <TabsContent value="measures">
+          <Card>
+            <CardHeader>
+              <CardTitle>Medidas Orquest</CardTitle>
+              <CardDescription>
+                Gestión de medidas y KPIs sincronizados con Orquest
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <OrquestMeasuresTable 
+                measures={extendedMeasures}
+                measureTypes={measureTypes}
+                services={activeServices}
+                loading={extendedMeasuresLoading}
+                onSyncFromOrquest={handleSyncMeasures}
+                selectedServiceId={selectedServiceId}
+                setSelectedServiceId={setSelectedServiceId}
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <OrquestConfigDialog
         open={configOpen} 
         onOpenChange={setConfigOpen}
-        franchiseeId={franchiseeId}
-      />
-
-      <OrquestSendMeasuresDialog
-        open={sendMeasuresOpen}
-        onOpenChange={setSendMeasuresOpen}
-        services={services}
-        franchiseeId={franchiseeId}
-      />
-
-      <OrquestSendForecastDialog>
-        <div />
-      </OrquestSendForecastDialog>
-
-      <OrquestFetchMeasuresDialog
-        open={fetchMeasuresOpen}
-        onOpenChange={setFetchMeasuresOpen}
-        services={services}
         franchiseeId={franchiseeId}
       />
     </div>
