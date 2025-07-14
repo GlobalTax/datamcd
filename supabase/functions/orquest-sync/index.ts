@@ -31,6 +31,22 @@ interface OrquestEmployee {
   [key: string]: any;
 }
 
+interface OrquestMeasure {
+  value: number;
+  from: string;
+  to: string;
+  measure: string;
+}
+
+interface SendMeasuresRequest {
+  action: string;
+  franchiseeId: string;
+  serviceId?: string;
+  measureType?: string;
+  periodFrom?: string;
+  periodTo?: string;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -291,6 +307,168 @@ serve(async (req) => {
             success: false,
             error: `Failed to sync with Orquest API: ${fetchError.message}`,
             services_updated: servicesUpdated,
+          }), 
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    } else if (action === 'send_measures') {
+      console.log('Starting measures send to Orquest');
+      const { serviceId, measureType, periodFrom, periodTo } = requestBody as SendMeasuresRequest;
+      
+      if (!serviceId || !measureType || !periodFrom || !periodTo) {
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: 'serviceId, measureType, periodFrom, and periodTo are required for send_measures action',
+            measures_sent: 0,
+          }), 
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      try {
+        // Obtener datos del P&L para el período especificado
+        const { data: profitLossData, error: plError } = await supabase
+          .from('profit_loss_data')
+          .select('*')
+          .gte('created_at', periodFrom)
+          .lte('created_at', periodTo)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (plError || !profitLossData?.length) {
+          console.error('No profit & loss data found for period:', periodFrom, periodTo);
+          return new Response(
+            JSON.stringify({ 
+              success: false,
+              error: 'No profit & loss data found for the specified period',
+              measures_sent: 0,
+            }), 
+            {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+
+        const plData = profitLossData[0];
+        let measureValue = 0;
+
+        // Mapear tipos de medidas a valores del P&L
+        switch (measureType) {
+          case 'SALES':
+            measureValue = plData.net_sales || 0;
+            break;
+          case 'LABOR_COST':
+            measureValue = plData.total_labor || 0;
+            break;
+          case 'FOOD_COST':
+            measureValue = plData.food_cost || 0;
+            break;
+          case 'OPERATING_EXPENSES':
+            measureValue = plData.total_operating_expenses || 0;
+            break;
+          case 'NET_PROFIT':
+            measureValue = plData.operating_income || 0;
+            break;
+          default:
+            throw new Error(`Unknown measure type: ${measureType}`);
+        }
+
+        // Preparar payload para Orquest
+        const orquestMeasure: OrquestMeasure = {
+          value: measureValue,
+          from: periodFrom,
+          to: periodTo,
+          measure: measureType
+        };
+
+        // Enviar medida a Orquest
+        const measuresEndpoint = `${orquestBaseUrl}/api/v1/import/business/${businessId}/product/${serviceId}/measures`;
+        console.log('Sending measure to Orquest:', measuresEndpoint, orquestMeasure);
+
+        const orquestResponse = await fetch(measuresEndpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${orquestApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orquestMeasure),
+          signal: AbortSignal.timeout(30000),
+        });
+
+        const responseText = await orquestResponse.text();
+        console.log('Orquest measures response:', orquestResponse.status, responseText);
+
+        // Registrar el envío en la base de datos
+        const measureRecord = {
+          franchisee_id: franchiseeId,
+          service_id: serviceId,
+          measure_type: measureType,
+          value: measureValue,
+          period_from: periodFrom,
+          period_to: periodTo,
+          restaurant_id: plData.restaurant_id || null,
+          status: orquestResponse.ok ? 'sent' : 'failed',
+          error_message: orquestResponse.ok ? null : responseText,
+          orquest_response: responseText ? JSON.parse(responseText) : null,
+        };
+
+        const { error: insertError } = await supabase
+          .from('orquest_measures_sent')
+          .insert(measureRecord);
+
+        if (insertError) {
+          console.error('Error recording measure send:', insertError);
+        }
+
+        if (!orquestResponse.ok) {
+          throw new Error(`Orquest API error: ${orquestResponse.status} - ${responseText}`);
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            measures_sent: 1,
+            measure_type: measureType,
+            value: measureValue,
+            service_id: serviceId,
+          }), 
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+
+      } catch (error) {
+        console.error('Error sending measures to Orquest:', error);
+        
+        // Registrar el error
+        const errorRecord = {
+          franchisee_id: franchiseeId,
+          service_id: serviceId,
+          measure_type: measureType,
+          value: 0,
+          period_from: periodFrom,
+          period_to: periodTo,
+          status: 'failed',
+          error_message: error.message,
+        };
+
+        await supabase
+          .from('orquest_measures_sent')
+          .insert(errorRecord);
+
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: `Failed to send measures to Orquest: ${error.message}`,
+            measures_sent: 0,
           }), 
           {
             status: 500,

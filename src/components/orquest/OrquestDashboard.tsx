@@ -5,10 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { OrquestServicesTable } from './OrquestServicesTable';
 import { OrquestEmployeesTable } from './OrquestEmployeesTable';
 import { OrquestConfigDialog } from './OrquestConfigDialog';
+import { OrquestSendMeasuresDialog } from './OrquestSendMeasuresDialog';
+import { OrquestMeasuresTable } from './OrquestMeasuresTable';
 import { useOrquest } from '@/hooks/useOrquest';
 import { useOrquestConfig } from '@/hooks/useOrquestConfig';
+import { useOrquestMeasures } from '@/hooks/useOrquestMeasures';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
-import { RefreshCw, Settings, MapPin, Users, AlertCircle } from 'lucide-react';
+import { RefreshCw, Settings, MapPin, Users, AlertCircle, Send, TrendingUp } from 'lucide-react';
 
 export const OrquestDashboard: React.FC = () => {
   const { franchisee } = useUnifiedAuth();
@@ -21,7 +24,9 @@ export const OrquestDashboard: React.FC = () => {
   
   const { services, employees, loading, syncWithOrquest, syncEmployeesOnly } = useOrquest(franchiseeId);
   const { isConfigured } = useOrquestConfig(franchiseeId);
+  const { measures, loading: measuresLoading } = useOrquestMeasures(franchiseeId);
   const [configOpen, setConfigOpen] = React.useState(false);
+  const [sendMeasuresOpen, setSendMeasuresOpen] = React.useState(false);
 
   const handleSync = async () => {
     await syncWithOrquest();
@@ -35,6 +40,13 @@ export const OrquestDashboard: React.FC = () => {
   const totalServices = services.length;
   const totalEmployees = employees.length;
   const activeEmployees = employees.filter(emp => emp.estado === 'active').length;
+  const totalMeasuresSent = measures.length;
+  const recentMeasures = measures.filter(m => {
+    const measureDate = new Date(m.sent_at);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return measureDate >= sevenDaysAgo;
+  }).length;
 
   return (
     <div className="space-y-6">
@@ -52,6 +64,14 @@ export const OrquestDashboard: React.FC = () => {
           >
             <Settings className="w-4 h-4 mr-2" />
             Configurar
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setSendMeasuresOpen(true)}
+            disabled={loading || !isConfigured() || !canSaveConfig}
+          >
+            <Send className="w-4 h-4 mr-2" />
+            Enviar Medidas
           </Button>
           <Button
             variant="outline"
@@ -123,7 +143,7 @@ export const OrquestDashboard: React.FC = () => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -187,6 +207,21 @@ export const OrquestDashboard: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
+              Medidas Enviadas
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalMeasuresSent}</div>
+            <p className="text-xs text-muted-foreground">
+              {recentMeasures} en los últimos 7 días
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
               Última Sync
             </CardTitle>
             <RefreshCw className="h-4 w-4 text-muted-foreground" />
@@ -229,9 +264,28 @@ export const OrquestDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Medidas Enviadas a Orquest</CardTitle>
+          <CardDescription>
+            Historial de medidas de P&L enviadas a Orquest para análisis
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <OrquestMeasuresTable measures={measures} loading={measuresLoading} />
+        </CardContent>
+      </Card>
+
       <OrquestConfigDialog 
         open={configOpen} 
         onOpenChange={setConfigOpen}
+        franchiseeId={franchiseeId}
+      />
+
+      <OrquestSendMeasuresDialog
+        open={sendMeasuresOpen}
+        onOpenChange={setSendMeasuresOpen}
+        services={services}
         franchiseeId={franchiseeId}
       />
     </div>
