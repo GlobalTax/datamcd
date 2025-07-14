@@ -7,6 +7,8 @@ import { OrquestEmployeesTable } from './OrquestEmployeesTable';
 import { OrquestConfigDialog } from './OrquestConfigDialog';
 import { OrquestSendMeasuresDialog } from './OrquestSendMeasuresDialog';
 import { OrquestMeasuresTable } from './OrquestMeasuresTable';
+import { OrquestForecastsTable } from './OrquestForecastsTable';
+import { OrquestSendForecastDialog } from './OrquestSendForecastDialog';
 import { useOrquest } from '@/hooks/useOrquest';
 import { useOrquestConfig } from '@/hooks/useOrquestConfig';
 import { useOrquestMeasures } from '@/hooks/useOrquestMeasures';
@@ -27,6 +29,7 @@ export const OrquestDashboard: React.FC = () => {
   const { measures, loading: measuresLoading } = useOrquestMeasures(franchiseeId);
   const [configOpen, setConfigOpen] = React.useState(false);
   const [sendMeasuresOpen, setSendMeasuresOpen] = React.useState(false);
+  const [sendForecastOpen, setSendForecastOpen] = React.useState(false);
 
   const handleSync = async () => {
     await syncWithOrquest();
@@ -72,6 +75,14 @@ export const OrquestDashboard: React.FC = () => {
           >
             <Send className="w-4 h-4 mr-2" />
             Enviar Medidas
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setSendForecastOpen(true)}
+            disabled={loading || !isConfigured() || !canSaveConfig}
+          >
+            <TrendingUp className="w-4 h-4 mr-2" />
+            Enviar Forecasts
           </Button>
           <Button
             variant="outline"
@@ -276,6 +287,8 @@ export const OrquestDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
+      <OrquestForecastsTable />
+
       <OrquestConfigDialog 
         open={configOpen} 
         onOpenChange={setConfigOpen}
@@ -288,6 +301,10 @@ export const OrquestDashboard: React.FC = () => {
         services={services}
         franchiseeId={franchiseeId}
       />
+
+      <OrquestSendForecastDialog>
+        <div />
+      </OrquestSendForecastDialog>
     </div>
   );
 };

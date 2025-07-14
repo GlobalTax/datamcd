@@ -476,6 +476,179 @@ serve(async (req) => {
           }
         );
       }
+    } else if (action === 'send_forecast') {
+      console.log('Starting forecast send to Orquest');
+      
+      try {
+        // Obtener datos de presupuestos anuales
+        const { data: annualBudgets, error: budgetError } = await supabase
+          .from('annual_budgets')
+          .select(`
+            *,
+            franchisee_restaurants!annual_budgets_restaurant_id_fkey (
+              id,
+              franchisee_id,
+              base_restaurant_id,
+              base_restaurants (
+                site_number,
+                restaurant_name
+              )
+            )
+          `)
+          .gte('year', new Date().getFullYear())
+          .lte('year', new Date().getFullYear() + 1);
+
+        if (budgetError || !annualBudgets?.length) {
+          console.error('No budget data found for forecast:', budgetError);
+          return new Response(
+            JSON.stringify({ 
+              success: false,
+              error: 'No budget data found for forecast',
+              forecasts_sent: 0,
+            }), 
+            {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+
+        // Agrupar por restaurante y año
+        const restaurantGroups = {};
+        annualBudgets.forEach(budget => {
+          const key = `${budget.restaurant_id}-${budget.year}`;
+          if (!restaurantGroups[key]) {
+            restaurantGroups[key] = {
+              restaurant: budget.franchisee_restaurants,
+              year: budget.year,
+              budgets: []
+            };
+          }
+          restaurantGroups[key].budgets.push(budget);
+        });
+
+        let forecastsSent = 0;
+        const errors = [];
+
+        for (const [key, group] of Object.entries(restaurantGroups)) {
+          try {
+            // Buscar servicio de Orquest correspondiente
+            const { data: service } = await supabase
+              .from('servicios_orquest')
+              .select('id, nombre')
+              .ilike('nombre', `%${group.restaurant.base_restaurants.site_number}%`)
+              .maybeSingle();
+
+            if (!service) {
+              console.log(`No Orquest service found for restaurant ${group.restaurant.base_restaurants.site_number}`);
+              continue;
+            }
+
+            // Construir forecasts mensuales
+            const monthlyForecasts = [];
+            const revenueBudget = group.budgets.find(b => b.category === 'revenue' || b.category === 'ingresos');
+            
+            if (revenueBudget) {
+              const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+              
+              months.forEach((month, index) => {
+                const monthValue = revenueBudget[month] || 0;
+                if (monthValue > 0) {
+                  monthlyForecasts.push({
+                    demandTypeName: 'SALES',
+                    businessDate: `${group.year}-${String(index + 1).padStart(2, '0')}-01`,
+                    value: monthValue
+                  });
+                }
+              });
+            }
+
+            if (monthlyForecasts.length === 0) {
+              console.log(`No forecast data to send for restaurant ${group.restaurant.base_restaurants.site_number}`);
+              continue;
+            }
+
+            // Enviar forecast a Orquest
+            const forecastEndpoint = `${orquestBaseUrl}/api/v1/import/business/${businessId}/product/${service.id}/forecast`;
+            console.log('Sending forecast to Orquest:', forecastEndpoint);
+
+            const orquestResponse = await fetch(forecastEndpoint, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${orquestApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(monthlyForecasts),
+              signal: AbortSignal.timeout(30000),
+            });
+
+            const responseText = await orquestResponse.text();
+            console.log('Orquest forecast response:', orquestResponse.status, responseText);
+
+            // Registrar en base de datos
+            const { error: insertError } = await supabase
+              .from('orquest_forecasts_sent')
+              .insert({
+                service_id: service.id,
+                forecast_type: 'budget_based',
+                period_from: `${group.year}-01-01T00:00:00Z`,
+                period_to: `${group.year}-12-31T23:59:59Z`,
+                forecast_data: monthlyForecasts,
+                franchisee_id: group.restaurant.franchisee_id,
+                restaurant_id: group.restaurant.id,
+                status: orquestResponse.ok ? 'sent' : 'error',
+                orquest_response: responseText ? JSON.parse(responseText) : null,
+                error_message: orquestResponse.ok ? null : `HTTP ${orquestResponse.status}: ${responseText}`
+              });
+
+            if (insertError) {
+              console.error('Error recording forecast send:', insertError);
+            }
+
+            if (orquestResponse.ok) {
+              forecastsSent++;
+            } else {
+              errors.push({
+                service_id: service.id,
+                error: `HTTP ${orquestResponse.status}: ${responseText}`
+              });
+            }
+
+          } catch (error) {
+            console.error('Error processing forecast for restaurant:', group.restaurant.base_restaurants.site_number, error);
+            errors.push({
+              restaurant: group.restaurant.base_restaurants.site_number,
+              error: error.message
+            });
+          }
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            forecasts_sent: forecastsSent,
+            errors_count: errors.length,
+            details: { errors }
+          }), 
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+
+      } catch (error) {
+        console.error('Error sending forecasts to Orquest:', error);
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: `Failed to send forecasts to Orquest: ${error.message}`,
+            forecasts_sent: 0,
+          }), 
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
     } else {
       console.log('Unknown action:', action);
       return new Response(

@@ -1329,6 +1329,57 @@ export type Database = {
         }
         Relationships: []
       }
+      orquest_forecasts_sent: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          forecast_data: Json
+          forecast_type: string
+          franchisee_id: string
+          id: string
+          orquest_response: Json | null
+          period_from: string
+          period_to: string
+          restaurant_id: string | null
+          sent_at: string
+          service_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          forecast_data: Json
+          forecast_type: string
+          franchisee_id: string
+          id?: string
+          orquest_response?: Json | null
+          period_from: string
+          period_to: string
+          restaurant_id?: string | null
+          sent_at?: string
+          service_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          forecast_data?: Json
+          forecast_type?: string
+          franchisee_id?: string
+          id?: string
+          orquest_response?: Json | null
+          period_from?: string
+          period_to?: string
+          restaurant_id?: string | null
+          sent_at?: string
+          service_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orquest_measures_sent: {
         Row: {
           created_at: string
