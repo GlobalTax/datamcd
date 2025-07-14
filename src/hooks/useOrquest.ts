@@ -206,5 +206,9 @@ export const useOrquest = (franchiseeId?: string) => {
     syncWithOrquest,
     syncEmployeesOnly,
     updateService,
+    refetch: () => {
+      fetchServices();
+      fetchEmployees();
+    }
   };
 };

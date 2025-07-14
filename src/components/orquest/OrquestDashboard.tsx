@@ -38,6 +38,12 @@ export const OrquestDashboard: React.FC = () => {
 
   const handleSync = async () => {
     await syncWithOrquest();
+    // Refrescar medidas también después de sincronizar servicios/empleados
+    setTimeout(async () => {
+      if (selectedServiceId && selectedDate) {
+        await syncMeasuresFromOrquest(selectedServiceId, selectedDate);
+      }
+    }, 1000);
   };
 
   const handleSyncEmployees = async () => {

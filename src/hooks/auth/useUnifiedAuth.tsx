@@ -185,31 +185,99 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       console.error('UNIFIED_AUTH: Error loading user data:', error);
       setConnectionStatus('online'); // Mantener online para evitar loops
       
-      // Fallback con datos básicos pero funcionales
-      const fallbackUser = {
-        id: userId,
-        email: 'usuario@ejemplo.com',
-        full_name: 'Usuario',
-        role: 'franchisee'
-      };
+      // Intentar crear un franquiciado real si no existe
+      const realFranchisee = await createRealFranchisee(userId);
       
-      const fallbackFranchisee = {
-        id: `fallback-${userId}`,
-        user_id: userId,
-        franchisee_name: 'Usuario',
-        company_name: 'Mi Empresa',
-        total_restaurants: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      setUser(fallbackUser);
-      setFranchisee(fallbackFranchisee);
-      setRestaurants([]);
-      
-      toast.success('Sesión iniciada correctamente');
+      if (realFranchisee) {
+        // Usar el franquiciado real recién creado
+        const user = {
+          id: userId,
+          email: session?.user?.email || 'usuario@ejemplo.com',
+          full_name: session?.user?.user_metadata?.full_name || 'Usuario',
+          role: 'franchisee'
+        };
+        
+        setUser(user);
+        setFranchisee(realFranchisee);
+        setRestaurants([]);
+        toast.success('Sesión iniciada correctamente');
+      } else {
+        // Fallback con datos básicos pero funcionales
+        const fallbackUser = {
+          id: userId,
+          email: 'usuario@ejemplo.com',
+          full_name: 'Usuario',
+          role: 'franchisee'
+        };
+        
+        const fallbackFranchisee = {
+          id: `fallback-${userId}`,
+          user_id: userId,
+          franchisee_name: 'Usuario',
+          company_name: 'Mi Empresa',
+          total_restaurants: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        setUser(fallbackUser);
+        setFranchisee(fallbackFranchisee);
+        setRestaurants([]);
+        
+        toast.success('Sesión iniciada correctamente');
+      }
     }
   }, [fetchUserData]);
+
+  const createRealFranchisee = async (userId: string) => {
+    try {
+      const { data: existingFranchisee } = await supabase
+        .from('franchisees')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (existingFranchisee) {
+        return {
+          id: existingFranchisee.id,
+          user_id: existingFranchisee.user_id,
+          franchisee_name: existingFranchisee.franchisee_name,
+          company_name: existingFranchisee.company_name,
+          total_restaurants: existingFranchisee.total_restaurants,
+          created_at: existingFranchisee.created_at,
+          updated_at: existingFranchisee.updated_at
+        };
+      }
+
+      const { data: newFranchisee, error } = await supabase
+        .from('franchisees')
+        .insert({
+          user_id: userId,
+          franchisee_name: session?.user?.user_metadata?.full_name || 'Usuario',
+          company_name: session?.user?.user_metadata?.full_name || 'Mi Empresa',
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creando franquiciado real:', error);
+        return null;
+      }
+
+      return {
+        id: newFranchisee.id,
+        user_id: newFranchisee.user_id,
+        franchisee_name: newFranchisee.franchisee_name,
+        company_name: newFranchisee.company_name,
+        total_restaurants: newFranchisee.total_restaurants,
+        created_at: newFranchisee.created_at,
+        updated_at: newFranchisee.updated_at
+      };
+    } catch (error) {
+      console.error('Error creando franquiciado real:', error);
+      return null;
+    }
+  };
 
   // Inicialización de autenticación
   useEffect(() => {
