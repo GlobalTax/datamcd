@@ -7,11 +7,11 @@ import { OrquestEmployeesTable } from './OrquestEmployeesTable';
 import { OrquestConfigDialog } from './OrquestConfigDialog';
 import { useOrquest } from '@/hooks/useOrquest';
 import { useOrquestConfig } from '@/hooks/useOrquestConfig';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { RefreshCw, Settings, MapPin, Users, AlertCircle } from 'lucide-react';
 
 export const OrquestDashboard: React.FC = () => {
-  const { franchisee } = useAuth();
+  const { franchisee } = useUnifiedAuth();
   const franchiseeId = franchisee?.id;
   
   const { services, employees, loading, syncWithOrquest, syncEmployeesOnly } = useOrquest(franchiseeId);
