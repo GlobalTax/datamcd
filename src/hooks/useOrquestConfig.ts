@@ -29,6 +29,18 @@ export const useOrquestConfig = (franchiseeId?: string) => {
         return;
       }
 
+      // No intentar hacer query si es un ID de fallback
+      if (isFallbackId(targetFranchiseeId)) {
+        setConfig(null);
+        return;
+      }
+
+      // Validar si es un UUID válido antes de hacer la query
+      if (!isValidUUID(targetFranchiseeId)) {
+        setConfig(null);
+        return;
+      }
+
       const { data, error: fetchError } = await supabase
         .from('integration_configs')
         .select('*')

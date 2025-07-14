@@ -91,7 +91,7 @@ export const OrquestMeasuresTable: React.FC<OrquestMeasuresTableProps> = ({
   }
 
   const filteredMeasures = measures.filter(measure => {
-    if (selectedServiceId && measure.service_id !== selectedServiceId) return false;
+    if (selectedServiceId && selectedServiceId !== "all" && measure.service_id !== selectedServiceId) return false;
     if (selectedDate) {
       const measureDate = new Date(measure.from_time).toISOString().split('T')[0];
       if (measureDate !== selectedDate) return false;
@@ -110,7 +110,7 @@ export const OrquestMeasuresTable: React.FC<OrquestMeasuresTableProps> = ({
               <SelectValue placeholder="Seleccionar servicio" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los servicios</SelectItem>
+              <SelectItem value="all">Todos los servicios</SelectItem>
               {services.map((service) => (
                 <SelectItem key={service.id} value={service.id}>
                   {service.nombre || service.id}
