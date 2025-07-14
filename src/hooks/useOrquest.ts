@@ -31,10 +31,16 @@ export const useOrquest = (franchiseeId?: string) => {
       setLoading(true);
       setError(null);
       
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('servicios_orquest')
-        .select('*')
-        .order('updated_at', { ascending: false });
+        .select('*');
+      
+      // Filtrar por franchisee_id si se proporciona
+      if (franchiseeId) {
+        query = query.eq('franchisee_id', franchiseeId);
+      }
+      
+      const { data, error: fetchError } = await query.order('updated_at', { ascending: false });
 
       if (fetchError) throw fetchError;
 
@@ -57,10 +63,16 @@ export const useOrquest = (franchiseeId?: string) => {
       setLoading(true);
       setError(null);
       
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('orquest_employees')
-        .select('*')
-        .order('updated_at', { ascending: false });
+        .select('*');
+      
+      // Filtrar por franchisee_id si se proporciona
+      if (franchiseeId) {
+        query = query.eq('franchisee_id', franchiseeId);
+      }
+      
+      const { data, error: fetchError } = await query.order('updated_at', { ascending: false });
 
       if (fetchError) throw fetchError;
 

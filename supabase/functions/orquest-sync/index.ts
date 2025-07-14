@@ -218,6 +218,7 @@ serve(async (req) => {
                   longitud: service.lon || null,
                   zona_horaria: service.timeZone || null,
                   datos_completos: service,
+                  franchisee_id: franchiseeId,
                   updated_at: new Date().toISOString(),
                 });
 
@@ -291,6 +292,7 @@ serve(async (req) => {
                       fecha_baja: employee.endDate ? new Date(employee.endDate).toISOString().split('T')[0] : null,
                       estado: employee.status || 'active',
                       datos_completos: employee,
+                      franchisee_id: franchiseeId,
                       updated_at: new Date().toISOString(),
                     });
 

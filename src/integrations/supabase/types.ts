@@ -1290,6 +1290,7 @@ export type Database = {
           estado: string | null
           fecha_alta: string | null
           fecha_baja: string | null
+          franchisee_id: string | null
           id: string
           nombre: string | null
           puesto: string | null
@@ -1305,6 +1306,7 @@ export type Database = {
           estado?: string | null
           fecha_alta?: string | null
           fecha_baja?: string | null
+          franchisee_id?: string | null
           id: string
           nombre?: string | null
           puesto?: string | null
@@ -1320,6 +1322,7 @@ export type Database = {
           estado?: string | null
           fecha_alta?: string | null
           fecha_baja?: string | null
+          franchisee_id?: string | null
           id?: string
           nombre?: string | null
           puesto?: string | null
@@ -1327,7 +1330,15 @@ export type Database = {
           telefono?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orquest_employees_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       orquest_forecasts_sent: {
         Row: {
@@ -1932,6 +1943,7 @@ export type Database = {
       servicios_orquest: {
         Row: {
           datos_completos: Json | null
+          franchisee_id: string | null
           id: string
           latitud: number | null
           longitud: number | null
@@ -1941,6 +1953,7 @@ export type Database = {
         }
         Insert: {
           datos_completos?: Json | null
+          franchisee_id?: string | null
           id: string
           latitud?: number | null
           longitud?: number | null
@@ -1950,6 +1963,7 @@ export type Database = {
         }
         Update: {
           datos_completos?: Json | null
+          franchisee_id?: string | null
           id?: string
           latitud?: number | null
           longitud?: number | null
@@ -1957,7 +1971,44 @@ export type Database = {
           updated_at?: string | null
           zona_horaria?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "servicios_orquest_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      temp_orquest_service_mapping: {
+        Row: {
+          created_at: string | null
+          franchisee_id: string | null
+          id: string
+          service_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          franchisee_id?: string | null
+          id?: string
+          service_id: string
+        }
+        Update: {
+          created_at?: string | null
+          franchisee_id?: string | null
+          id?: string
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temp_orquest_service_mapping_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       valuation_budgets: {
         Row: {
