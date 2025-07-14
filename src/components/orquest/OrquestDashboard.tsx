@@ -7,13 +7,16 @@ import { OrquestEmployeesTable } from './OrquestEmployeesTable';
 import { OrquestConfigDialog } from './OrquestConfigDialog';
 import { OrquestSendMeasuresDialog } from './OrquestSendMeasuresDialog';
 import { OrquestMeasuresTable } from './OrquestMeasuresTable';
+import { OrquestMeasuresReceivedTable } from './OrquestMeasuresReceivedTable';
 import { OrquestForecastsTable } from './OrquestForecastsTable';
 import { OrquestSendForecastDialog } from './OrquestSendForecastDialog';
+import { OrquestFetchMeasuresDialog } from './OrquestFetchMeasuresDialog';
 import { useOrquest } from '@/hooks/useOrquest';
 import { useOrquestConfig } from '@/hooks/useOrquestConfig';
 import { useOrquestMeasures } from '@/hooks/useOrquestMeasures';
+import { useOrquestMeasuresReceived } from '@/hooks/useOrquestMeasuresReceived';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
-import { RefreshCw, Settings, MapPin, Users, AlertCircle, Send, TrendingUp } from 'lucide-react';
+import { RefreshCw, Settings, MapPin, Users, AlertCircle, Send, TrendingUp, Download } from 'lucide-react';
 
 export const OrquestDashboard: React.FC = () => {
   const { franchisee } = useUnifiedAuth();
@@ -27,9 +30,11 @@ export const OrquestDashboard: React.FC = () => {
   const { services, employees, loading, syncWithOrquest, syncEmployeesOnly } = useOrquest(franchiseeId);
   const { isConfigured } = useOrquestConfig(franchiseeId);
   const { measures, loading: measuresLoading } = useOrquestMeasures(franchiseeId);
+  const { measures: receivedMeasures, loading: receivedMeasuresLoading } = useOrquestMeasuresReceived(franchiseeId);
   const [configOpen, setConfigOpen] = React.useState(false);
   const [sendMeasuresOpen, setSendMeasuresOpen] = React.useState(false);
   const [sendForecastOpen, setSendForecastOpen] = React.useState(false);
+  const [fetchMeasuresOpen, setFetchMeasuresOpen] = React.useState(false);
 
   const handleSync = async () => {
     await syncWithOrquest();
@@ -83,6 +88,14 @@ export const OrquestDashboard: React.FC = () => {
           >
             <TrendingUp className="w-4 h-4 mr-2" />
             Enviar Forecasts
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setFetchMeasuresOpen(true)}
+            disabled={loading || !isConfigured() || !canSaveConfig}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Obtener Medidas
           </Button>
           <Button
             variant="outline"
@@ -287,9 +300,14 @@ export const OrquestDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
+      <OrquestMeasuresReceivedTable
+        measures={receivedMeasures}
+        loading={receivedMeasuresLoading}
+      />
+
       <OrquestForecastsTable />
 
-      <OrquestConfigDialog 
+      <OrquestConfigDialog
         open={configOpen} 
         onOpenChange={setConfigOpen}
         franchiseeId={franchiseeId}
@@ -305,6 +323,13 @@ export const OrquestDashboard: React.FC = () => {
       <OrquestSendForecastDialog>
         <div />
       </OrquestSendForecastDialog>
+
+      <OrquestFetchMeasuresDialog
+        open={fetchMeasuresOpen}
+        onOpenChange={setFetchMeasuresOpen}
+        services={services}
+        franchiseeId={franchiseeId}
+      />
     </div>
   );
 };

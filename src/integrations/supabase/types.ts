@@ -1380,6 +1380,63 @@ export type Database = {
         }
         Relationships: []
       }
+      orquest_measures: {
+        Row: {
+          created_at: string | null
+          franchisee_id: string | null
+          from_time: string
+          id: string
+          measure_category: string | null
+          measure_type: string
+          raw_data: Json | null
+          service_id: string | null
+          to_time: string
+          updated_at: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          franchisee_id?: string | null
+          from_time: string
+          id?: string
+          measure_category?: string | null
+          measure_type: string
+          raw_data?: Json | null
+          service_id?: string | null
+          to_time: string
+          updated_at?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          franchisee_id?: string | null
+          from_time?: string
+          id?: string
+          measure_category?: string | null
+          measure_type?: string
+          raw_data?: Json | null
+          service_id?: string | null
+          to_time?: string
+          updated_at?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orquest_measures_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orquest_measures_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "servicios_orquest"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orquest_measures_sent: {
         Row: {
           created_at: string

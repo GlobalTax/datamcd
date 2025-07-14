@@ -47,6 +47,15 @@ interface SendMeasuresRequest {
   periodTo?: string;
 }
 
+interface FetchMeasuresRequest {
+  action: string;
+  franchiseeId: string;
+  serviceId: string;
+  startDate: string;
+  endDate: string;
+  demandTypes?: string[];
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -642,6 +651,101 @@ serve(async (req) => {
             success: false,
             error: `Failed to send forecasts to Orquest: ${error.message}`,
             forecasts_sent: 0,
+          }), 
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    } else if (action === 'fetch_measures') {
+      console.log('Starting measures fetch from Orquest');
+      const { serviceId, startDate, endDate, demandTypes } = requestBody as FetchMeasuresRequest;
+      
+      if (!serviceId || !startDate || !endDate) {
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: 'serviceId, startDate, and endDate are required for fetch_measures action',
+            measures_fetched: 0,
+          }), 
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      try {
+        const demandTypeParams = (demandTypes || ['SALES', 'TICKETS']).join(',');
+        const measuresEndpoint = `${orquestBaseUrl}/api/v1/business/${businessId}/product/${serviceId}/demand/from/${startDate}/to/${endDate}?demandTypeNames=${demandTypeParams}`;
+        
+        console.log('Fetching measures from Orquest:', measuresEndpoint);
+
+        const orquestResponse = await fetch(measuresEndpoint, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${orquestApiKey}`,
+          },
+          signal: AbortSignal.timeout(30000),
+        });
+
+        if (!orquestResponse.ok) {
+          const errorText = await orquestResponse.text();
+          throw new Error(`Orquest API error: ${orquestResponse.status} - ${errorText}`);
+        }
+
+        const responseData = await orquestResponse.json();
+        console.log('Orquest measures response:', responseData);
+
+        let measuresInserted = 0;
+
+        if (Array.isArray(responseData)) {
+          for (const measure of responseData) {
+            try {
+              const { error: insertError } = await supabase
+                .from('orquest_measures')
+                .upsert({
+                  service_id: serviceId,
+                  measure_type: measure.demandTypeName || measure.type,
+                  value: measure.value || measure.demand || 0,
+                  from_time: measure.fromTime || measure.from || startDate,
+                  to_time: measure.toTime || measure.to || endDate,
+                  measure_category: 'real',
+                  franchisee_id: franchiseeId,
+                  raw_data: measure,
+                });
+
+              if (insertError) {
+                console.error('Error inserting measure:', insertError);
+              } else {
+                measuresInserted++;
+              }
+            } catch (error) {
+              console.error('Error processing measure:', measure, error);
+            }
+          }
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            measures_fetched: measuresInserted,
+            service_id: serviceId,
+            period: { from: startDate, to: endDate },
+          }), 
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+
+      } catch (error) {
+        console.error('Error fetching measures from Orquest:', error);
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: `Failed to fetch measures from Orquest: ${error.message}`,
+            measures_fetched: 0,
           }), 
           {
             status: 500,
