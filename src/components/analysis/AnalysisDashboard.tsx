@@ -6,6 +6,9 @@ import { toast } from 'sonner';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardKPIs } from './DashboardKPIs';
 import { DashboardTabs } from './DashboardTabs';
+import { QuantumSyncStatus } from '@/components/quantum/QuantumSyncStatus';
+import { QuantumDataDialog } from '@/components/quantum/QuantumDataDialog';
+import { Button } from '@/components/ui/button';
 
 export const AnalysisDashboard = () => {
   const { effectiveFranchisee, restaurants } = useUnifiedAuth();
@@ -48,6 +51,20 @@ export const AnalysisDashboard = () => {
       />
 
       <DashboardKPIs restaurants={restaurants} />
+
+      {/* Integración con Quantum Economics */}
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="md:col-span-2">
+          <QuantumSyncStatus />
+        </div>
+        <div className="flex flex-col justify-center">
+          <QuantumDataDialog>
+            <Button variant="outline" size="lg" className="w-full">
+              Ver Datos Quantum
+            </Button>
+          </QuantumDataDialog>
+        </div>
+      </div>
 
       <DashboardTabs
         selectedYear={selectedYear}

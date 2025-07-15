@@ -1575,6 +1575,7 @@ export type Database = {
           gross_profit: number | null
           id: string
           insurance: number | null
+          last_quantum_sync: string | null
           maintenance: number | null
           management_labor: number | null
           month: number
@@ -1584,9 +1585,11 @@ export type Database = {
           other_expenses: number | null
           other_revenue: number | null
           paper_cost: number | null
+          quantum_sync_id: string | null
           rent: number | null
           rent_percentage: number | null
           restaurant_id: string
+          source: string | null
           supplies: number | null
           total_cost_of_sales: number | null
           total_labor: number | null
@@ -1609,6 +1612,7 @@ export type Database = {
           gross_profit?: number | null
           id?: string
           insurance?: number | null
+          last_quantum_sync?: string | null
           maintenance?: number | null
           management_labor?: number | null
           month: number
@@ -1618,9 +1622,11 @@ export type Database = {
           other_expenses?: number | null
           other_revenue?: number | null
           paper_cost?: number | null
+          quantum_sync_id?: string | null
           rent?: number | null
           rent_percentage?: number | null
           restaurant_id: string
+          source?: string | null
           supplies?: number | null
           total_cost_of_sales?: number | null
           total_labor?: number | null
@@ -1643,6 +1649,7 @@ export type Database = {
           gross_profit?: number | null
           id?: string
           insurance?: number | null
+          last_quantum_sync?: string | null
           maintenance?: number | null
           management_labor?: number | null
           month?: number
@@ -1652,9 +1659,11 @@ export type Database = {
           other_expenses?: number | null
           other_revenue?: number | null
           paper_cost?: number | null
+          quantum_sync_id?: string | null
           rent?: number | null
           rent_percentage?: number | null
           restaurant_id?: string
+          source?: string | null
           supplies?: number | null
           total_cost_of_sales?: number | null
           total_labor?: number | null
@@ -1672,6 +1681,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["site_number"]
+          },
+          {
+            foreignKeyName: "profit_loss_data_quantum_sync_id_fkey"
+            columns: ["quantum_sync_id"]
+            isOneToOne: false
+            referencedRelation: "quantum_sync_logs"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1699,6 +1715,138 @@ export type Database = {
           is_default?: boolean | null
           name?: string
           template_data?: Json
+        }
+        Relationships: []
+      }
+      quantum_account_mapping: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          mapping_type: string
+          profit_loss_category: string
+          profit_loss_field: string
+          quantum_account_code: string
+          quantum_account_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          mapping_type?: string
+          profit_loss_category: string
+          profit_loss_field: string
+          quantum_account_code: string
+          quantum_account_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          mapping_type?: string
+          profit_loss_category?: string
+          profit_loss_field?: string
+          quantum_account_code?: string
+          quantum_account_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      quantum_accounting_data: {
+        Row: {
+          account_name: string
+          account_type: string
+          balance: number
+          created_at: string
+          franchisee_id: string
+          id: string
+          last_sync: string
+          period_end: string
+          period_start: string
+          quantum_account_code: string
+          raw_data: Json | null
+          restaurant_id: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          account_type: string
+          balance?: number
+          created_at?: string
+          franchisee_id: string
+          id?: string
+          last_sync?: string
+          period_end: string
+          period_start: string
+          quantum_account_code: string
+          raw_data?: Json | null
+          restaurant_id: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_type?: string
+          balance?: number
+          created_at?: string
+          franchisee_id?: string
+          id?: string
+          last_sync?: string
+          period_end?: string
+          period_start?: string
+          quantum_account_code?: string
+          raw_data?: Json | null
+          restaurant_id?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      quantum_sync_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          franchisee_id: string
+          id: string
+          records_imported: number
+          records_processed: number
+          records_skipped: number
+          restaurant_id: string | null
+          status: string
+          sync_completed_at: string | null
+          sync_started_at: string
+          sync_type: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          franchisee_id: string
+          id?: string
+          records_imported?: number
+          records_processed?: number
+          records_skipped?: number
+          restaurant_id?: string | null
+          status?: string
+          sync_completed_at?: string | null
+          sync_started_at?: string
+          sync_type: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          franchisee_id?: string
+          id?: string
+          records_imported?: number
+          records_processed?: number
+          records_skipped?: number
+          restaurant_id?: string | null
+          status?: string
+          sync_completed_at?: string | null
+          sync_started_at?: string
+          sync_type?: string
         }
         Relationships: []
       }
