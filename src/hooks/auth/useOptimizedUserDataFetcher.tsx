@@ -13,10 +13,10 @@ export const useOptimizedUserDataFetcher = () => {
     console.log('useOptimizedUserDataFetcher - Starting optimized fetch for user:', userId);
     
     try {
-      // Fetch con timeout más corto y fallback inmediato
+      // Fetch con timeout más generoso
       const profilePromise = fetchUserProfile(userId);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('User data fetch timeout')), 4000)
+        setTimeout(() => reject(new Error('User data fetch timeout')), 10000)
       );
 
       const profile = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -31,7 +31,7 @@ export const useOptimizedUserDataFetcher = () => {
         try {
           const franchiseePromise = fetchFranchiseeData(userId);
           const franchiseeTimeout = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Franchisee fetch timeout')), 3000)
+            setTimeout(() => reject(new Error('Franchisee fetch timeout')), 8000)
           );
           
           franchisee = await Promise.race([franchiseePromise, franchiseeTimeout]) as any;
@@ -42,7 +42,7 @@ export const useOptimizedUserDataFetcher = () => {
             try {
               const restaurantsPromise = fetchRestaurantsData(franchisee.id);
               const restaurantsTimeout = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Restaurants fetch timeout')), 2000)
+                setTimeout(() => reject(new Error('Restaurants fetch timeout')), 6000)
               );
               
               restaurants = await Promise.race([restaurantsPromise, restaurantsTimeout]) as any;

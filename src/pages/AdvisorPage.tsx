@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useSimpleAuth } from '@/hooks/auth/useSimpleAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ import { UnifiedRestaurantsTable } from '@/components/UnifiedRestaurantsTable';
 import { useUnifiedRestaurants } from '@/hooks/useUnifiedRestaurants';
 import { AdvancedDashboard } from '@/components/advisor/AdvancedDashboard';
 import { NotificationCenter } from '@/components/advisor/NotificationCenter';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { AdvancedReports } from '@/components/advisor/AdvancedReports';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { ConnectionStatus } from '@/components/common/ConnectionStatus';
@@ -36,7 +37,7 @@ import { OrquestDashboard } from '@/components/orquest/OrquestDashboard';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const AdvisorPage = () => {
-  const { user, signOut, loading } = useUnifiedAuth();
+  const { user, signOut, loading } = useSimpleAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -47,7 +48,7 @@ const AdvisorPage = () => {
     return <LoadingFallback message="Cargando panel de asesor..." />;
   }
 
-  if (!user || !['asesor', 'admin', 'superadmin'].includes(user.role)) {
+  if (!user || !['asesor', 'admin', 'superadmin', 'advisor'].includes(user.role)) {
     return <Navigate to="/auth" replace />;
   }
 
@@ -105,7 +106,8 @@ const AdvisorPage = () => {
   };
 
   return (
-    <ErrorBoundary>
+    <ProtectedRoute allowedRoles={['admin', 'asesor', 'advisor', 'superadmin']}>
+      <ErrorBoundary>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         <ConnectionStatus />
         
@@ -361,6 +363,7 @@ const AdvisorPage = () => {
         </div>
       </div>
     </ErrorBoundary>
+    </ProtectedRoute>
   );
 };
 
