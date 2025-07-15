@@ -3,8 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { UnifiedAuthProvider } from "@/hooks/auth/useUnifiedAuth";
-import { ImpersonationProvider } from "@/hooks/useImpersonation";
+import { SimpleAuthProvider } from "@/hooks/auth/useSimpleAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
@@ -31,9 +30,8 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <UnifiedAuthProvider>
-        <ImpersonationProvider>
-          <TooltipProvider>
+      <SimpleAuthProvider>
+        <TooltipProvider>
           <BrowserRouter>
             <Toaster />
             <Routes>
@@ -112,7 +110,7 @@ function App() {
               <Route
                 path="/advisor"
                 element={
-                  <ProtectedRoute allowedRoles={['asesor', 'admin', 'superadmin']}>
+                  <ProtectedRoute allowedRoles={['asesor', 'admin', 'superadmin', 'advisor']}>
                     <AdvisorPage />
                   </ProtectedRoute>
                 }
@@ -120,7 +118,7 @@ function App() {
               <Route
                 path="/advisor/franchisee/:franchiseeId"
                 element={
-                  <ProtectedRoute allowedRoles={['asesor', 'admin', 'superadmin']}>
+                  <ProtectedRoute allowedRoles={['asesor', 'admin', 'superadmin', 'advisor']}>
                     <FranchiseeDetailPage />
                   </ProtectedRoute>
                 }
@@ -168,9 +166,8 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-          </TooltipProvider>
-        </ImpersonationProvider>
-      </UnifiedAuthProvider>
+        </TooltipProvider>
+      </SimpleAuthProvider>
     </QueryClientProvider>
   );
 }
