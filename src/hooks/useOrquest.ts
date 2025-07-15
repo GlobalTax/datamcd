@@ -193,8 +193,11 @@ export const useOrquest = (franchiseeId?: string) => {
   };
 
   useEffect(() => {
-    Promise.all([fetchServices(), fetchEmployees()]);
-  }, []);
+    if (franchiseeId) {
+      fetchServices();
+      fetchEmployees();
+    }
+  }, [franchiseeId]);
 
   return {
     services,

@@ -18,7 +18,7 @@ interface OrquestService {
 
 interface OrquestEmployee {
   id: string;
-  serviceId: string;
+  serviceId?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -28,6 +28,10 @@ interface OrquestEmployee {
   startDate?: string;
   endDate?: string;
   status?: string;
+  // Posibles campos adicionales que puede devolver la API
+  name?: string;
+  fullName?: string;
+  role?: string;
   [key: string]: any;
 }
 
@@ -277,30 +281,37 @@ serve(async (req) => {
               // Actualizar empleados en Supabase
               for (const employee of orquestEmployees) {
                 try {
+                  console.log(`Processing employee ${employee.id} with data:`, employee);
+                  
+                  // Mapear datos con diferentes posibles estructuras
+                  const employeeData = {
+                    id: employee.id,
+                    service_id: service.id,
+                    nombre: employee.firstName || employee.name || employee.fullName?.split(' ')[0] || null,
+                    apellidos: employee.lastName || employee.fullName?.split(' ').slice(1).join(' ') || null,
+                    email: employee.email || null,
+                    telefono: employee.phone || null,
+                    puesto: employee.position || employee.role || null,
+                    departamento: employee.department || null,
+                    fecha_alta: employee.startDate ? new Date(employee.startDate).toISOString().split('T')[0] : null,
+                    fecha_baja: employee.endDate ? new Date(employee.endDate).toISOString().split('T')[0] : null,
+                    estado: employee.status || (employee.endDate ? 'inactive' : 'active'),
+                    datos_completos: employee,
+                    franchisee_id: franchiseeId,
+                    updated_at: new Date().toISOString(),
+                  };
+
+                  console.log(`Mapped employee data:`, employeeData);
+
                   const { error } = await supabase
                     .from('orquest_employees')
-                    .upsert({
-                      id: employee.id,
-                      service_id: service.id,
-                      nombre: employee.firstName || null,
-                      apellidos: employee.lastName || null,
-                      email: employee.email || null,
-                      telefono: employee.phone || null,
-                      puesto: employee.position || null,
-                      departamento: employee.department || null,
-                      fecha_alta: employee.startDate ? new Date(employee.startDate).toISOString().split('T')[0] : null,
-                      fecha_baja: employee.endDate ? new Date(employee.endDate).toISOString().split('T')[0] : null,
-                      estado: employee.status || 'active',
-                      datos_completos: employee,
-                      franchisee_id: franchiseeId,
-                      updated_at: new Date().toISOString(),
-                    });
+                    .upsert(employeeData);
 
                   if (error) {
                     console.error('Error upserting employee:', employee.id, error);
                   } else {
                     employeesUpdated++;
-                    console.log('Employee updated:', employee.id);
+                    console.log('Employee updated successfully:', employee.id);
                   }
                 } catch (error) {
                   console.error('Error processing employee:', employee.id, error);
