@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSimpleAuth } from '@/hooks/auth/useSimpleAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ import { OrquestDashboard } from '@/components/orquest/OrquestDashboard';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const AdvisorPage = () => {
-  const { user, signOut, loading } = useSimpleAuth();
+  const { user, signOut, loading } = useUnifiedAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
