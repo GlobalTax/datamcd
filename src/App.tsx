@@ -26,6 +26,7 @@ import OrquestPage from "./pages/OrquestPage";
 import IncidentManagementPage from "./pages/IncidentManagementPage";
 import BiloopPage from "./pages/BiloopPage";
 import WorkersPage from "./pages/WorkersPage";
+import LaborDashboardPage from "./pages/LaborDashboardPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -180,6 +181,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin']}>
                     <WorkersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/labor-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin']}>
+                    <LaborDashboardPage />
                   </ProtectedRoute>
                 }
               />
