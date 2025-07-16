@@ -46,7 +46,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
-              <Route path="/advisor-auth" element={<AdvisorAuthPage />} />
+              {/* Ruta de autenticación unificada - todos los usuarios usan /auth */}
               {/* Nueva estructura unificada */}
               <Route
                 path="/dashboard"

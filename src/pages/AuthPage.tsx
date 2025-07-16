@@ -32,14 +32,9 @@ const AuthPage = () => {
       console.log('AuthPage - User role:', user.role);
       console.log('AuthPage - Determining redirect...');
       
-      // Redirigir usuarios con roles de asesor, admin o superadmin al panel de asesor
-      if (['asesor', 'admin', 'superadmin'].includes(user.role)) {
-        console.log('AuthPage - Redirecting asesor/admin/superadmin to /advisor');
-        navigate('/advisor', { replace: true });
-      } else {
-        console.log('AuthPage - Redirecting franchisee to /dashboard');
-        navigate('/dashboard', { replace: true });
-      }
+      // Redirigir todos los usuarios autenticados al dashboard unificado
+      console.log('AuthPage - Redirecting to unified dashboard');
+      navigate('/dashboard', { replace: true });
     }
   }, [user, loading, navigate]);
 
@@ -103,13 +98,13 @@ const AuthPage = () => {
           <div className="w-16 h-16 bg-red-600 rounded-lg flex items-center justify-center mx-auto mb-4">
             <Store className="text-white w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Portal de Franquiciados</h1>
-          <p className="text-gray-600 mt-2">Gestiona tu restaurante McDonald's</p>
+          <h1 className="text-3xl font-bold text-gray-900">Portal McDonald's</h1>
+          <p className="text-gray-600 mt-2">Acceso para franquiciados y asesores</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-center">Acceso para Franquiciados</CardTitle>
+            <CardTitle className="text-center">Acceso al Portal</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -270,17 +265,6 @@ const AuthPage = () => {
               </TabsContent>
             </Tabs>
 
-            <div className="mt-6 pt-4 border-t text-center">
-              <p className="text-sm text-gray-600">
-                ¿Eres asesor de McDonald's?{' '}
-                <button
-                  onClick={() => navigate('/advisor-auth')}
-                  className="text-blue-600 hover:text-blue-700 underline font-medium"
-                >
-                  Accede aquí
-                </button>
-              </p>
-            </div>
 
           </CardContent>
         </Card>

@@ -9,15 +9,10 @@ export const IndexHeader = () => {
   const { user } = useUnifiedAuth();
 
   const handleUserRedirect = () => {
-    console.log('IndexHeader - Manual navigation button clicked for user role:', user?.role);
+    console.log('IndexHeader - Manual navigation button clicked');
     try {
-      if (user && ['asesor', 'admin', 'superadmin'].includes(user.role)) {
-        console.log('IndexHeader - Manual redirect to /advisor');
-        navigate('/advisor');
-      } else {
-        console.log('IndexHeader - Manual redirect to /dashboard');
-        navigate('/dashboard');
-      }
+      console.log('IndexHeader - Manual redirect to /dashboard');
+      navigate('/dashboard');
     } catch (error) {
       console.error('IndexHeader - Error in manual navigation:', error);
     }
@@ -49,23 +44,13 @@ export const IndexHeader = () => {
                 </Button>
               </div>
             ) : (
-              <>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/auth')}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  <Store className="w-4 h-4 mr-2" />
-                  Franquiciados
-                </Button>
-                <Button 
-                  onClick={() => navigate('/advisor-auth')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Asesores
-                </Button>
-              </>
+              <Button 
+                onClick={() => navigate('/auth')}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                <Store className="w-4 h-4 mr-2" />
+                Iniciar Sesión
+              </Button>
             )}
           </div>
         </div>
