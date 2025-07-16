@@ -24,6 +24,7 @@ import AnnualBudgetPage from "./pages/AnnualBudgetPage";
 import EmployeePage from "./pages/EmployeePage";
 import OrquestPage from "./pages/OrquestPage";
 import IncidentManagementPage from "./pages/IncidentManagementPage";
+import BiloopPage from "./pages/BiloopPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -162,6 +163,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['franchisee']}>
                     <SettingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/biloop"
+                element={
+                  <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin']}>
+                    <BiloopPage />
                   </ProtectedRoute>
                 }
               />
