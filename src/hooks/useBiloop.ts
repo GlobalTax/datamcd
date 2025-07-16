@@ -32,6 +32,39 @@ export interface BiloopCustomer {
   address?: string;
 }
 
+export interface BiloopEmployee {
+  id: string;
+  name: string;
+  surname: string;
+  email?: string;
+  phone?: string;
+  dni?: string;
+  position?: string;
+  department?: string;
+  salary?: number;
+  startDate?: string;
+  endDate?: string;
+  status: 'active' | 'inactive';
+  contractType?: string;
+  socialSecurityNumber?: string;
+}
+
+export interface BiloopEmployeeTransform {
+  employees: BiloopEmployee[];
+  companyId: string;
+  format: 'a3nom' | 'a3eco' | 'a3';
+}
+
+export interface BiloopProfessionalPayment {
+  id: string;
+  professionalId: string;
+  amount: number;
+  date: string;
+  description?: string;
+  status: 'pending' | 'paid' | 'overdue';
+  dueDate?: string;
+}
+
 export const useBiloop = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -102,6 +135,85 @@ export const useBiloop = () => {
     return data.items || data || [];
   };
 
+  // Métodos específicos para empleados
+  const getEmployees = async (companyId?: string): Promise<BiloopEmployee[]> => {
+    const params: Record<string, string> = {};
+    if (companyId) params.companyId = companyId;
+
+    const data = await callBiloopAPI('/api-global/v1/employees', 'GET', undefined, params);
+    return data.employees || data || [];
+  };
+
+  const createEmployee = async (employee: Omit<BiloopEmployee, 'id'>): Promise<BiloopEmployee> => {
+    const data = await callBiloopAPI('/api-global/v1/employees', 'POST', employee);
+    return data;
+  };
+
+  const transformEmployeesToA3 = async (transformData: BiloopEmployeeTransform): Promise<string> => {
+    const endpoint = `/api-global/v1/a3/transform/employees/json-to-${transformData.format}`;
+    const data = await callBiloopAPI(endpoint, 'POST', {
+      employees: transformData.employees,
+      companyId: transformData.companyId
+    });
+    
+    toast({
+      title: 'Transformación exitosa',
+      description: `Empleados transformados a formato ${transformData.format.toUpperCase()}`,
+    });
+    
+    return data.txtContent || data.file || data;
+  };
+
+  const getProfessionalPayments = async (
+    from: string, 
+    to: string, 
+    companyId?: string
+  ): Promise<BiloopProfessionalPayment[]> => {
+    const params: Record<string, string> = { from, to };
+    if (companyId) params.companyId = companyId;
+
+    const data = await callBiloopAPI('/api-global/v1/professional_payments', 'GET', undefined, params);
+    return data.payments || data || [];
+  };
+
+  const getOverduePayments = async (
+    from: string, 
+    to: string, 
+    companyId?: string
+  ): Promise<BiloopProfessionalPayment[]> => {
+    const params: Record<string, string> = { from, to };
+    if (companyId) params.companyId = companyId;
+
+    const data = await callBiloopAPI('/api-global/v1/professional_overdue_payments', 'GET', undefined, params);
+    return data.overduePayments || data || [];
+  };
+
+  const getMovements = async (
+    from: string,
+    to: string,
+    companyId?: string
+  ): Promise<any[]> => {
+    const params: Record<string, string> = { from, to };
+    if (companyId) params.companyId = companyId;
+
+    const data = await callBiloopAPI('/api-global/v1/movements', 'GET', undefined, params);
+    return data.movements || data || [];
+  };
+
+  const transformMovementsToA3ECO = async (movements: any[], companyId: string): Promise<string> => {
+    const data = await callBiloopAPI('/api-global/v1/a3/transform/movements/json-to-a3eco', 'POST', {
+      movements,
+      companyId
+    });
+    
+    toast({
+      title: 'Transformación exitosa',
+      description: 'Movimientos transformados a formato A3ECO',
+    });
+    
+    return data.txtContent || data.file || data;
+  };
+
   const testConnection = async (): Promise<boolean> => {
     try {
       await getCompanies();
@@ -122,6 +234,7 @@ export const useBiloop = () => {
 
   return {
     loading,
+    // Métodos generales
     getCompanies,
     getInvoices,
     getCustomers,
@@ -130,5 +243,14 @@ export const useBiloop = () => {
     getInventory,
     testConnection,
     callBiloopAPI,
+    
+    // Métodos específicos para empleados
+    getEmployees,
+    createEmployee,
+    transformEmployeesToA3,
+    getProfessionalPayments,
+    getOverduePayments,
+    getMovements,
+    transformMovementsToA3ECO,
   };
 };
