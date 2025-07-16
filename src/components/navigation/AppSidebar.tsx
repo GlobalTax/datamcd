@@ -43,19 +43,6 @@ export function AppSidebar() {
     getDebugInfo
   } = useUnifiedAuth();
 
-  // Determinar si el usuario es asesor
-  const isAdvisor = user?.role && ['asesor', 'admin', 'superadmin', 'advisor'].includes(user.role);
-
-  // Items del menú dinámicos según el rol
-  const dynamicMenuItems = isAdvisor ? [
-    ...menuItems,
-    {
-      title: "Panel Asesor",
-      url: "/advisor",
-      icon: Users,
-    },
-  ] : menuItems;
-
   // Log de debugging detallado
   const debugInfo = getDebugInfo();
   console.log('SIDEBAR DEBUG:', debugInfo);
@@ -86,7 +73,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {dynamicMenuItems.map((item) => (
+              {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild

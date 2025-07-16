@@ -25,6 +25,9 @@ const NewDashboardPage = () => {
   const debugInfo = getDebugInfo();
   console.log('NEW DASHBOARD DEBUG:', debugInfo);
 
+  // Determinar si es asesor
+  const isAdvisor = user?.role && ['asesor', 'admin', 'superadmin', 'advisor'].includes(user.role);
+
   // Calcular métricas generales
   const totalRestaurants = restaurants.length;
   const totalRevenue = restaurants.reduce((sum, r) => sum + (r.last_year_revenue || 0), 0);
@@ -68,9 +71,14 @@ const NewDashboardPage = () => {
           <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-white px-6">
             <SidebarTrigger className="-ml-1" />
             <div className="flex-1">
-              <h1 className="text-lg font-semibold text-gray-900">Dashboard Principal</h1>
+              <h1 className="text-lg font-semibold text-gray-900">
+                {isAdvisor ? 'Panel de Asesor' : 'Dashboard Principal'}
+              </h1>
               <p className="text-sm text-gray-500">
-                {effectiveFranchisee?.franchisee_name || 'Panel de Control'}
+                {isAdvisor ? 
+                  `Vista completa de todos los restaurantes (${totalRestaurants} restaurantes)` :
+                  (effectiveFranchisee?.franchisee_name || 'Panel de Control')
+                }
               </p>
             </div>
             <Button 

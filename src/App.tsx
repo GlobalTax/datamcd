@@ -126,22 +126,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/advisor"
-                element={
-                  <ProtectedRoute allowedRoles={['asesor', 'admin', 'superadmin', 'advisor']}>
-                    <AdvisorPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/advisor/franchisee/:franchiseeId"
-                element={
-                  <ProtectedRoute allowedRoles={['asesor', 'admin', 'superadmin', 'advisor']}>
-                    <FranchiseeDetailPage />
-                  </ProtectedRoute>
-                }
-              />
+              {/* Panel de asesor eliminado - ahora todos usan el dashboard unificado */}
               <Route
                 path="/valuation"
                 element={
