@@ -9,6 +9,14 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import AdvisorAuthPage from "./pages/AdvisorAuthPage";
+import NewDashboardPage from "./pages/NewDashboardPage";
+import RestaurantHub from "./pages/RestaurantHub";
+import AdvisorPage from "./pages/AdvisorPage";
+import FranchiseeDetailPage from "./pages/FranchiseeDetailPage";
+import SettingsPage from "./pages/SettingsPage";
+import NotFound from "./pages/NotFound";
+
+// Legacy imports for backward compatibility
 import DashboardPage from "./pages/DashboardPage";
 import OptimizedDashboardPage from "./pages/OptimizedDashboardPage";
 import RestaurantPage from "./pages/RestaurantPage";
@@ -16,10 +24,7 @@ import RestaurantManagementPage from "./pages/RestaurantManagementPage";
 import ProfitLossPage from "./pages/ProfitLossPage";
 import HistoricalDataPage from "./pages/HistoricalDataPage";
 import AnalysisPage from "./pages/AnalysisPage";
-import AdvisorPage from "./pages/AdvisorPage";
-import FranchiseeDetailPage from "./pages/FranchiseeDetailPage";
 import ValuationApp from "./pages/ValuationApp";
-import SettingsPage from "./pages/SettingsPage";
 import AnnualBudgetPage from "./pages/AnnualBudgetPage";
 import EmployeePage from "./pages/EmployeePage";
 import OrquestPage from "./pages/OrquestPage";
@@ -27,7 +32,6 @@ import IncidentManagementPage from "./pages/IncidentManagementPage";
 import BiloopPage from "./pages/BiloopPage";
 import WorkersPage from "./pages/WorkersPage";
 import LaborDashboardPage from "./pages/LaborDashboardPage";
-import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -43,8 +47,35 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/advisor-auth" element={<AdvisorAuthPage />} />
+              {/* Nueva estructura unificada */}
               <Route
                 path="/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin', 'advisor']}>
+                    <NewDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/restaurant/:restaurantId"
+                element={
+                  <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin', 'advisor']}>
+                    <RestaurantHub />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/restaurant/:restaurantId/*"
+                element={
+                  <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin', 'advisor']}>
+                    <RestaurantHub />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Rutas legacy para compatibilidad */}
+              <Route
+                path="/dashboard-legacy"
                 element={
                   <ProtectedRoute allowedRoles={['franchisee']}>
                     <OptimizedDashboardPage />
@@ -52,26 +83,10 @@ function App() {
                 }
               />
               <Route
-                path="/dashboard-legacy"
-                element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
-                    <DashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/restaurant"
+                path="/restaurant-old"
                 element={
                   <ProtectedRoute allowedRoles={['franchisee']}>
                     <RestaurantManagementPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/restaurant-admin"
-                element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
-                    <RestaurantPage />
                   </ProtectedRoute>
                 }
               />
@@ -83,7 +98,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              {/* Redirección de /profit-loss a /profit-loss/001 (primer restaurante) */}
               <Route
                 path="/profit-loss"
                 element={<Navigate to="/profit-loss/001" replace />}

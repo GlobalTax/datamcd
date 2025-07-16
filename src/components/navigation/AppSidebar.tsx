@@ -13,7 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, HardHat, UserCheck } from 'lucide-react';
+import { Home, Settings, LogOut, Cog, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 
@@ -24,59 +24,9 @@ const menuItems = [
     icon: Home,
   },
   {
-    title: "Panel Laboral",
-    url: "/labor-dashboard",
-    icon: HardHat,
-  },
-  {
-    title: "Restaurantes",
-    url: "/restaurant",
-    icon: Building,
-  },
-  {
-    title: "Empleados",
-    url: "/employees",
-    icon: Users,
-  },
-  {
-    title: "Análisis",
-    url: "/analysis",
-    icon: BarChart3,
-  },
-  {
-    title: "Valoración",
-    url: "/valuation",
-    icon: Calculator,
-  },
-  {
-    title: "Presupuestos",
-    url: "/annual-budget",
-    icon: Calendar,
-  },
-  {
-    title: "Datos Históricos",
-    url: "/historical-data",
-    icon: Database,
-  },
-  {
-    title: "Orquest",
-    url: "/orquest",
+    title: "Configuración",
+    url: "/settings",
     icon: Cog,
-  },
-  {
-    title: "Incidencias",
-    url: "/incidents",
-    icon: AlertTriangle,
-  },
-  {
-    title: "Biloop",
-    url: "/biloop",
-    icon: Receipt,
-  },
-  {
-    title: "Panel Trabajadores",
-    url: "/workers",
-    icon: UserCheck,
   },
 ];
 
@@ -92,6 +42,19 @@ export function AppSidebar() {
     effectiveFranchisee,
     getDebugInfo
   } = useUnifiedAuth();
+
+  // Determinar si el usuario es asesor
+  const isAdvisor = user?.role && ['asesor', 'admin', 'superadmin', 'advisor'].includes(user.role);
+
+  // Items del menú dinámicos según el rol
+  const dynamicMenuItems = isAdvisor ? [
+    ...menuItems,
+    {
+      title: "Panel Asesor",
+      url: "/advisor",
+      icon: Users,
+    },
+  ] : menuItems;
 
   // Log de debugging detallado
   const debugInfo = getDebugInfo();
@@ -123,7 +86,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {menuItems.map((item) => (
+              {dynamicMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild
