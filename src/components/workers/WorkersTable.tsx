@@ -2,8 +2,9 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Building2, Database, Phone, Mail, User, Calendar } from 'lucide-react';
+import { Building2, Database, Phone, Mail, User, Calendar, Link } from 'lucide-react';
 import { UnifiedWorker } from '@/hooks/useWorkersPanel';
+import { WorkerDetailDialog } from './WorkerDetailDialog';
 
 interface WorkersTableProps {
   workers: UnifiedWorker[];
@@ -16,7 +17,15 @@ export const WorkersTable: React.FC<WorkersTableProps> = ({
   loading,
   showSource = false
 }) => {
-  const getSourceIcon = (source: 'orquest' | 'biloop') => {
+  const [selectedWorker, setSelectedWorker] = React.useState<UnifiedWorker | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
+
+  const handleWorkerClick = (worker: UnifiedWorker) => {
+    setSelectedWorker(worker);
+    setDetailDialogOpen(true);
+  };
+  const getSourceIcon = (source: 'orquest' | 'biloop' | 'unified') => {
+    if (source === 'unified') return <Link className="h-3 w-3" />;
     return source === 'orquest' ? (
       <Building2 className="h-3 w-3" />
     ) : (
@@ -77,7 +86,11 @@ export const WorkersTable: React.FC<WorkersTableProps> = ({
         </TableHeader>
         <TableBody>
           {workers.map((worker) => (
-            <TableRow key={worker.id}>
+            <TableRow 
+              key={worker.id} 
+              className="cursor-pointer hover:bg-muted/50"
+              onClick={() => handleWorkerClick(worker)}
+            >
               {showSource && (
                 <TableCell>
                   <Badge 
@@ -85,7 +98,8 @@ export const WorkersTable: React.FC<WorkersTableProps> = ({
                     className="flex items-center gap-1 w-fit"
                   >
                     {getSourceIcon(worker.source)}
-                    {worker.source === 'orquest' ? 'Orquest' : 'Biloop'}
+                    {worker.source === 'orquest' ? 'Orquest' : 
+                     worker.source === 'biloop' ? 'Biloop' : 'Vinculado'}
                   </Badge>
                 </TableCell>
               )}
@@ -129,6 +143,12 @@ export const WorkersTable: React.FC<WorkersTableProps> = ({
           ))}
         </TableBody>
       </Table>
+      
+      <WorkerDetailDialog
+        worker={selectedWorker}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+      />
     </div>
   );
 };
