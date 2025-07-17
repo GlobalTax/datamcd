@@ -10,19 +10,12 @@ export const useOptimizedProfileFetcher = () => {
     setIsLoading(true);
     
     try {
-      // Timeout aumentado para evitar franquiciados temporales
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Optimized query timeout after 15 seconds')), 15000)
-      );
-      
-      // Consulta optimizada que usa el índice idx_profiles_id
-      const queryPromise = supabase
+      // Consulta directa sin timeout agresivo para mayor confiabilidad
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('id, email, full_name, role, phone, created_at, updated_at')
         .eq('id', userId)
         .single();
-
-      const { data: profile, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
       if (error) {
         console.error('useOptimizedProfileFetcher - Database error:', error);

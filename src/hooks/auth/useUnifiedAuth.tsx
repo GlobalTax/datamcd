@@ -169,7 +169,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setConnectionStatus('reconnecting');
     
     try {
-      // Intentar cargar datos sin reintentos para evitar bucles
+      // Intentar cargar datos optimizados primero
       const userData = await fetchUserData(userId);
       
       if (userData) {
@@ -186,33 +186,61 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setConnectionStatus('online');
         console.log('UNIFIED_AUTH: User data loaded successfully:', enrichedUser);
       } else {
-        // Si no hay datos en la BD, crear usuario básico con datos de sesión reales
-        console.log('UNIFIED_AUTH: No user data found, using session data:', session?.user);
+        // Si los fetchers fallan, intentar consulta directa como último recurso
+        console.log('UNIFIED_AUTH: Fetchers failed, trying direct profile query...');
+        const directProfile = await fetchProfileDirectly(userId);
         
-        const sessionUser = {
-          id: userId,
-          email: session?.user?.email || 'usuario@ejemplo.com',
-          full_name: session?.user?.user_metadata?.full_name || 
-                     session?.user?.user_metadata?.name ||
-                     session?.user?.email?.split('@')[0] || 'Usuario',
-          role: 'franchisee'
-        };
-        
-        const basicFranchisee = {
-          id: userId,
-          franchisee_name: sessionUser.full_name,
-          user_id: userId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        console.log('UNIFIED_AUTH: Created user from session:', sessionUser);
-        console.log('UNIFIED_AUTH: Created franchisee from session:', basicFranchisee);
-        
-        setUser(sessionUser);
-        setFranchisee(basicFranchisee);
-        setRestaurants([]);
-        setConnectionStatus('online');
+        if (directProfile) {
+          console.log('UNIFIED_AUTH: Direct profile query successful:', directProfile);
+          
+          const enrichedUser = {
+            ...directProfile,
+            email: session?.user?.email || directProfile.email,
+            full_name: session?.user?.user_metadata?.full_name || directProfile.full_name || session?.user?.email?.split('@')[0]
+          };
+          
+          // Crear franquiciado básico basado en el perfil real
+          const basicFranchisee = {
+            id: directProfile.id,
+            franchisee_name: enrichedUser.full_name,
+            user_id: directProfile.id,
+            created_at: directProfile.created_at || new Date().toISOString(),
+            updated_at: directProfile.updated_at || new Date().toISOString()
+          };
+          
+          setUser(enrichedUser);
+          setFranchisee(basicFranchisee);
+          setRestaurants([]);
+          setConnectionStatus('online');
+          console.log('UNIFIED_AUTH: Using direct profile data:', enrichedUser);
+        } else {
+          // Fallback final con datos de sesión
+          console.log('UNIFIED_AUTH: All queries failed, using session fallback:', session?.user);
+          
+          const sessionUser = {
+            id: userId,
+            email: session?.user?.email || 'usuario@ejemplo.com',
+            full_name: session?.user?.user_metadata?.full_name || 
+                       session?.user?.user_metadata?.name ||
+                       session?.user?.email?.split('@')[0] || 'Usuario',
+            role: 'franchisee'
+          };
+          
+          const basicFranchisee = {
+            id: userId,
+            franchisee_name: sessionUser.full_name,
+            user_id: userId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          console.log('UNIFIED_AUTH: Using session fallback:', sessionUser);
+          
+          setUser(sessionUser);
+          setFranchisee(basicFranchisee);
+          setRestaurants([]);
+          setConnectionStatus('online');
+        }
       }
     } catch (error) {
       console.error('UNIFIED_AUTH: Error loading user data:', error);
@@ -260,7 +288,31 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         toast.success('Sesión iniciada correctamente');
       }
     }
-  }, [fetchUserData]);
+  }, [fetchUserData, session]);
+
+  // Función para consulta directa a profiles como último recurso
+  const fetchProfileDirectly = useCallback(async (userId: string): Promise<any | null> => {
+    try {
+      console.log('UNIFIED_AUTH: Attempting direct profile query for:', userId);
+      
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('UNIFIED_AUTH: Direct profile query error:', error);
+        return null;
+      }
+
+      console.log('UNIFIED_AUTH: Direct profile query successful:', profile);
+      return profile;
+    } catch (error) {
+      console.error('UNIFIED_AUTH: Direct profile query failed:', error);
+      return null;
+    }
+  }, []);
 
   const createRealFranchisee = async (userId: string) => {
     try {

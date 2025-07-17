@@ -13,39 +13,29 @@ export const useOptimizedUserDataFetcher = () => {
     console.log('useOptimizedUserDataFetcher - Starting optimized fetch for user:', userId);
     
     try {
-      // Fetch con timeout más generoso
-      const profilePromise = fetchUserProfile(userId);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('User data fetch timeout')), 10000)
-      );
-
-      const profile = await Promise.race([profilePromise, timeoutPromise]) as any;
+      // Fetch directo sin timeout para mayor confiabilidad
+      const profile = await fetchUserProfile(userId);
+      
+      if (!profile) {
+        console.log('useOptimizedUserDataFetcher - No profile returned from fetcher');
+        return null;
+      }
       
       let franchisee = null;
       let restaurants = [];
 
-      // 2. Si es franchisee, obtener datos del franquiciado con timeout independiente
+      // 2. Si es franchisee, obtener datos del franquiciado sin timeout para mayor confiabilidad
       if (profile.role === 'franchisee') {
         console.log('useOptimizedUserDataFetcher - User is franchisee, fetching optimized franchisee data');
         
         try {
-          const franchiseePromise = fetchFranchiseeData(userId);
-          const franchiseeTimeout = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Franchisee fetch timeout')), 8000)
-          );
-          
-          franchisee = await Promise.race([franchiseePromise, franchiseeTimeout]) as any;
+          franchisee = await fetchFranchiseeData(userId);
           
           if (franchisee && !franchisee.id.startsWith('temp-')) {
             console.log('useOptimizedUserDataFetcher - About to fetch optimized restaurants for franchisee:', franchisee.id);
             
             try {
-              const restaurantsPromise = fetchRestaurantsData(franchisee.id);
-              const restaurantsTimeout = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Restaurants fetch timeout')), 6000)
-              );
-              
-              restaurants = await Promise.race([restaurantsPromise, restaurantsTimeout]) as any;
+              restaurants = await fetchRestaurantsData(franchisee.id);
             } catch (restaurantError) {
               console.log('useOptimizedUserDataFetcher - Restaurant fetch failed, using empty array:', restaurantError);
               restaurants = [];

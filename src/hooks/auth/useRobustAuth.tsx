@@ -99,7 +99,12 @@ export const RobustAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
 
     if (userData) {
-      setUser(userData);
+      // Asegurar que el role sea del tipo correcto
+      const userWithCorrectRole = {
+        ...userData,
+        role: userData.role as 'franchisee' | 'admin' | 'staff' | 'superadmin' | 'asesor'
+      };
+      setUser(userWithCorrectRole);
       setFranchisee(userData.franchisee);
       setRestaurants(userData.restaurants || []);
       setConnectionStatus('online');
