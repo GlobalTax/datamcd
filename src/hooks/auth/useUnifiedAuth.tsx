@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { Franchisee } from '@/types/auth';
 import { toast } from 'sonner';
+import { DataCache } from '@/utils/dataCache';
 
 interface UnifiedAuthContextType {
   // Estados básicos de autenticación
@@ -59,6 +60,8 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const authInitialized = useRef(false);
   const currentUserId = useRef<string | null>(null);
   const loadingTimeout = useRef<NodeJS.Timeout | null>(null);
+  const fetchInProgress = useRef(false);
+  const cache = useRef(new DataCache());
 
   // Calcular franquiciado efectivo
   const effectiveFranchisee = impersonatedFranchisee || franchisee;
@@ -127,80 +130,142 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     toast.success('Impersonación terminada');
   }, [impersonatedFranchisee, user]);
 
-  // Versión simplificada de fetch de datos de usuario
-  const fetchUserDataSimple = useCallback(async (userId: string) => {
+  // Versión optimizada con cache y control de duplicados
+  const fetchUserDataSimple = useCallback(async (userId: string, forceRefresh = false) => {
+    const cacheKey = `user-${userId}`;
+    
+    // Evitar múltiples fetches simultáneos
+    if (fetchInProgress.current && !forceRefresh) {
+      console.log('UNIFIED_AUTH: Fetch already in progress, skipping...');
+      return;
+    }
+    
+    // Verificar cache primero (excepto en refresh forzado)
+    if (!forceRefresh) {
+      const cachedData = cache.current.get<any>(cacheKey);
+      if (cachedData) {
+        console.log('UNIFIED_AUTH: Using cached data for userId:', userId);
+        setUser(cachedData.user);
+        setFranchisee(cachedData.franchisee);
+        setRestaurants(cachedData.restaurants || []);
+        setConnectionStatus('online');
+        return;
+      }
+    }
+    
+    fetchInProgress.current = true;
     console.log('UNIFIED_AUTH: Simple fetch starting for userId:', userId);
     
     try {
-      // Intento 1: Consulta directa a profiles
-      console.log('UNIFIED_AUTH: Attempting direct profile query...');
-      const { data: profile, error } = await supabase
+      // Intentar consulta directa primero con timeout
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
+        
+      const franchiseePromise = supabase
+        .from('franchisees')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-      if (!error && profile) {
-        console.log('UNIFIED_AUTH: Profile found:', profile);
-        
-        const enrichedUser = {
-          ...profile,
-          email: session?.user?.email || profile.email,
-          full_name: session?.user?.user_metadata?.full_name || profile.full_name || session?.user?.email?.split('@')[0]
+      // Timeout de 2 segundos para evitar queries colgadas
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Query timeout')), 2000)
+      );
+
+      const [profileResult, franchiseeResult] = await Promise.allSettled([
+        Promise.race([profilePromise, timeoutPromise]),
+        Promise.race([franchiseePromise, timeoutPromise])
+      ]);
+
+      let enrichedUser = null;
+      let userFranchisee = null;
+
+      if (profileResult.status === 'fulfilled' && profileResult.value && 
+          typeof profileResult.value === 'object' && 'data' in profileResult.value &&
+          profileResult.value.data && !('error' in profileResult.value && profileResult.value.error)) {
+        const profileData = profileResult.value.data as any;
+        console.log('UNIFIED_AUTH: Profile found:', profileData);
+        enrichedUser = {
+          ...profileData,
+          email: session?.user?.email || profileData.email,
+          full_name: session?.user?.user_metadata?.full_name || 
+                    profileData.full_name || 
+                    session?.user?.email?.split('@')[0]
         };
-        
-        // Intentar obtener franquiciado
-        const { data: franchiseeData } = await supabase
-          .from('franchisees')
-          .select('*')
-          .eq('user_id', userId)
-          .single();
-        
-        const userFranchisee = franchiseeData || {
+      }
+
+      if (franchiseeResult.status === 'fulfilled' && franchiseeResult.value && 
+          typeof franchiseeResult.value === 'object' && 'data' in franchiseeResult.value &&
+          franchiseeResult.value.data) {
+        userFranchisee = franchiseeResult.value.data as any;
+      }
+
+      // Si no hay datos válidos, usar fallback de sesión
+      if (!enrichedUser) {
+        console.log('UNIFIED_AUTH: Using session fallback data');
+        enrichedUser = {
+          id: userId,
+          email: session?.user?.email || 'usuario@ejemplo.com',
+          full_name: session?.user?.user_metadata?.full_name || 
+                     session?.user?.user_metadata?.name ||
+                     session?.user?.email?.split('@')[0] || 'Usuario',
+          role: 'franchisee'
+        };
+      }
+
+      if (!userFranchisee) {
+        userFranchisee = {
           id: userId,
           franchisee_name: enrichedUser.full_name,
           user_id: userId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
-        
-        setUser(enrichedUser);
-        setFranchisee(userFranchisee);
-        setRestaurants([]);
-        setConnectionStatus('online');
-        console.log('UNIFIED_AUTH: User data loaded successfully');
-        return;
       }
+
+      // Cachear los datos por 5 minutos
+      const dataToCache = {
+        user: enrichedUser,
+        franchisee: userFranchisee,
+        restaurants: []
+      };
+      cache.current.set(cacheKey, dataToCache, 5);
+
+      setUser(enrichedUser);
+      setFranchisee(userFranchisee);
+      setRestaurants([]);
+      setConnectionStatus('online');
+      console.log('UNIFIED_AUTH: User data loaded successfully');
       
-      console.log('UNIFIED_AUTH: Profile query failed, using session fallback');
     } catch (error) {
-      console.log('UNIFIED_AUTH: Profile query error:', error);
+      console.log('UNIFIED_AUTH: Error in fetchUserDataSimple:', error);
+      setConnectionStatus('offline');
+      
+      // En caso de error total, usar fallback mínimo
+      const fallbackUser = {
+        id: userId,
+        email: session?.user?.email || 'usuario@ejemplo.com',
+        full_name: session?.user?.user_metadata?.full_name || 'Usuario',
+        role: 'franchisee'
+      };
+      
+      const fallbackFranchisee = {
+        id: userId,
+        franchisee_name: fallbackUser.full_name,
+        user_id: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      setUser(fallbackUser);
+      setFranchisee(fallbackFranchisee);
+      setRestaurants([]);
+    } finally {
+      fetchInProgress.current = false;
     }
-    
-    // Fallback: Usar datos de sesión
-    const sessionUser = {
-      id: userId,
-      email: session?.user?.email || 'usuario@ejemplo.com',
-      full_name: session?.user?.user_metadata?.full_name || 
-                 session?.user?.user_metadata?.name ||
-                 session?.user?.email?.split('@')[0] || 'Usuario',
-      role: 'franchisee'
-    };
-    
-    const basicFranchisee = {
-      id: userId,
-      franchisee_name: sessionUser.full_name,
-      user_id: userId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    
-    console.log('UNIFIED_AUTH: Using session fallback data:', sessionUser);
-    
-    setUser(sessionUser);
-    setFranchisee(basicFranchisee);
-    setRestaurants([]);
-    setConnectionStatus('online');
   }, [session]);
 
 
@@ -254,47 +319,58 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
-  // Inicialización simplificada de autenticación
+  // Inicialización con debouncing y control de duplicados
   useEffect(() => {
     if (authInitialized.current) return;
     
-    console.log('UNIFIED_AUTH: Initializing simplified auth system');
+    console.log('UNIFIED_AUTH: Initializing optimized auth system');
     authInitialized.current = true;
     
     // Configurar timeout de emergencia para loading
     loadingTimeout.current = setTimeout(() => {
       console.log('UNIFIED_AUTH: Emergency timeout - forcing loading false');
       setLoading(false);
-    }, 3000); // 3 segundos máximo de loading
+    }, 5000); // Aumentamos a 5 segundos
+    
+    let authStateTimeout: NodeJS.Timeout | null = null;
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('UNIFIED_AUTH: Auth state change:', event, session?.user?.id);
         
-        if (loadingTimeout.current) {
-          clearTimeout(loadingTimeout.current);
-          loadingTimeout.current = null;
+        // Limpiar timeout previo
+        if (authStateTimeout) {
+          clearTimeout(authStateTimeout);
         }
         
-        setSession(session);
-        
-        if (session?.user && currentUserId.current !== session.user.id) {
-          console.log('UNIFIED_AUTH: New user session detected');
-          currentUserId.current = session.user.id;
-          fetchUserDataSimple(session.user.id);
-        } else if (!session?.user) {
-          console.log('UNIFIED_AUTH: No session, clearing data');
-          currentUserId.current = null;
-          setUser(null);
-          setFranchisee(null);
-          setRestaurants([]);
-          setConnectionStatus('online');
-        }
-        setLoading(false);
+        // Debounce para evitar múltiples calls rápidos
+        authStateTimeout = setTimeout(async () => {
+          if (loadingTimeout.current) {
+            clearTimeout(loadingTimeout.current);
+            loadingTimeout.current = null;
+          }
+          
+          setSession(session);
+          
+          if (session?.user && currentUserId.current !== session.user.id) {
+            console.log('UNIFIED_AUTH: New user session detected');
+            currentUserId.current = session.user.id;
+            await fetchUserDataSimple(session.user.id);
+          } else if (!session?.user) {
+            console.log('UNIFIED_AUTH: No session, clearing data');
+            currentUserId.current = null;
+            setUser(null);
+            setFranchisee(null);
+            setRestaurants([]);
+            setConnectionStatus('online');
+            cache.current.clear(); // Limpiar cache al cerrar sesión
+          }
+          setLoading(false);
+        }, 100); // Debounce de 100ms
       }
     );
 
-    // Verificar sesión inicial
+    // Verificar sesión inicial con debounce
     const initializeAuth = async () => {
       try {
         console.log('UNIFIED_AUTH: Checking initial session...');
@@ -307,7 +383,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
         
         setSession(session);
-        if (session?.user) {
+        if (session?.user && currentUserId.current !== session.user.id) {
           currentUserId.current = session.user.id;
           await fetchUserDataSimple(session.user.id);
         }
@@ -328,13 +404,18 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return () => {
       subscription.unsubscribe();
       authInitialized.current = false;
+      fetchInProgress.current = false;
+      
+      if (authStateTimeout) {
+        clearTimeout(authStateTimeout);
+      }
       
       if (loadingTimeout.current) {
         clearTimeout(loadingTimeout.current);
         loadingTimeout.current = null;
       }
     };
-  }, [fetchUserDataSimple]);
+  }, []); // Removemos fetchUserDataSimple de las dependencias para evitar re-renders
 
   // Acciones de autenticación
   const signIn = useCallback(async (email: string, password: string) => {
