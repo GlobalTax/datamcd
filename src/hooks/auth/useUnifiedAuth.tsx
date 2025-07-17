@@ -166,14 +166,34 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, []);
 
   const fetchUserDataRobust = useCallback(async (userId: string) => {
+    console.log('UNIFIED_AUTH: fetchUserDataRobust starting for userId:', userId);
     setConnectionStatus('reconnecting');
     
+    // Implementar timeout para evitar cuelgues indefinidos
+    const fetchWithTimeout = async () => {
+      const timeoutId = setTimeout(() => {
+        console.log('UNIFIED_AUTH: fetchUserDataRobust timeout reached, using session fallback');
+        throw new Error('Fetch timeout - using session fallback');
+      }, 8000); // 8 segundos de timeout
+      
+      try {
+        console.log('UNIFIED_AUTH: About to call fetchUserData...');
+        const userData = await fetchUserData(userId);
+        clearTimeout(timeoutId);
+        return userData;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
+    };
+    
     try {
-      // Intentar cargar datos optimizados primero
-      const userData = await fetchUserData(userId);
+      console.log('UNIFIED_AUTH: Attempting to fetch optimized user data...');
+      const userData = await fetchWithTimeout();
       
       if (userData) {
-        // Usar los datos de la sesión para completar la información del usuario
+        console.log('UNIFIED_AUTH: Optimized data fetch successful:', userData);
+        
         const enrichedUser = {
           ...userData,
           email: session?.user?.email || userData.email,
@@ -185,109 +205,77 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setRestaurants(userData.restaurants || []);
         setConnectionStatus('online');
         console.log('UNIFIED_AUTH: User data loaded successfully:', enrichedUser);
-      } else {
-        // Si los fetchers fallan, intentar consulta directa como último recurso
-        console.log('UNIFIED_AUTH: Fetchers failed, trying direct profile query...');
-        const directProfile = await fetchProfileDirectly(userId);
-        
-        if (directProfile) {
-          console.log('UNIFIED_AUTH: Direct profile query successful:', directProfile);
-          
-          const enrichedUser = {
-            ...directProfile,
-            email: session?.user?.email || directProfile.email,
-            full_name: session?.user?.user_metadata?.full_name || directProfile.full_name || session?.user?.email?.split('@')[0]
-          };
-          
-          // Crear franquiciado básico basado en el perfil real
-          const basicFranchisee = {
-            id: directProfile.id,
-            franchisee_name: enrichedUser.full_name,
-            user_id: directProfile.id,
-            created_at: directProfile.created_at || new Date().toISOString(),
-            updated_at: directProfile.updated_at || new Date().toISOString()
-          };
-          
-          setUser(enrichedUser);
-          setFranchisee(basicFranchisee);
-          setRestaurants([]);
-          setConnectionStatus('online');
-          console.log('UNIFIED_AUTH: Using direct profile data:', enrichedUser);
-        } else {
-          // Fallback final con datos de sesión
-          console.log('UNIFIED_AUTH: All queries failed, using session fallback:', session?.user);
-          
-          const sessionUser = {
-            id: userId,
-            email: session?.user?.email || 'usuario@ejemplo.com',
-            full_name: session?.user?.user_metadata?.full_name || 
-                       session?.user?.user_metadata?.name ||
-                       session?.user?.email?.split('@')[0] || 'Usuario',
-            role: 'franchisee'
-          };
-          
-          const basicFranchisee = {
-            id: userId,
-            franchisee_name: sessionUser.full_name,
-            user_id: userId,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          
-          console.log('UNIFIED_AUTH: Using session fallback:', sessionUser);
-          
-          setUser(sessionUser);
-          setFranchisee(basicFranchisee);
-          setRestaurants([]);
-          setConnectionStatus('online');
-        }
+        return; // Éxito - salir aquí
       }
+      
+      console.log('UNIFIED_AUTH: Optimized fetch returned null, trying direct query...');
     } catch (error) {
-      console.error('UNIFIED_AUTH: Error loading user data:', error);
-      setConnectionStatus('online'); // Mantener online para evitar loops
-      
-      // Intentar crear un franquiciado real si no existe
-      const realFranchisee = await createRealFranchisee(userId);
-      
-      if (realFranchisee) {
-        // Usar el franquiciado real recién creado
-        const user = {
-          id: userId,
-          email: session?.user?.email || 'usuario@ejemplo.com',
-          full_name: session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Usuario',
-          role: 'franchisee'
-        };
-        
-        setUser(user);
-        setFranchisee(realFranchisee);
-        setRestaurants([]);
-        toast.success('Sesión iniciada correctamente');
-      } else {
-        // Fallback con datos básicos pero funcionales
-        const fallbackUser = {
-          id: userId,
-          email: session?.user?.email || 'usuario@ejemplo.com',
-          full_name: session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Usuario',
-          role: 'franchisee'
-        };
-        
-        const fallbackFranchisee = {
-          id: `fallback-${userId}`,
-          user_id: userId,
-          franchisee_name: 'Usuario',
-          company_name: 'Mi Empresa',
-          total_restaurants: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        setUser(fallbackUser);
-        setFranchisee(fallbackFranchisee);
-        setRestaurants([]);
-        
-        toast.success('Sesión iniciada correctamente');
-      }
+      console.log('UNIFIED_AUTH: Optimized fetch failed or timed out:', error.message);
     }
+    
+    // Fallback 1: Consulta directa a profiles
+    try {
+      console.log('UNIFIED_AUTH: Attempting direct profile query...');
+      const directProfile = await fetchProfileDirectly(userId);
+      
+      if (directProfile) {
+        console.log('UNIFIED_AUTH: Direct profile query successful:', directProfile);
+        
+        const enrichedUser = {
+          ...directProfile,
+          email: session?.user?.email || directProfile.email,
+          full_name: session?.user?.user_metadata?.full_name || directProfile.full_name || session?.user?.email?.split('@')[0]
+        };
+        
+        const basicFranchisee = {
+          id: directProfile.id,
+          franchisee_name: enrichedUser.full_name,
+          user_id: directProfile.id,
+          created_at: directProfile.created_at || new Date().toISOString(),
+          updated_at: directProfile.updated_at || new Date().toISOString()
+        };
+        
+        setUser(enrichedUser);
+        setFranchisee(basicFranchisee);
+        setRestaurants([]);
+        setConnectionStatus('online');
+        console.log('UNIFIED_AUTH: Using direct profile data:', enrichedUser);
+        return; // Éxito - salir aquí
+      }
+      
+      console.log('UNIFIED_AUTH: Direct profile query returned null');
+    } catch (error) {
+      console.log('UNIFIED_AUTH: Direct profile query failed:', error.message);
+    }
+    
+    // Fallback 2: Usar datos de sesión directamente
+    console.log('UNIFIED_AUTH: All fetches failed, using session fallback data...');
+    
+    const sessionUser = {
+      id: userId,
+      email: session?.user?.email || 'usuario@ejemplo.com',
+      full_name: session?.user?.user_metadata?.full_name || 
+                 session?.user?.user_metadata?.name ||
+                 session?.user?.email?.split('@')[0] || 'Usuario',
+      role: 'franchisee'
+    };
+    
+    const basicFranchisee = {
+      id: userId,
+      franchisee_name: sessionUser.full_name,
+      user_id: userId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log('UNIFIED_AUTH: Setting session fallback data:', sessionUser);
+    
+    setUser(sessionUser);
+    setFranchisee(basicFranchisee);
+    setRestaurants([]);
+    setConnectionStatus('online');
+    
+    console.log('UNIFIED_AUTH: fetchUserDataRobust completed with session fallback');
   }, [fetchUserData, session]);
 
   // Función para consulta directa a profiles como último recurso
