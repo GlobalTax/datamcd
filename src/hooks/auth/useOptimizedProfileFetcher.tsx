@@ -22,6 +22,8 @@ export const useOptimizedProfileFetcher = () => {
         throw error;
       }
 
+      console.log('useOptimizedProfileFetcher - Raw response data:', { data: profile, error });
+      
       if (profile) {
         console.log('useOptimizedProfileFetcher - Profile found:', profile);
         return profile;
@@ -30,7 +32,7 @@ export const useOptimizedProfileFetcher = () => {
         return null; // Devolver null para que useUnifiedAuth use datos de sesión
       }
     } catch (error) {
-      console.log('useOptimizedProfileFetcher - Error or timeout:', error);
+      console.error('useOptimizedProfileFetcher - Error details:', error);
       return null; // Devolver null para que useUnifiedAuth use datos de sesión
     } finally {
       setIsLoading(false);
