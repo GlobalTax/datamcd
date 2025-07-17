@@ -173,11 +173,18 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const userData = await fetchUserData(userId);
       
       if (userData) {
-        setUser(userData);
+        // Usar los datos de la sesión para completar la información del usuario
+        const enrichedUser = {
+          ...userData,
+          email: session?.user?.email || userData.email,
+          full_name: session?.user?.user_metadata?.full_name || userData.full_name || session?.user?.email?.split('@')[0]
+        };
+        
+        setUser(enrichedUser);
         setFranchisee(userData.franchisee);
         setRestaurants(userData.restaurants || []);
         setConnectionStatus('online');
-        console.log('UNIFIED_AUTH: User data loaded successfully');
+        console.log('UNIFIED_AUTH: User data loaded successfully:', enrichedUser);
       } else {
         throw new Error('No user data received');
       }
@@ -193,7 +200,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const user = {
           id: userId,
           email: session?.user?.email || 'usuario@ejemplo.com',
-          full_name: session?.user?.user_metadata?.full_name || 'Usuario',
+          full_name: session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Usuario',
           role: 'franchisee'
         };
         
@@ -205,8 +212,8 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         // Fallback con datos básicos pero funcionales
         const fallbackUser = {
           id: userId,
-          email: 'usuario@ejemplo.com',
-          full_name: 'Usuario',
+          email: session?.user?.email || 'usuario@ejemplo.com',
+          full_name: session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Usuario',
           role: 'franchisee'
         };
         

@@ -96,10 +96,18 @@ export function AppSidebar() {
         <div className="space-y-3">
           <div className={`px-3 py-2 rounded-lg ${isImpersonating ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
             <p className="text-sm font-medium text-gray-900 truncate">
-              {isImpersonating ? effectiveFranchisee?.franchisee_name : (user?.full_name || user?.email)}
+              {isImpersonating 
+                ? effectiveFranchisee?.franchisee_name 
+                : (user?.full_name || franchisee?.franchisee_name || user?.email || 'Usuario')
+              }
             </p>
             <p className={`text-xs ${isImpersonating ? 'text-blue-600' : 'text-gray-500'}`}>
-              {isImpersonating ? 'Franquiciado (Vista Asesor)' : 'Franquiciado'}
+              {isImpersonating 
+                ? 'Franquiciado (Vista Asesor)' 
+                : user?.role === 'asesor' 
+                  ? 'Asesor' 
+                  : 'Franquiciado'
+              }
             </p>
           </div>
           
