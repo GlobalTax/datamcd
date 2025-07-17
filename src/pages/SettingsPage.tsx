@@ -38,11 +38,11 @@ const SettingsPage = () => {
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" value={user?.email || ''} disabled />
+                    <Input id="email" value={user?.email || ''} disabled onChange={() => {}} />
                   </div>
                   <div>
                     <Label htmlFor="name">Nombre completo</Label>
-                    <Input id="name" value={user?.full_name || ''} />
+                    <Input id="name" value={user?.full_name || ''} onChange={() => {}} />
                   </div>
                   <Button>Guardar cambios</Button>
                 </CardContent>

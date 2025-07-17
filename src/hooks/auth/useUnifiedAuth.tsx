@@ -186,7 +186,27 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setConnectionStatus('online');
         console.log('UNIFIED_AUTH: User data loaded successfully:', enrichedUser);
       } else {
-        throw new Error('No user data received');
+        // Si no hay datos en la BD, crear usuario básico con datos de sesión
+        const sessionUser = {
+          id: userId,
+          email: session?.user?.email || 'usuario@ejemplo.com',
+          full_name: session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Usuario',
+          role: 'franchisee'
+        };
+        
+        const basicFranchisee = {
+          id: userId,
+          franchisee_name: sessionUser.full_name,
+          user_id: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        setUser(sessionUser);
+        setFranchisee(basicFranchisee);
+        setRestaurants([]);
+        setConnectionStatus('online');
+        console.log('UNIFIED_AUTH: Using session data as fallback:', sessionUser);
       }
     } catch (error) {
       console.error('UNIFIED_AUTH: Error loading user data:', error);

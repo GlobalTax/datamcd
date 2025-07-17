@@ -33,22 +33,12 @@ export const useOptimizedProfileFetcher = () => {
         console.log('useOptimizedProfileFetcher - Profile found:', profile);
         return profile;
       } else {
-        console.log('useOptimizedProfileFetcher - No profile found, creating basic profile');
-        return {
-          id: userId,
-          email: 'user@example.com',
-          full_name: 'Usuario',
-          role: 'franchisee'
-        };
+        console.log('useOptimizedProfileFetcher - No profile found, returning null to use session data');
+        return null; // Devolver null para que useUnifiedAuth use datos de sesión
       }
     } catch (error) {
       console.log('useOptimizedProfileFetcher - Error or timeout:', error);
-      return {
-        id: userId,
-        email: 'user@example.com',
-        full_name: 'Usuario',
-        role: 'franchisee'
-      };
+      return null; // Devolver null para que useUnifiedAuth use datos de sesión
     } finally {
       setIsLoading(false);
     }
