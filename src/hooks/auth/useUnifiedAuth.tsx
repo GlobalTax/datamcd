@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { Franchisee } from '@/types/auth';
-import { useOptimizedUserDataFetcher } from './useOptimizedUserDataFetcher';
 import { toast } from 'sonner';
 
 interface UnifiedAuthContextType {
@@ -57,10 +56,9 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Estados de impersonación
   const [impersonatedFranchisee, setImpersonatedFranchisee] = useState<Franchisee | null>(null);
   
-  const { fetchUserData } = useOptimizedUserDataFetcher();
   const authInitialized = useRef(false);
   const currentUserId = useRef<string | null>(null);
-  const retryTimeouts = useRef<Set<NodeJS.Timeout>>(new Set());
+  const loadingTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Calcular franquiciado efectivo
   const effectiveFranchisee = impersonatedFranchisee || franchisee;
@@ -129,128 +127,57 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     toast.success('Impersonación terminada');
   }, [impersonatedFranchisee, user]);
 
-  // Funciones de autenticación robustas con reintentos
-  const retryWithBackoff = useCallback(async <T,>(
-    operation: () => Promise<T>,
-    maxRetries: number = 3,
-    baseDelay: number = 1000
-  ): Promise<T | null> => {
-    let lastError: Error | null = null;
-    
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        const result = await operation();
-        if (attempt > 0) {
-          console.log(`UNIFIED_AUTH: Success on attempt ${attempt + 1}`);
-        }
-        return result;
-      } catch (error) {
-        lastError = error as Error;
-        console.log(`UNIFIED_AUTH: Attempt ${attempt + 1} failed:`, lastError.message);
-        
-        if (attempt === maxRetries) break;
-        
-        const delay = Math.min(baseDelay * Math.pow(2, attempt), 10000);
-        setConnectionStatus('reconnecting');
-        
-        await new Promise(resolve => {
-          const timeout = setTimeout(resolve, delay);
-          retryTimeouts.current.add(timeout);
-        });
-      }
-    }
-    
-    setConnectionStatus('offline');
-    console.error('UNIFIED_AUTH: All retry attempts failed:', lastError);
-    return null;
-  }, []);
-
-  const fetchUserDataRobust = useCallback(async (userId: string) => {
-    console.log('UNIFIED_AUTH: fetchUserDataRobust starting for userId:', userId);
-    setConnectionStatus('reconnecting');
-    
-    // Implementar timeout para evitar cuelgues indefinidos
-    const fetchWithTimeout = async () => {
-      const timeoutId = setTimeout(() => {
-        console.log('UNIFIED_AUTH: fetchUserDataRobust timeout reached, using session fallback');
-        throw new Error('Fetch timeout - using session fallback');
-      }, 8000); // 8 segundos de timeout
-      
-      try {
-        console.log('UNIFIED_AUTH: About to call fetchUserData...');
-        const userData = await fetchUserData(userId);
-        clearTimeout(timeoutId);
-        return userData;
-      } catch (error) {
-        clearTimeout(timeoutId);
-        throw error;
-      }
-    };
+  // Versión simplificada de fetch de datos de usuario
+  const fetchUserDataSimple = useCallback(async (userId: string) => {
+    console.log('UNIFIED_AUTH: Simple fetch starting for userId:', userId);
     
     try {
-      console.log('UNIFIED_AUTH: Attempting to fetch optimized user data...');
-      const userData = await fetchWithTimeout();
-      
-      if (userData) {
-        console.log('UNIFIED_AUTH: Optimized data fetch successful:', userData);
-        
-        const enrichedUser = {
-          ...userData,
-          email: session?.user?.email || userData.email,
-          full_name: session?.user?.user_metadata?.full_name || userData.full_name || session?.user?.email?.split('@')[0]
-        };
-        
-        setUser(enrichedUser);
-        setFranchisee(userData.franchisee);
-        setRestaurants(userData.restaurants || []);
-        setConnectionStatus('online');
-        console.log('UNIFIED_AUTH: User data loaded successfully:', enrichedUser);
-        return; // Éxito - salir aquí
-      }
-      
-      console.log('UNIFIED_AUTH: Optimized fetch returned null, trying direct query...');
-    } catch (error) {
-      console.log('UNIFIED_AUTH: Optimized fetch failed or timed out:', error.message);
-    }
-    
-    // Fallback 1: Consulta directa a profiles
-    try {
+      // Intento 1: Consulta directa a profiles
       console.log('UNIFIED_AUTH: Attempting direct profile query...');
-      const directProfile = await fetchProfileDirectly(userId);
-      
-      if (directProfile) {
-        console.log('UNIFIED_AUTH: Direct profile query successful:', directProfile);
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (!error && profile) {
+        console.log('UNIFIED_AUTH: Profile found:', profile);
         
         const enrichedUser = {
-          ...directProfile,
-          email: session?.user?.email || directProfile.email,
-          full_name: session?.user?.user_metadata?.full_name || directProfile.full_name || session?.user?.email?.split('@')[0]
+          ...profile,
+          email: session?.user?.email || profile.email,
+          full_name: session?.user?.user_metadata?.full_name || profile.full_name || session?.user?.email?.split('@')[0]
         };
         
-        const basicFranchisee = {
-          id: directProfile.id,
+        // Intentar obtener franquiciado
+        const { data: franchiseeData } = await supabase
+          .from('franchisees')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+        
+        const userFranchisee = franchiseeData || {
+          id: userId,
           franchisee_name: enrichedUser.full_name,
-          user_id: directProfile.id,
-          created_at: directProfile.created_at || new Date().toISOString(),
-          updated_at: directProfile.updated_at || new Date().toISOString()
+          user_id: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         };
         
         setUser(enrichedUser);
-        setFranchisee(basicFranchisee);
+        setFranchisee(userFranchisee);
         setRestaurants([]);
         setConnectionStatus('online');
-        console.log('UNIFIED_AUTH: Using direct profile data:', enrichedUser);
-        return; // Éxito - salir aquí
+        console.log('UNIFIED_AUTH: User data loaded successfully');
+        return;
       }
       
-      console.log('UNIFIED_AUTH: Direct profile query returned null');
+      console.log('UNIFIED_AUTH: Profile query failed, using session fallback');
     } catch (error) {
-      console.log('UNIFIED_AUTH: Direct profile query failed:', error.message);
+      console.log('UNIFIED_AUTH: Profile query error:', error);
     }
     
-    // Fallback 2: Usar datos de sesión directamente
-    console.log('UNIFIED_AUTH: All fetches failed, using session fallback data...');
-    
+    // Fallback: Usar datos de sesión
     const sessionUser = {
       id: userId,
       email: session?.user?.email || 'usuario@ejemplo.com',
@@ -268,39 +195,14 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       updated_at: new Date().toISOString()
     };
     
-    console.log('UNIFIED_AUTH: Setting session fallback data:', sessionUser);
+    console.log('UNIFIED_AUTH: Using session fallback data:', sessionUser);
     
     setUser(sessionUser);
     setFranchisee(basicFranchisee);
     setRestaurants([]);
     setConnectionStatus('online');
-    
-    console.log('UNIFIED_AUTH: fetchUserDataRobust completed with session fallback');
-  }, [fetchUserData, session]);
+  }, [session]);
 
-  // Función para consulta directa a profiles como último recurso
-  const fetchProfileDirectly = useCallback(async (userId: string): Promise<any | null> => {
-    try {
-      console.log('UNIFIED_AUTH: Attempting direct profile query for:', userId);
-      
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('UNIFIED_AUTH: Direct profile query error:', error);
-        return null;
-      }
-
-      console.log('UNIFIED_AUTH: Direct profile query successful:', profile);
-      return profile;
-    } catch (error) {
-      console.error('UNIFIED_AUTH: Direct profile query failed:', error);
-      return null;
-    }
-  }, []);
 
   const createRealFranchisee = async (userId: string) => {
     try {
@@ -352,21 +254,34 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
-  // Inicialización de autenticación
+  // Inicialización simplificada de autenticación
   useEffect(() => {
     if (authInitialized.current) return;
     
-    console.log('UNIFIED_AUTH: Initializing unified authentication system');
+    console.log('UNIFIED_AUTH: Initializing simplified auth system');
     authInitialized.current = true;
     
+    // Configurar timeout de emergencia para loading
+    loadingTimeout.current = setTimeout(() => {
+      console.log('UNIFIED_AUTH: Emergency timeout - forcing loading false');
+      setLoading(false);
+    }, 3000); // 3 segundos máximo de loading
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('UNIFIED_AUTH: Auth state change:', event, session?.user?.id);
+        
+        if (loadingTimeout.current) {
+          clearTimeout(loadingTimeout.current);
+          loadingTimeout.current = null;
+        }
+        
         setSession(session);
         
         if (session?.user && currentUserId.current !== session.user.id) {
+          console.log('UNIFIED_AUTH: New user session detected');
           currentUserId.current = session.user.id;
-          await fetchUserDataRobust(session.user.id);
+          fetchUserDataSimple(session.user.id);
         } else if (!session?.user) {
           console.log('UNIFIED_AUTH: No session, clearing data');
           currentUserId.current = null;
@@ -382,17 +297,27 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Verificar sesión inicial
     const initializeAuth = async () => {
       try {
+        console.log('UNIFIED_AUTH: Checking initial session...');
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('UNIFIED_AUTH: Initial session check:', session?.user?.id);
+        console.log('UNIFIED_AUTH: Initial session:', session?.user?.id);
+        
+        if (loadingTimeout.current) {
+          clearTimeout(loadingTimeout.current);
+          loadingTimeout.current = null;
+        }
         
         setSession(session);
-        if (session?.user && currentUserId.current !== session.user.id) {
+        if (session?.user) {
           currentUserId.current = session.user.id;
-          await fetchUserDataRobust(session.user.id);
+          await fetchUserDataSimple(session.user.id);
         }
         setLoading(false);
       } catch (error) {
         console.error('UNIFIED_AUTH: Error in initialization:', error);
+        if (loadingTimeout.current) {
+          clearTimeout(loadingTimeout.current);
+          loadingTimeout.current = null;
+        }
         setLoading(false);
         setConnectionStatus('offline');
       }
@@ -404,11 +329,12 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       subscription.unsubscribe();
       authInitialized.current = false;
       
-      // Limpiar timeouts pendientes
-      retryTimeouts.current.forEach(timeout => clearTimeout(timeout));
-      retryTimeouts.current.clear();
+      if (loadingTimeout.current) {
+        clearTimeout(loadingTimeout.current);
+        loadingTimeout.current = null;
+      }
     };
-  }, [fetchUserDataRobust]);
+  }, [fetchUserDataSimple]);
 
   // Acciones de autenticación
   const signIn = useCallback(async (email: string, password: string) => {
