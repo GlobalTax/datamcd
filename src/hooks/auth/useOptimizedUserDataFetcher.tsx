@@ -72,22 +72,9 @@ export const useOptimizedUserDataFetcher = () => {
       console.log('useOptimizedUserDataFetcher - Optimized user data fetch completed successfully');
       return userData;
     } catch (error) {
-      console.error('useOptimizedUserDataFetcher - Critical error, returning basic user:', error);
+      console.error('useOptimizedUserDataFetcher - Critical error, returning null to use session data:', error);
       
-      return {
-        id: userId,
-        email: 'user@example.com',
-        full_name: 'Usuario',
-        role: 'franchisee',
-        franchisee: {
-          id: `fallback-${userId}`,
-          user_id: userId,
-          franchisee_name: 'Usuario',
-          company_name: 'Mi Empresa',
-          total_restaurants: 0
-        },
-        restaurants: []
-      };
+      return null; // Devolver null para que useUnifiedAuth use datos de sesión
     }
   }, [fetchUserProfile, fetchFranchiseeData, fetchRestaurantsData]);
 
