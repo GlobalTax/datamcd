@@ -28,7 +28,7 @@ export const useOrquestMeasuresReceived = (franchiseeId?: string) => {
   const [measures, setMeasures] = useState<OrquestMeasureReceived[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useUnifiedAuth();
+  const { user, franchisee } = useUnifiedAuth();
 
   const fetchMeasures = async (): Promise<void> => {
     if (!franchiseeId && !user) return;
@@ -40,7 +40,7 @@ export const useOrquestMeasuresReceived = (franchiseeId?: string) => {
       const { data, error: fetchError } = await supabase
         .from('orquest_measures')
         .select('*')
-        .eq('franchisee_id', franchiseeId || user?.franchiseeId)
+        .eq('franchisee_id', franchiseeId || franchisee?.id)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -60,7 +60,7 @@ export const useOrquestMeasuresReceived = (franchiseeId?: string) => {
     endDate: string,
     demandTypes?: string[]
   ): Promise<FetchMeasuresResponse | null> => {
-    if (!franchiseeId && !user?.franchiseeId) {
+    if (!franchiseeId && !franchisee?.id) {
       throw new Error('Franchisee ID is required');
     }
 
@@ -71,7 +71,7 @@ export const useOrquestMeasuresReceived = (franchiseeId?: string) => {
       const { data, error: invokeError } = await supabase.functions.invoke('orquest-sync', {
         body: {
           action: 'fetch_measures',
-          franchiseeId: franchiseeId || user?.franchiseeId,
+          franchiseeId: franchiseeId || franchisee?.id,
           serviceId,
           startDate,
           endDate,
@@ -130,10 +130,10 @@ export const useOrquestMeasuresReceived = (franchiseeId?: string) => {
   };
 
   useEffect(() => {
-    if (franchiseeId || user?.franchiseeId) {
+    if (franchiseeId || franchisee?.id) {
       fetchMeasures();
     }
-  }, [franchiseeId, user?.franchiseeId]);
+  }, [franchiseeId, franchisee?.id]);
 
   return {
     measures,

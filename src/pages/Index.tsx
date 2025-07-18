@@ -1,6 +1,6 @@
 
 import { useNavigate } from "react-router-dom";
-import { useUnifiedAuth } from "@/hooks/auth/useUnifiedAuth";
+import { useAuth } from "@/hooks/auth/AuthProvider";
 import { useEffect } from "react";
 import { IndexHeader } from "@/components/index/IndexHeader";
 import { HeroSection } from "@/components/index/HeroSection";
@@ -12,7 +12,7 @@ import { LoadingSpinner } from "@/components/index/LoadingSpinner";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, loading } = useUnifiedAuth();
+  const { user, loading } = useAuth();
 
   console.log('Index - Component rendered');
   console.log('Index - User:', user);

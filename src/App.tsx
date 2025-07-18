@@ -3,8 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { UnifiedAuthProvider } from "@/hooks/auth/useUnifiedAuth";
-import { ImpersonationProvider } from "@/hooks/useImpersonation";
+import { AuthProvider } from "@/hooks/auth/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
@@ -34,9 +33,8 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <UnifiedAuthProvider>
-        <ImpersonationProvider>
-          <TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
           <BrowserRouter>
             <Toaster />
             <Routes>
@@ -195,9 +193,8 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-          </TooltipProvider>
-        </ImpersonationProvider>
-      </UnifiedAuthProvider>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
