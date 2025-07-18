@@ -98,11 +98,21 @@ export const useOrquest = (franchiseeId?: string) => {
         throw new Error('franchiseeId is required for sync operations');
       }
       
+      // Validate franchiseeId format
+      if (!franchiseeId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        throw new Error('Invalid franchiseeId format. Expected UUID format.');
+      }
+      
+      console.log('Syncing Orquest data for franchiseeId:', franchiseeId);
+      
       const { data, error: syncError } = await supabase.functions.invoke('orquest-sync', {
         body: { action: 'sync_all', franchiseeId }
       });
 
-      if (syncError) throw syncError;
+      if (syncError) {
+        console.error('Orquest sync error:', syncError);
+        throw syncError;
+      }
 
       await Promise.all([fetchServices(), fetchEmployees()]); // Refresh data
       
@@ -118,6 +128,7 @@ export const useOrquest = (franchiseeId?: string) => {
       return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error en la sincronización';
+      console.error('Orquest sync error:', err);
       setError(errorMessage);
       toast({
         title: "Error de sincronización",
@@ -138,11 +149,21 @@ export const useOrquest = (franchiseeId?: string) => {
         throw new Error('franchiseeId is required for sync operations');
       }
       
+      // Validate franchiseeId format
+      if (!franchiseeId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        throw new Error('Invalid franchiseeId format. Expected UUID format.');
+      }
+      
+      console.log('Syncing Orquest employees for franchiseeId:', franchiseeId);
+      
       const { data, error: syncError } = await supabase.functions.invoke('orquest-sync', {
         body: { action: 'sync_employees', franchiseeId }
       });
 
-      if (syncError) throw syncError;
+      if (syncError) {
+        console.error('Orquest employees sync error:', syncError);
+        throw syncError;
+      }
 
       await fetchEmployees(); // Refresh employees data
       
@@ -154,6 +175,7 @@ export const useOrquest = (franchiseeId?: string) => {
       return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error en la sincronización de empleados';
+      console.error('Orquest employees sync error:', err);
       setError(errorMessage);
       toast({
         title: "Error de sincronización",

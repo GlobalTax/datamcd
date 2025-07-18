@@ -72,24 +72,51 @@ export const useWorkersPanel = (franchiseeId?: string) => {
   // Función para cargar empleados de Biloop
   const loadBiloopEmployees = async () => {
     try {
+      console.log('Loading Biloop employees...');
       const employees = await getEmployees();
+      console.log('Biloop employees loaded:', employees.length);
       setBiloopEmployees(employees);
     } catch (error) {
       console.error('Error loading Biloop employees:', error);
+      toast({
+        title: "Error cargando empleados de Biloop",
+        description: error instanceof Error ? error.message : 'Error desconocido',
+        variant: "destructive",
+      });
+      setBiloopEmployees([]); // Set empty array on error
     }
   };
 
   // Función para extraer NIF de diferentes fuentes de datos
   const extractNIF = (orquestEmp?: any, biloopEmp?: BiloopEmployee): string => {
     // Priorizar DNI de Biloop por ser más confiable
-    if (biloopEmp?.dni) return biloopEmp.dni;
+    if (biloopEmp?.dni && biloopEmp.dni !== '') {
+      return biloopEmp.dni;
+    }
     
     // Buscar en datos completos de Orquest
-    if (orquestEmp?.datos_completos?.dni) return orquestEmp.datos_completos.dni;
-    if (orquestEmp?.datos_completos?.nif) return orquestEmp.datos_completos.nif;
+    if (orquestEmp?.datos_completos?.dni && orquestEmp.datos_completos.dni !== '') {
+      return orquestEmp.datos_completos.dni;
+    }
+    if (orquestEmp?.datos_completos?.nif && orquestEmp.datos_completos.nif !== '') {
+      return orquestEmp.datos_completos.nif;
+    }
     
-    // Fallback: generar ID temporal
-    return orquestEmp?.id || biloopEmp?.id || 'unknown';
+    // Fallback: usar email como identificador único si está disponible
+    if (biloopEmp?.email && biloopEmp.email !== '') {
+      return `email-${biloopEmp.email}`;
+    }
+    if (orquestEmp?.email && orquestEmp.email !== '') {
+      return `email-${orquestEmp.email}`;
+    }
+    
+    // Último recurso: generar ID único basado en nombre y sistema
+    const name = biloopEmp?.name || orquestEmp?.nombre || 'unknown';
+    const surname = biloopEmp?.surname || orquestEmp?.apellidos || '';
+    const system = biloopEmp ? 'biloop' : 'orquest';
+    const timestamp = Date.now();
+    
+    return `${system}-${name}-${surname}-${timestamp}`.toLowerCase().replace(/\s+/g, '-');
   };
 
   // Función para unificar datos de ambos sistemas vinculando por NIF
@@ -207,15 +234,26 @@ export const useWorkersPanel = (franchiseeId?: string) => {
   // Función para sincronizar datos de Orquest
   const syncOrquestData = async () => {
     try {
-      await syncOrquestEmployees();
-      toast({
-        title: "Sincronización exitosa",
-        description: "Datos de Orquest actualizados",
-      });
+      if (!franchiseeId) {
+        throw new Error('Se requiere un franquiciado seleccionado para sincronizar');
+      }
+      
+      console.log('Syncing Orquest data for franchiseeId:', franchiseeId);
+      const result = await syncOrquestEmployees();
+      
+      if (result) {
+        toast({
+          title: "Sincronización exitosa",
+          description: "Datos de Orquest actualizados",
+        });
+      } else {
+        throw new Error('La sincronización no devolvió resultados');
+      }
     } catch (error) {
+      console.error('Error syncing Orquest data:', error);
       toast({
         title: "Error de sincronización",
-        description: "No se pudieron sincronizar los datos de Orquest",
+        description: error instanceof Error ? error.message : "No se pudieron sincronizar los datos de Orquest",
         variant: "destructive",
       });
     }
