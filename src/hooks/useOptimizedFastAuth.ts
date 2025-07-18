@@ -43,12 +43,7 @@ export const useOptimizedFastAuth = () => {
             
             if (optimizedUserData.franchisee && !optimizedUserData.franchisee.id.startsWith('temp-')) {
               console.log('useOptimizedFastAuth - Optimized real data loaded successfully');
-              // Asegurar que el role sea del tipo correcto
-              const userWithCorrectRole = {
-                ...optimizedUserData,
-                role: optimizedUserData.role as 'franchisee' | 'admin' | 'staff' | 'superadmin' | 'asesor'
-              };
-              setUser(userWithCorrectRole);
+              setUser(optimizedUserData);
               setFranchisee(optimizedUserData.franchisee);
               setRestaurants(optimizedUserData.restaurants);
             } else {

@@ -27,9 +27,16 @@ const Index = () => {
       console.log('Index - User authenticated, redirecting based on role:', user.role);
       
       try {
-        // Redirigir todos los usuarios autenticados al dashboard unificado
-        console.log('Index - Redirecting authenticated user to /dashboard');
-        navigate('/dashboard', { replace: true });
+        // Redirigir usuarios autenticados según su rol
+        if (['asesor', 'admin', 'superadmin'].includes(user.role)) {
+          console.log('Index - Redirecting asesor/admin/superadmin to /advisor');
+          navigate('/advisor', { replace: true });
+        } else if (user.role === 'franchisee') {
+          console.log('Index - Redirecting franchisee to /dashboard');
+          navigate('/dashboard', { replace: true });
+        } else {
+          console.log('Index - Unknown role, staying on landing page:', user.role);
+        }
       } catch (error) {
         console.error('Index - Error during navigation:', error);
       }

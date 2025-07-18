@@ -32,14 +32,27 @@ export const useProfileFetcher = () => {
         console.log('fetchUserProfile - Profile found:', profile);
         return profile;
       } else {
-        console.log('fetchUserProfile - No profile found, returning null to use session data');
-        return null; // Devolver null para que useUnifiedAuth use datos de sesión
+        console.log('fetchUserProfile - No profile found, creating basic profile');
+        // Si no hay perfil, crear uno básico
+        const basicProfile = {
+          id: userId,
+          email: 'user@example.com',
+          full_name: 'Usuario',
+          role: 'franchisee'
+        };
+        return basicProfile;
       }
     } catch (error) {
       console.log('fetchUserProfile - Query timeout or error:', error);
-      console.log('fetchUserProfile - Returning null to use session data');
+      console.log('fetchUserProfile - Setting basic user due to timeout');
       
-      return null; // Devolver null para que useUnifiedAuth use datos de sesión
+      // En caso de error o timeout, devolver perfil básico
+      return {
+        id: userId,
+        email: 'user@example.com',
+        full_name: 'Usuario',
+        role: 'franchisee'
+      };
     } finally {
       setIsLoading(false);
     }

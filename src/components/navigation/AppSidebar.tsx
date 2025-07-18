@@ -13,7 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Home, Settings, LogOut, Cog, Users } from 'lucide-react';
+import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, HardHat, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 
@@ -24,9 +24,59 @@ const menuItems = [
     icon: Home,
   },
   {
-    title: "Configuración",
-    url: "/settings",
+    title: "Panel Laboral",
+    url: "/labor-dashboard",
+    icon: HardHat,
+  },
+  {
+    title: "Restaurantes",
+    url: "/restaurant",
+    icon: Building,
+  },
+  {
+    title: "Empleados",
+    url: "/employees",
+    icon: Users,
+  },
+  {
+    title: "Análisis",
+    url: "/analysis",
+    icon: BarChart3,
+  },
+  {
+    title: "Valoración",
+    url: "/valuation",
+    icon: Calculator,
+  },
+  {
+    title: "Presupuestos",
+    url: "/annual-budget",
+    icon: Calendar,
+  },
+  {
+    title: "Datos Históricos",
+    url: "/historical-data",
+    icon: Database,
+  },
+  {
+    title: "Orquest",
+    url: "/orquest",
     icon: Cog,
+  },
+  {
+    title: "Incidencias",
+    url: "/incidents",
+    icon: AlertTriangle,
+  },
+  {
+    title: "Biloop",
+    url: "/biloop",
+    icon: Receipt,
+  },
+  {
+    title: "Panel Trabajadores",
+    url: "/workers",
+    icon: UserCheck,
   },
 ];
 
@@ -96,18 +146,10 @@ export function AppSidebar() {
         <div className="space-y-3">
           <div className={`px-3 py-2 rounded-lg ${isImpersonating ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
             <p className="text-sm font-medium text-gray-900 truncate">
-              {isImpersonating 
-                ? effectiveFranchisee?.franchisee_name 
-                : (user?.full_name || franchisee?.franchisee_name || user?.email || 'Usuario')
-              }
+              {isImpersonating ? effectiveFranchisee?.franchisee_name : (user?.full_name || user?.email)}
             </p>
             <p className={`text-xs ${isImpersonating ? 'text-blue-600' : 'text-gray-500'}`}>
-              {isImpersonating 
-                ? 'Franquiciado (Vista Asesor)' 
-                : user?.role === 'asesor' 
-                  ? 'Asesor' 
-                  : 'Franquiciado'
-              }
+              {isImpersonating ? 'Franquiciado (Vista Asesor)' : 'Franquiciado'}
             </p>
           </div>
           

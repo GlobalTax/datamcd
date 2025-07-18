@@ -40,8 +40,8 @@ export const FeatureCards = () => {
         </CardContent>
       </Card>
 
-      {/* Portal Unificado Card */}
-      <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white cursor-pointer" onClick={() => navigate('/auth')}>
+      {/* Asesores Card */}
+      <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white cursor-pointer" onClick={() => navigate('/advisor-auth')}>
         <CardHeader className="pb-6">
           <div className="flex items-center justify-between">
             <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center group-hover:bg-blue-200 transition-colors">

@@ -41,8 +41,15 @@ export const useUserDataFetcher = () => {
     } catch (error) {
       console.error('fetchUserData - Error fetching user data:', error);
       
-      // Devolver null en caso de error para usar datos de sesión
-      return null;
+      // Devolver datos básicos en caso de error completo
+      return {
+        id: userId,
+        email: 'user@example.com',
+        full_name: 'Usuario',
+        role: 'franchisee',
+        franchisee: null,
+        restaurants: []
+      };
     }
   }, [fetchUserProfile, fetchFranchiseeData, fetchRestaurantsData]);
 
