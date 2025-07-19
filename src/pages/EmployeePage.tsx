@@ -1,7 +1,7 @@
+
 import React, { useState } from 'react';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/navigation/AppSidebar';
+import { StandardLayout } from '@/components/layout/StandardLayout';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EmployeeManagement } from '@/components/employees/EmployeeManagement';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,51 +17,56 @@ const EmployeePage = () => {
 
   if (!user || !restaurants) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 bg-red-600 rounded-xl animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando...</p>
+      <StandardLayout
+        title="Empleados"
+        description="Gestión de personal"
+      >
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-red-600 rounded-xl animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando...</p>
+          </div>
         </div>
-      </div>
+      </StandardLayout>
     );
   }
 
   if (restaurants.length === 0) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
-          <AppSidebar />
-          <main className="flex-1 p-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Gestión de Empleados
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-center py-12">
-                <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No hay restaurantes disponibles
-                </h3>
-                <p className="text-gray-600">
-                  Necesitas tener al menos un restaurante para gestionar empleados.
-                </p>
-              </CardContent>
-            </Card>
-          </main>
-        </div>
-      </SidebarProvider>
+      <StandardLayout
+        title="Empleados"
+        description="Gestión de personal"
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Gestión de Empleados
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center py-12">
+            <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No hay restaurantes disponibles
+            </h3>
+            <p className="text-gray-600">
+              Necesitas tener al menos un restaurante para gestionar empleados.
+            </p>
+          </CardContent>
+        </Card>
+      </StandardLayout>
     );
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <main className="flex-1 p-8">
-          {restaurants.length > 1 && (
-            <div className="mb-6">
+    <StandardLayout
+      title="Empleados"
+      description="Gestión de personal y recursos humanos"
+    >
+      <div className="space-y-6">
+        {restaurants.length > 1 && (
+          <Card>
+            <CardContent className="p-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Seleccionar Restaurante
               </label>
@@ -80,21 +85,21 @@ const EmployeePage = () => {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          )}
+            </CardContent>
+          </Card>
+        )}
 
-          {selectedRestaurant && (
-            <EmployeeManagement
-              restaurantId={selectedRestaurantId}
-              restaurantName={
-                selectedRestaurant.restaurant_name || 
-                `Restaurante ${selectedRestaurant.site_number}`
-              }
-            />
-          )}
-        </main>
+        {selectedRestaurant && (
+          <EmployeeManagement
+            restaurantId={selectedRestaurantId}
+            restaurantName={
+              selectedRestaurant.restaurant_name || 
+              `Restaurante ${selectedRestaurant.site_number}`
+            }
+          />
+        )}
       </div>
-    </SidebarProvider>
+    </StandardLayout>
   );
 };
 
