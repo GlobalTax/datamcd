@@ -16,7 +16,7 @@ interface PayrollViewProps {
 
 export const PayrollView: React.FC<PayrollViewProps> = ({ employees, restaurantId }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
-  const [selectedEmployee, setSelectedEmployee] = useState<string>('');
+  const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
   const { payrollRecords, loading, fetchPayrollRecords, generatePayroll, updatePayrollStatus } = usePayroll(restaurantId);
 
   const formatCurrency = (amount: number) => {
@@ -45,7 +45,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees, restaurantI
     }
   };
 
-  const filteredPayroll = selectedEmployee 
+  const filteredPayroll = selectedEmployee && selectedEmployee !== 'all'
     ? payrollRecords.filter(payroll => payroll.employee_id === selectedEmployee)
     : payrollRecords;
 
@@ -155,7 +155,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees, restaurantI
                   <SelectValue placeholder="Todos los empleados" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los empleados</SelectItem>
+                  <SelectItem value="all">Todos los empleados</SelectItem>
                   {employees.filter(emp => emp.status === 'active').map(employee => (
                     <SelectItem key={employee.id} value={employee.id}>
                       {employee.first_name} {employee.last_name}

@@ -23,7 +23,7 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({ employees, restaurantI
   const { timeOffRequests, loading, createTimeOffRequest, approveTimeOffRequest, rejectTimeOffRequest } = useTimeOff(restaurantId);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedEmployee, setSelectedEmployee] = useState<string>('');
+  const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
 
   const [formData, setFormData] = useState({
     employee_id: '',
@@ -35,7 +35,7 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({ employees, restaurantI
 
   const filteredRequests = timeOffRequests.filter(request => {
     const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
-    const matchesEmployee = selectedEmployee === '' || request.employee_id === selectedEmployee;
+    const matchesEmployee = selectedEmployee === 'all' || request.employee_id === selectedEmployee;
     return matchesStatus && matchesEmployee;
   });
 
@@ -240,7 +240,7 @@ export const TimeOffView: React.FC<TimeOffViewProps> = ({ employees, restaurantI
                   <SelectValue placeholder="Todos los empleados" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los empleados</SelectItem>
+                  <SelectItem value="all">Todos los empleados</SelectItem>
                   {employees.map(employee => (
                     <SelectItem key={employee.id} value={employee.id}>
                       {employee.first_name} {employee.last_name}
