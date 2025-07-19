@@ -27,12 +27,10 @@ interface Restaurant {
   franchisee_id: string;
   base_restaurant_id: string;
   status: string;
-  // Campos adicionales de franchisee_restaurants
   franchise_start_date?: string;
   franchise_end_date?: string;
   last_year_revenue?: number;
   monthly_rent?: number;
-  // Relación con base_restaurant
   base_restaurant?: {
     id: string;
     restaurant_name: string;
@@ -41,7 +39,6 @@ interface Restaurant {
     city: string;
     [key: string]: any;
   };
-  // Alias para compatibilidad
   restaurant_name?: string;
   site_number?: string;
 }
@@ -54,7 +51,6 @@ interface AuthContextType {
   franchisee: Franchisee | null;
   restaurants: Restaurant[];
   loading: boolean;
-  connectionStatus: 'online' | 'offline' | 'reconnecting';
   
   // Estados de impersonación (solo para asesores)
   isImpersonating: boolean;
@@ -72,7 +68,6 @@ interface AuthContextType {
   
   // Utilidades
   refetchUserData: () => Promise<void>;
-  getDebugInfo: () => any;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -101,7 +96,7 @@ const useDebounce = (callback: (...args: any[]) => Promise<void>, delay: number)
   }, [callback, delay]);
 };
 
-// Provider consolidado
+// Provider consolidado  
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Estados principales
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -109,12 +104,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [franchisee, setFranchisee] = useState<Franchisee | null>(null);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState<'online' | 'offline' | 'reconnecting'>('online');
   
   // Estados de impersonación
   const [impersonatedFranchisee, setImpersonatedFranchisee] = useState<Franchisee | null>(null);
   
-  // Referencias para control de estado - CORREGIDO: No resetear en cleanup
+  // Referencias para control de estado
   const authInitialized = useRef(false);
   const currentUserId = useRef<string | null>(null);
   const isInitializing = useRef(false);
@@ -130,9 +124,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const savedFranchisee = JSON.parse(savedImpersonation);
         setImpersonatedFranchisee(savedFranchisee);
-        console.log('AUTH: Restored impersonation state');
       } catch (error) {
-        console.error('AUTH: Error restoring impersonation:', error);
+        console.error('Error restoring impersonation:', error);
         sessionStorage.removeItem('impersonatedFranchisee');
       }
     }
@@ -142,15 +135,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserData = useCallback(async (userId: string, retryCount = 0) => {
     // Evitar múltiples llamadas simultáneas
     if (isInitializing.current) {
-      console.log('AUTH: Already initializing, skipping fetchUserData');
       return;
     }
     
     isInitializing.current = true;
     
     try {
-      console.log('AUTH: Fetching user data for:', userId, 'Retry:', retryCount);
-      
       // Cargar perfil del usuario con timeout
       const profilePromise = supabase
         .from('profiles')
@@ -159,7 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
       );
 
       let profile;
@@ -170,7 +160,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ]) as any;
 
         if (profileError) {
-          console.log('AUTH: Profile not found, using session data');
           // Fallback con datos de sesión
           const sessionUser = session?.user;
           profile = {
@@ -183,7 +172,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           profile = profileData;
         }
       } catch (error) {
-        console.log('AUTH: Profile fetch failed, using fallback');
         const sessionUser = session?.user;
         profile = {
           id: userId,
@@ -205,7 +193,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .single();
 
           if (franchiseeError) {
-            console.log('AUTH: Creating new franchisee');
             await createFranchisee(userId);
           } else {
             setFranchisee(franchiseeData);
@@ -214,18 +201,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await fetchRestaurants(franchiseeData.id);
           }
         } catch (franchiseeError) {
-          console.log('AUTH: Franchisee fetch failed, creating new one');
           await createFranchisee(userId);
         }
       }
-
-      console.log('AUTH: User data loaded successfully');
     } catch (error) {
-      console.error('AUTH: Error fetching user data:', error);
+      console.error('Error fetching user data:', error);
       
       // Retry logic para errores temporales
       if (retryCount < 2) {
-        console.log('AUTH: Retrying fetchUserData, attempt:', retryCount + 1);
         setTimeout(() => {
           fetchUserData(userId, retryCount + 1);
         }, 1000 * (retryCount + 1));
@@ -265,7 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
-        console.error('AUTH: Error creating franchisee:', error);
+        console.error('Error creating franchisee:', error);
         // Crear franquiciado fallback local
         const fallbackFranchisee: Franchisee = {
           id: `temp-${userId}`,
@@ -281,7 +264,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setFranchisee(newFranchisee);
       }
     } catch (error) {
-      console.error('AUTH: Unexpected error creating franchisee:', error);
+      console.error('Unexpected error creating franchisee:', error);
     }
   }, [session]);
 
@@ -304,31 +287,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('status', 'active');
 
       if (error) {
-        console.error('AUTH: Error fetching restaurants:', error);
+        console.error('Error fetching restaurants:', error);
         setRestaurants([]);
       } else {
         setRestaurants(restaurantData || []);
-        console.log('AUTH: Restaurants loaded:', restaurantData?.length || 0);
       }
     } catch (error) {
-      console.error('AUTH: Error fetching restaurants:', error);
+      console.error('Error fetching restaurants:', error);
       setRestaurants([]);
     }
   }, []);
 
-  // Inicialización del sistema de autenticación - CORREGIDO
+  // Inicialización del sistema de autenticación
   useEffect(() => {
     if (authInitialized.current) return;
     
-    console.log('AUTH: Initializing authentication system');
     authInitialized.current = true;
     
     let authSubscription: any = null;
     
     // Función para manejar cambios de estado de autenticación
     const handleAuthStateChange = async (event: string, newSession: Session | null) => {
-      console.log('AUTH: State change:', event, newSession?.user?.id);
-      
       // Sincronizar el estado de sesión primero
       setSession(newSession);
       
@@ -337,7 +316,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Usar la versión con debounce para evitar llamadas rápidas
         debouncedFetchUserData(newSession.user.id);
       } else if (!newSession?.user) {
-        console.log('AUTH: Clearing user data');
         currentUserId.current = null;
         setUser(null);
         setFranchisee(null);
@@ -360,7 +338,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeAuth = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
-        console.log('AUTH: Initial session check:', initialSession?.user?.id);
         
         if (initialSession) {
           await handleAuthStateChange('INITIAL_SESSION', initialSession);
@@ -368,7 +345,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
         }
       } catch (error) {
-        console.error('AUTH: Error in initialization:', error);
+        console.error('Error in initialization:', error);
         setLoading(false);
       }
     };
@@ -377,12 +354,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setupAuthListener();
     initializeAuth();
 
-    // Cleanup - CORREGIDO: No resetear authInitialized
+    // Cleanup
     return () => {
       if (authSubscription) {
         authSubscription.unsubscribe();
       }
-      // NO resetear authInitialized.current = false; para mantener patrón singleton
     };
   }, [debouncedFetchUserData]);
 
@@ -402,7 +378,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
-        console.error('AUTH: Sign in error:', error);
+        console.error('Sign in error:', error);
         toast.error(error.message);
         return { error: error.message };
       }
@@ -410,7 +386,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Sesión iniciada correctamente');
       return {};
     } catch (error: any) {
-      console.error('AUTH: Unexpected sign in error:', error);
+      console.error('Unexpected sign in error:', error);
       toast.error('Error inesperado al iniciar sesión');
       return { error: 'Error inesperado al iniciar sesión' };
     }
@@ -432,7 +408,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
-        console.error('AUTH: Sign up error:', error);
+        console.error('Sign up error:', error);
         toast.error(error.message);
         return { error: error.message };
       }
@@ -440,7 +416,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Cuenta creada. Revisa tu email para confirmar.');
       return {};
     } catch (error: any) {
-      console.error('AUTH: Unexpected sign up error:', error);
+      console.error('Unexpected sign up error:', error);
       toast.error('Error inesperado al registrarse');
       return { error: 'Error inesperado al registrarse' };
     }
@@ -456,27 +432,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const { error } = await supabase.auth.signOut();
       if (error && !error.message.includes('Session not found')) {
-        console.error('AUTH: Sign out error:', error);
+        console.error('Sign out error:', error);
         toast.error(error.message);
       } else {
         toast.success('Sesión cerrada correctamente');
       }
     } catch (error: any) {
-      console.error('AUTH: Unexpected sign out error:', error);
+      console.error('Unexpected sign out error:', error);
       toast.error('Error al cerrar sesión');
     }
   }, [isImpersonating]);
 
   // Acciones de impersonación
   const startImpersonation = useCallback((franchisee: Franchisee) => {
-    console.log('AUTH: Starting impersonation:', franchisee.franchisee_name);
     setImpersonatedFranchisee(franchisee);
     sessionStorage.setItem('impersonatedFranchisee', JSON.stringify(franchisee));
     toast.success(`Impersonando a ${franchisee.franchisee_name}`);
   }, []);
 
   const stopImpersonation = useCallback(() => {
-    console.log('AUTH: Stopping impersonation');
     setImpersonatedFranchisee(null);
     sessionStorage.removeItem('impersonatedFranchisee');
     toast.success('Impersonación terminada');
@@ -489,24 +463,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [fetchUserData]);
 
-  // Información de debugging
-  const getDebugInfo = useCallback(() => {
-    return {
-      user: user ? { id: user.id, role: user.role, email: user.email } : null,
-      session: !!session,
-      loading,
-      franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
-      restaurants: restaurants.length,
-      impersonation: {
-        isImpersonating,
-        impersonatedFranchisee: impersonatedFranchisee?.franchisee_name || null
-      },
-      initialized: authInitialized.current,
-      isInitializing: isInitializing.current,
-      timestamp: new Date().toISOString()
-    };
-  }, [user, session, loading, franchisee, restaurants, isImpersonating, impersonatedFranchisee]);
-
   const value: AuthContextType = {
     // Estados principales
     user,
@@ -514,7 +470,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     franchisee,
     restaurants,
     loading,
-    connectionStatus,
     
     // Impersonación
     isImpersonating,
@@ -529,8 +484,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     stopImpersonation,
     
     // Utilidades
-    refetchUserData,
-    getDebugInfo
+    refetchUserData
   };
 
   return (

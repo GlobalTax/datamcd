@@ -10,8 +10,8 @@ import AuthPage from "./pages/AuthPage";
 import AdvisorAuthPage from "./pages/AdvisorAuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import OptimizedDashboardPage from "./pages/OptimizedDashboardPage";
-import RestaurantPage from "./pages/RestaurantPage";
 import RestaurantManagementPage from "./pages/RestaurantManagementPage";
+import RestaurantDetailPage from "./pages/RestaurantDetailPage";
 import ProfitLossPage from "./pages/ProfitLossPage";
 import HistoricalDataPage from "./pages/HistoricalDataPage";
 import AnalysisPage from "./pages/AnalysisPage";
@@ -66,10 +66,10 @@ function App() {
                 }
               />
               <Route
-                path="/restaurant-admin"
+                path="/restaurant/:restaurantId"
                 element={
                   <ProtectedRoute allowedRoles={['franchisee']}>
-                    <RestaurantPage />
+                    <RestaurantDetailPage />
                   </ProtectedRoute>
                 }
               />
