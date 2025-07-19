@@ -60,8 +60,8 @@ interface AuthContextType {
   
   // Acciones de autenticación
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   
   // Acciones de impersonación
   startImpersonation: (franchisee: Franchisee) => void;
@@ -81,21 +81,6 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
-
-// Debounce utility para evitar llamadas rápidas consecutivas
-const useDebounce = (callback: (...args: any[]) => Promise<void>, delay: number) => {
-  const timeoutRef = useRef<NodeJS.Timeout>();
-  
-  return useCallback((...args: any[]) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      callback(...args);
-    }, delay);
-  }, [callback, delay]);
 };
 
 // Provider consolidado  
@@ -133,60 +118,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Función para cargar datos del usuario con manejo de errores mejorado
+  // Función mejorada para cargar datos del usuario
   const fetchUserData = useCallback(async (userId: string, retryCount = 0) => {
-    // Evitar múltiples llamadas simultáneas
+    console.log(`AuthProvider - fetchUserData starting for userId: ${userId}, retry: ${retryCount}`);
+    
     if (isInitializing.current) {
+      console.log('AuthProvider - Already initializing, skipping');
       return;
     }
     
     isInitializing.current = true;
     
     try {
-      // Cargar perfil del usuario con timeout
-      const profilePromise = supabase
+      // 1. Cargar perfil del usuario
+      console.log('AuthProvider - Fetching user profile...');
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
-      );
-
-      let profile;
-      try {
-        const { data: profileData, error: profileError } = await Promise.race([
-          profilePromise,
-          timeoutPromise
-        ]) as any;
-
-        if (profileError) {
-          // Fallback con datos de sesión
-          const sessionUser = session?.user;
+      let profile: UserProfile;
+      
+      if (profileError || !profileData) {
+        console.error('AuthProvider - Profile error:', profileError);
+        
+        // Para superadmin, crear perfil básico con los datos de sesión
+        const sessionUser = session?.user;
+        if (sessionUser?.email === 's.navarro@obn.es') {
+          console.log('AuthProvider - Creating superadmin profile fallback');
+          profile = {
+            id: userId,
+            email: 's.navarro@obn.es',
+            full_name: 'Superadmin',
+            role: 'superadmin'
+          };
+        } else {
           profile = {
             id: userId,
             email: sessionUser?.email || 'usuario@ejemplo.com',
             full_name: sessionUser?.user_metadata?.full_name || 'Usuario',
             role: 'franchisee'
           };
-        } else {
-          profile = profileData;
         }
-      } catch (error) {
-        const sessionUser = session?.user;
-        profile = {
-          id: userId,
-          email: sessionUser?.email || 'usuario@ejemplo.com',
-          full_name: sessionUser?.user_metadata?.full_name || 'Usuario',
-          role: 'franchisee'
-        };
+      } else {
+        profile = profileData;
       }
 
+      console.log('AuthProvider - Profile loaded:', { email: profile.email, role: profile.role });
       setUser(profile);
 
-      // Cargar franquiciado solo para usuarios franchisee
-      if (!profile || profile.role === 'franchisee') {
+      // 2. Solo cargar franquiciado para usuarios franchisee
+      if (profile.role === 'franchisee') {
+        console.log('AuthProvider - Loading franchisee data...');
         try {
           const { data: franchiseeData, error: franchiseeError } = await supabase
             .from('franchisees')
@@ -194,50 +178,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .eq('user_id', userId)
             .single();
 
-          if (franchiseeError) {
+          if (franchiseeError || !franchiseeData) {
+            console.log('AuthProvider - Creating new franchisee');
             await createFranchisee(userId);
           } else {
             setFranchisee(franchiseeData);
+            console.log('AuthProvider - Franchisee loaded:', franchiseeData.franchisee_name);
             
             // Cargar restaurantes del franquiciado
             await fetchRestaurants(franchiseeData.id);
           }
         } catch (franchiseeError) {
+          console.error('AuthProvider - Franchisee fetch error:', franchiseeError);
           await createFranchisee(userId);
         }
+      } else {
+        console.log(`AuthProvider - User role is ${profile.role}, skipping franchisee data`);
+        setFranchisee(null);
+        setRestaurants([]);
       }
+
+      console.log('AuthProvider - User data loaded successfully');
+      
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('AuthProvider - Critical error in fetchUserData:', error);
       
       // Retry logic para errores temporales
       if (retryCount < 2) {
+        console.log(`AuthProvider - Retrying fetchUserData in ${1000 * (retryCount + 1)}ms`);
         setTimeout(() => {
           fetchUserData(userId, retryCount + 1);
         }, 1000 * (retryCount + 1));
         return;
       }
       
-      // Fallback con datos mínimos funcionales después de todos los reintentos
+      // Fallback después de todos los reintentos
+      const sessionUser = session?.user;
       const fallbackProfile: UserProfile = {
         id: userId,
-        email: session?.user?.email || 'usuario@ejemplo.com',
-        full_name: session?.user?.user_metadata?.full_name || 'Usuario',
-        role: 'franchisee'
+        email: sessionUser?.email || 'usuario@ejemplo.com',
+        full_name: sessionUser?.user_metadata?.full_name || 'Usuario',
+        role: sessionUser?.email === 's.navarro@obn.es' ? 'superadmin' : 'franchisee'
       };
+      
+      console.log('AuthProvider - Using fallback profile:', fallbackProfile);
       setUser(fallbackProfile);
       
-      // Intentar crear franquiciado
-      await createFranchisee(userId);
+      if (fallbackProfile.role === 'franchisee') {
+        await createFranchisee(userId);
+      }
     } finally {
       isInitializing.current = false;
+      setLoading(false);
     }
   }, [session]);
 
-  // Versión con debounce para evitar llamadas rápidas
-  const debouncedFetchUserData = useDebounce(fetchUserData, 300);
-
   // Crear franquiciado si no existe
   const createFranchisee = useCallback(async (userId: string) => {
+    console.log('AuthProvider - Creating franchisee for userId:', userId);
     try {
       const { data: newFranchisee, error } = await supabase
         .from('franchisees')
@@ -250,8 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
-        console.error('Error creating franchisee:', error);
-        // Crear franquiciado fallback local
+        console.error('AuthProvider - Error creating franchisee:', error);
         const fallbackFranchisee: Franchisee = {
           id: `temp-${userId}`,
           user_id: userId,
@@ -263,17 +260,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setFranchisee(fallbackFranchisee);
       } else {
+        console.log('AuthProvider - Franchisee created successfully');
         setFranchisee(newFranchisee);
       }
     } catch (error) {
-      console.error('Unexpected error creating franchisee:', error);
+      console.error('AuthProvider - Unexpected error creating franchisee:', error);
     }
   }, [session]);
 
   // Cargar restaurantes del franquiciado
   const fetchRestaurants = useCallback(async (franchiseeId: string) => {
+    console.log('AuthProvider - Fetching restaurants for franchisee:', franchiseeId);
     try {
-      // Skip para IDs temporales
       if (franchiseeId.startsWith('temp-')) {
         setRestaurants([]);
         return;
@@ -289,13 +287,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('status', 'active');
 
       if (error) {
-        console.error('Error fetching restaurants:', error);
+        console.error('AuthProvider - Error fetching restaurants:', error);
         setRestaurants([]);
       } else {
+        console.log(`AuthProvider - Loaded ${restaurantData?.length || 0} restaurants`);
         setRestaurants(restaurantData || []);
       }
     } catch (error) {
-      console.error('Error fetching restaurants:', error);
+      console.error('AuthProvider - Error fetching restaurants:', error);
       setRestaurants([]);
     }
   }, []);
@@ -304,25 +303,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (authInitialized.current) return;
     
+    console.log('AuthProvider - Initializing authentication system');
     authInitialized.current = true;
     
     let authSubscription: any = null;
     
     // Función para manejar cambios de estado de autenticación
     const handleAuthStateChange = async (event: string, newSession: Session | null) => {
-      // Sincronizar el estado de sesión primero
+      console.log(`AuthProvider - Auth state change: ${event}`, {
+        hasSession: !!newSession,
+        userId: newSession?.user?.id,
+        email: newSession?.user?.email
+      });
+      
       setSession(newSession);
       
       if (newSession?.user && currentUserId.current !== newSession.user.id) {
         currentUserId.current = newSession.user.id;
-        // Usar la versión con debounce para evitar llamadas rápidas
-        debouncedFetchUserData(newSession.user.id);
+        await fetchUserData(newSession.user.id);
       } else if (!newSession?.user) {
+        console.log('AuthProvider - Clearing user data');
         currentUserId.current = null;
         setUser(null);
         setFranchisee(null);
         setRestaurants([]);
-        // Limpiar impersonación al cerrar sesión
         setImpersonatedFranchisee(null);
         sessionStorage.removeItem('impersonatedFranchisee');
         setLoading(false);
@@ -339,62 +343,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Verificar sesión inicial
     const initializeAuth = async () => {
       try {
+        console.log('AuthProvider - Checking initial session...');
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
         if (initialSession) {
+          console.log('AuthProvider - Initial session found');
           await handleAuthStateChange('INITIAL_SESSION', initialSession);
         } else {
+          console.log('AuthProvider - No initial session');
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error in initialization:', error);
+        console.error('AuthProvider - Error in initialization:', error);
         setLoading(false);
       }
     };
 
-    // Configurar listener primero, luego verificar sesión inicial
     setupAuthListener();
     initializeAuth();
 
-    // Cleanup
     return () => {
       if (authSubscription) {
         authSubscription.unsubscribe();
       }
     };
-  }, [debouncedFetchUserData]);
-
-  // Efecto separado para manejar el loading después de fetch de datos
-  useEffect(() => {
-    if (user !== null || (!session && !loading)) {
-      setLoading(false);
-    }
-  }, [user, session, loading]);
+  }, [fetchUserData]);
 
   // Acciones de autenticación
   const signIn = useCallback(async (email: string, password: string) => {
+    console.log('AuthProvider - Starting sign in for:', email);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) {
-        console.error('Sign in error:', error);
+        console.error('AuthProvider - Sign in error:', error);
         toast.error(error.message);
         return { error: error.message };
       }
       
+      console.log('AuthProvider - Sign in successful');
       toast.success('Sesión iniciada correctamente');
       return {};
     } catch (error: any) {
-      console.error('Unexpected sign in error:', error);
+      console.error('AuthProvider - Unexpected sign in error:', error);
       toast.error('Error inesperado al iniciar sesión');
       return { error: 'Error inesperado al iniciar sesión' };
     }
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, fullName: string) => {
+    console.log('AuthProvider - Starting sign up for:', email);
     try {
       const redirectUrl = `${window.location.origin}/`;
       
@@ -410,23 +411,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
-        console.error('Sign up error:', error);
+        console.error('AuthProvider - Sign up error:', error);
         toast.error(error.message);
         return { error: error.message };
       }
       
+      console.log('AuthProvider - Sign up successful');
       toast.success('Cuenta creada. Revisa tu email para confirmar.');
       return {};
     } catch (error: any) {
-      console.error('Unexpected sign up error:', error);
+      console.error('AuthProvider - Unexpected sign up error:', error);
       toast.error('Error inesperado al registrarse');
       return { error: 'Error inesperado al registrarse' };
     }
   }, []);
 
   const signOut = useCallback(async () => {
+    console.log('AuthProvider - Starting sign out');
     try {
-      // Limpiar impersonación
       if (isImpersonating) {
         setImpersonatedFranchisee(null);
         sessionStorage.removeItem('impersonatedFranchisee');
@@ -434,13 +436,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const { error } = await supabase.auth.signOut();
       if (error && !error.message.includes('Session not found')) {
-        console.error('Sign out error:', error);
+        console.error('AuthProvider - Sign out error:', error);
         toast.error(error.message);
       } else {
+        console.log('AuthProvider - Sign out successful');
         toast.success('Sesión cerrada correctamente');
       }
     } catch (error: any) {
-      console.error('Unexpected sign out error:', error);
+      console.error('AuthProvider - Unexpected sign out error:', error);
       toast.error('Error al cerrar sesión');
     }
   }, [isImpersonating]);
@@ -461,17 +464,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Refetch manual de datos
   const refetchUserData = useCallback(async () => {
     if (currentUserId.current) {
+      console.log('AuthProvider - Manual refetch requested');
       await fetchUserData(currentUserId.current);
     }
   }, [fetchUserData]);
 
   const getDebugInfo = useCallback(() => ({
-    user: user ? { id: user.id, email: user.email, role: user.role } : null,
-    session: session ? { access_token: session.access_token ? 'present' : 'missing' } : null,
-    franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
+    user: user ? { 
+      id: user.id, 
+      email: user.email, 
+      role: user.role,
+      full_name: user.full_name 
+    } : null,
+    session: session ? { 
+      access_token: session.access_token ? 'present' : 'missing',
+      user_id: session.user?.id,
+      user_email: session.user?.email
+    } : null,
+    franchisee: franchisee ? { 
+      id: franchisee.id, 
+      name: franchisee.franchisee_name 
+    } : null,
     loading,
-    authInitialized: !!session,
-    sessionExists: !!session?.access_token
+    authInitialized: authInitialized.current,
+    currentUserId: currentUserId.current,
+    isInitializing: isInitializing.current
   }), [user, session, franchisee, loading]);
 
   const value: AuthContextType = {
