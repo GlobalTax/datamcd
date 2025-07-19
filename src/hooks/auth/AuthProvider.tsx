@@ -51,6 +51,7 @@ interface AuthContextType {
   franchisee: Franchisee | null;
   restaurants: Restaurant[];
   loading: boolean;
+  connectionStatus?: 'online' | 'offline' | 'reconnecting';
   
   // Estados de impersonación (solo para asesores)
   isImpersonating: boolean;
@@ -68,6 +69,7 @@ interface AuthContextType {
   
   // Utilidades
   refetchUserData: () => Promise<void>;
+  getDebugInfo?: () => any;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -463,6 +465,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [fetchUserData]);
 
+  const getDebugInfo = useCallback(() => ({
+    user: user ? { id: user.id, email: user.email, role: user.role } : null,
+    session: session ? { access_token: session.access_token ? 'present' : 'missing' } : null,
+    franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
+    loading,
+    authInitialized: !!session,
+    sessionExists: !!session?.access_token
+  }), [user, session, franchisee, loading]);
+
   const value: AuthContextType = {
     // Estados principales
     user,
@@ -470,6 +481,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     franchisee,
     restaurants,
     loading,
+    connectionStatus: 'online',
     
     // Impersonación
     isImpersonating,
@@ -484,7 +496,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     stopImpersonation,
     
     // Utilidades
-    refetchUserData
+    refetchUserData,
+    getDebugInfo
   };
 
   return (

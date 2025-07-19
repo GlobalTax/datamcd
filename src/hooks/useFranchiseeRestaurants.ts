@@ -5,7 +5,7 @@ import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
 import { toast } from 'sonner';
 
-export const useFranchiseeRestaurants = () => {
+export const useFranchiseeRestaurants = (franchiseeId?: string) => {
   const { user, franchisee, restaurants: authRestaurants } = useUnifiedAuth();
   const [restaurants, setRestaurants] = useState<FranchiseeRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
