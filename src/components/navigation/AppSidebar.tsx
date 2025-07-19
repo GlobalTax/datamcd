@@ -94,7 +94,7 @@ export function AppSidebar() {
   } = useUnifiedAuth();
 
   // Log de debugging detallado
-  const debugInfo = getDebugInfo();
+  const debugInfo = getDebugInfo?.() || {};
   console.log('SIDEBAR DEBUG:', debugInfo);
 
   const handleSignOut = async () => {
