@@ -51,16 +51,24 @@ export const useDashboardData = (): DashboardData => {
     const activeRestaurants = restaurants.length > 0 ? restaurants : unifiedRestaurants;
     
     const totalRevenue = activeRestaurants.reduce((sum, r) => {
-      // Manejar tanto Restaurant como UnifiedRestaurant
-      const revenue = ('assignment' in r && r.assignment?.last_year_revenue) || 
-                     ('last_year_revenue' in r && r.last_year_revenue) || 0;
+      // Manejar tanto Restaurant como UnifiedRestaurant con verificaciones de propiedades
+      let revenue = 0;
+      if ('assignment' in r && r.assignment?.last_year_revenue) {
+        revenue = r.assignment.last_year_revenue;
+      } else if ('last_year_revenue' in r && r.last_year_revenue) {
+        revenue = r.last_year_revenue;
+      }
       return sum + revenue;
     }, 0);
     
     const totalRent = activeRestaurants.reduce((sum, r) => {
-      // Manejar tanto Restaurant como UnifiedRestaurant
-      const rent = ('assignment' in r && r.assignment?.monthly_rent) || 
-                   ('monthly_rent' in r && r.monthly_rent) || 0;
+      // Manejar tanto Restaurant como UnifiedRestaurant con verificaciones de propiedades
+      let rent = 0;
+      if ('assignment' in r && r.assignment?.monthly_rent) {
+        rent = r.assignment.monthly_rent;
+      } else if ('monthly_rent' in r && r.monthly_rent) {
+        rent = r.monthly_rent;
+      }
       return sum + (rent * 12);
     }, 0);
 

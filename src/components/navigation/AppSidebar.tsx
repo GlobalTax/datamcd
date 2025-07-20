@@ -13,7 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, HardHat, UserCheck } from 'lucide-react';
+import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, HardHat, UserCheck, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 
@@ -80,6 +80,15 @@ const menuItems = [
   },
 ];
 
+// Elementos de administración solo para admins
+const adminMenuItems = [
+  {
+    title: "Configuración Sistema",
+    url: "/system-config",
+    icon: Shield,
+  },
+];
+
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -101,6 +110,8 @@ export function AppSidebar() {
     await signOut();
     navigate('/auth');
   };
+
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   return (
     <Sidebar className="w-64">
@@ -140,6 +151,33 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Sección de administración para admins */}
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+              Administración
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {adminMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild
+                      isActive={location.pathname === item.url}
+                      className="w-full justify-start px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <button onClick={() => navigate(item.url)}>
+                        <item.icon className="w-4 h-4" />
+                        <span className="font-medium">{item.title}</span>
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t">

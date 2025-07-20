@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,6 +9,14 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 // Importar el nuevo dashboard unificado
 import UnifiedDashboardPage from "./pages/UnifiedDashboardPage";
+
+// Importar páginas reales existentes
+import OrquestPage from "./pages/OrquestPage";
+import EmployeePage from "./pages/EmployeePage";
+import AnnualBudgetPage from "./pages/AnnualBudgetPage";
+import ProfitLossPage from "./pages/ProfitLossPage";
+import SettingsPage from "./pages/SettingsPage";
+import SystemConfigPage from "./pages/SystemConfigPage";
 
 // Placeholder components for missing pages
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -39,17 +48,39 @@ function App() {
                 </ProtectedRoute>
               } />
 
-              {/* Temporary placeholder routes until pages are implemented */}
+              {/* Páginas reales existentes */}
               <Route path="/annual-budget" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="Presupuesto Anual" />
+                  <AnnualBudgetPage />
                 </ProtectedRoute>
               } />
               <Route path="/employees" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="Empleados" />
+                  <EmployeePage />
                 </ProtectedRoute>
               } />
+              <Route path="/orquest" element={
+                <ProtectedRoute>
+                  <OrquestPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/profit-loss/:siteNumber" element={
+                <ProtectedRoute>
+                  <ProfitLossPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/system-config" element={
+                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                  <SystemConfigPage />
+                </ProtectedRoute>
+              } />
+
+              {/* Páginas placeholder temporales */}
               <Route path="/incidents" element={
                 <ProtectedRoute>
                   <PlaceholderPage title="Incidencias" />
@@ -58,11 +89,6 @@ function App() {
               <Route path="/restaurant" element={
                 <ProtectedRoute>
                   <PlaceholderPage title="Restaurante" />
-                </ProtectedRoute>
-              } />
-              <Route path="/settings" element={
-                <ProtectedRoute>
-                  <PlaceholderPage title="Configuración" />
                 </ProtectedRoute>
               } />
               <Route path="/valuation" element={
@@ -80,11 +106,6 @@ function App() {
                   <PlaceholderPage title="Análisis" />
                 </ProtectedRoute>
               } />
-              <Route path="/orquest" element={
-                <ProtectedRoute>
-                  <PlaceholderPage title="Orquest" />
-                </ProtectedRoute>
-              } />
               <Route path="/workers" element={
                 <ProtectedRoute>
                   <PlaceholderPage title="Trabajadores" />
@@ -93,6 +114,21 @@ function App() {
               <Route path="/advisor" element={
                 <ProtectedRoute>
                   <PlaceholderPage title="Panel Asesor" />
+                </ProtectedRoute>
+              } />
+              <Route path="/historical-data" element={
+                <ProtectedRoute>
+                  <PlaceholderPage title="Datos Históricos" />
+                </ProtectedRoute>
+              } />
+              <Route path="/labor-dashboard" element={
+                <ProtectedRoute>
+                  <PlaceholderPage title="Panel Laboral" />
+                </ProtectedRoute>
+              } />
+              <Route path="/biloop" element={
+                <ProtectedRoute>
+                  <PlaceholderPage title="Biloop" />
                 </ProtectedRoute>
               } />
 
