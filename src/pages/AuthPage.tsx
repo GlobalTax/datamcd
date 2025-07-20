@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,9 +31,9 @@ const AuthPage = () => {
       console.log('AuthPage - User role:', user.role);
       console.log('AuthPage - Determining redirect...');
       
-      // Redirigir usuarios con roles de asesor, admin o superadmin al panel de asesor
-      if (['asesor', 'admin', 'superadmin'].includes(user.role)) {
-        console.log('AuthPage - Redirecting asesor/admin/superadmin to /advisor');
+      // Redirigir usuarios con roles de admin, superadmin o asesor al panel de asesor
+      if (['admin', 'superadmin', 'asesor'].includes(user.role)) {
+        console.log('AuthPage - Redirecting admin/superadmin to /advisor');
         navigate('/advisor', { replace: true });
       } else {
         console.log('AuthPage - Redirecting franchisee to /dashboard');
@@ -272,7 +271,7 @@ const AuthPage = () => {
 
             <div className="mt-6 pt-4 border-t text-center">
               <p className="text-sm text-gray-600">
-                ¿Eres asesor de McDonald's?{' '}
+                ¿Eres administrador de McDonald's?{' '}
                 <button
                   onClick={() => navigate('/advisor-auth')}
                   className="text-blue-600 hover:text-blue-700 underline font-medium"

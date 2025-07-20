@@ -21,19 +21,20 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
     setDebugMode(isDev);
   }, []);
 
-  // Timeout para evitar loading infinito
+  // Timeout para evitar loading infinito - reducido para debugging
   useEffect(() => {
     if (loading) {
       const timeoutId = setTimeout(() => {
         console.log('ProtectedRoute - Loading timeout reached');
+        console.log('ProtectedRoute - Debug info:', getDebugInfo?.());
         setShowTimeout(true);
-      }, 15000); // Aumentado a 15 segundos para dar más tiempo
+      }, 10000); // Reducido a 10 segundos para detectar problemas más rápido
 
       return () => clearTimeout(timeoutId);
     } else {
       setShowTimeout(false);
     }
-  }, [loading]);
+  }, [loading, getDebugInfo]);
 
   // Si está cargando y no hemos alcanzado el timeout, mostrar spinner
   if (loading && !showTimeout) {
@@ -56,6 +57,7 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
   // Si hemos alcanzado el timeout, redirigir a auth
   if (showTimeout) {
     console.log('ProtectedRoute - Timeout reached, redirecting to auth');
+    console.log('ProtectedRoute - Final debug info:', getDebugInfo?.());
     return <Navigate to="/auth" replace />;
   }
 

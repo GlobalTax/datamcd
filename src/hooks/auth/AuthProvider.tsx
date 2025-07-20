@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -130,30 +129,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isInitializing.current = true;
     
     try {
-      // 1. Cargar perfil del usuario
-      console.log('AuthProvider - Fetching user profile...');
-      const { data: profileData, error: profileError } = await supabase
+      // 1. Intentar cargar perfil por ID primero
+      console.log('AuthProvider - Fetching user profile by ID...');
+      let { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
+
+      // 2. Si no encuentra por ID, buscar por email como fallback
+      if (!profileData && session?.user?.email) {
+        console.log('AuthProvider - Profile not found by ID, trying by email:', session.user.email);
+        const { data: profileByEmail, error: emailError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', session.user.email)
+          .maybeSingle();
+        
+        profileData = profileByEmail;
+        profileError = emailError;
+        
+        // Si encontramos por email pero el ID no coincide, actualizamos el ID
+        if (profileData && profileData.id !== userId) {
+          console.log('AuthProvider - Syncing profile ID from', profileData.id, 'to', userId);
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ id: userId })
+            .eq('email', session.user.email);
+          
+          if (!updateError) {
+            profileData.id = userId;
+          }
+        }
+      }
 
       let profile: UserProfile;
       
       if (profileError || !profileData) {
-        console.error('AuthProvider - Profile error:', profileError);
+        console.log('AuthProvider - Profile error or not found:', profileError);
         
-        // Para superadmin, crear perfil básico con los datos de sesión
+        // Crear perfil básico basado en email para casos especiales
         const sessionUser = session?.user;
         if (sessionUser?.email === 's.navarro@obn.es') {
-          console.log('AuthProvider - Creating superadmin profile fallback');
+          console.log('AuthProvider - Creating superadmin profile for s.navarro@obn.es');
           profile = {
             id: userId,
             email: 's.navarro@obn.es',
             full_name: 'Superadmin',
             role: 'superadmin'
           };
+          
+          // Intentar crear el perfil en la base de datos
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert(profile)
+            .select()
+            .single();
+          
+          if (insertError) {
+            console.log('AuthProvider - Could not insert profile, using fallback');
+          }
         } else {
+          // Perfil genérico para otros usuarios
           profile = {
             id: userId,
             email: sessionUser?.email || 'usuario@ejemplo.com',
@@ -163,12 +200,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         profile = profileData;
+        
+        // Mapear roles legacy a roles actuales
+        if (profile.role === 'asesor') {
+          console.log('AuthProvider - Mapping legacy role "asesor" to "admin"');
+          profile.role = 'admin';
+        }
       }
 
-      console.log('AuthProvider - Profile loaded:', { email: profile.email, role: profile.role });
+      console.log('AuthProvider - Profile loaded:', { 
+        email: profile.email, 
+        role: profile.role,
+        id: profile.id 
+      });
       setUser(profile);
 
-      // 2. Solo cargar franquiciado para usuarios franchisee
+      // 3. Solo cargar franquiciado para usuarios franchisee
       if (profile.role === 'franchisee') {
         console.log('AuthProvider - Loading franchisee data...');
         try {
@@ -176,7 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .from('franchisees')
             .select('*')
             .eq('user_id', userId)
-            .single();
+            .maybeSingle();
 
           if (franchiseeError || !franchiseeData) {
             console.log('AuthProvider - Creating new franchisee');
@@ -321,6 +368,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (newSession?.user && currentUserId.current !== newSession.user.id) {
         currentUserId.current = newSession.user.id;
+        setLoading(true);
         await fetchUserData(newSession.user.id);
       } else if (!newSession?.user) {
         console.log('AuthProvider - Clearing user data');
