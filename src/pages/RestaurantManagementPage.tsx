@@ -33,8 +33,7 @@ const RestaurantManagementPage = () => {
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
   // Usar restaurants filtrados o todos si no hay filtros
-  const displayRestaurants = filteredRestaurants.length > 0 || 
-    Object.values(filters || {}).some(v => v !== '') ? 
+  const displayRestaurants = filteredRestaurants.length > 0 ? 
     filteredRestaurants : restaurants;
 
   console.log('RestaurantManagementPage - User:', user ? { id: user.id, role: user.role } : null);
