@@ -83,24 +83,24 @@ export const useAuth = () => {
 };
 
 // Provider consolidado  
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Estados principales
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [franchisee, setFranchisee] = useState<Franchisee | null>(null);
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = React.useState<UserProfile | null>(null);
+  const [session, setSession] = React.useState<Session | null>(null);
+  const [franchisee, setFranchisee] = React.useState<Franchisee | null>(null);
+  const [restaurants, setRestaurants] = React.useState<Restaurant[]>([]);
+  const [loading, setLoading] = React.useState(true);
   
   // Estados de impersonación
-  const [impersonatedFranchisee, setImpersonatedFranchisee] = useState<Franchisee | null>(null);
+  const [impersonatedFranchisee, setImpersonatedFranchisee] = React.useState<Franchisee | null>(null);
   
   // Referencias para control de estado
-  const authInitialized = useRef(false);
-  const currentUserId = useRef<string | null>(null);
-  const isInitializing = useRef(false);
+  const authInitialized = React.useRef(false);
+  const currentUserId = React.useRef<string | null>(null);
+  const isInitializing = React.useRef(false);
 
   // Función mejorada para validar y sincronizar IDs entre auth.users y profiles
-  const validateAndSyncUserProfile = useCallback(async (authUser: User) => {
+  const validateAndSyncUserProfile = React.useCallback(async (authUser: User) => {
     console.log(`🔍 AuthProvider - Validating profile sync for user:`, {
       authUserId: authUser.id,
       email: authUser.email
@@ -185,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isImpersonating = Boolean(impersonatedFranchisee);
 
   // Cargar estado de impersonación persistente
-  useEffect(() => {
+  React.useEffect(() => {
     const savedImpersonation = sessionStorage.getItem('impersonatedFranchisee');
     if (savedImpersonation) {
       try {
@@ -199,7 +199,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Función mejorada para cargar datos del usuario
-  const fetchUserData = useCallback(async (userId: string, retryCount = 0) => {
+  const fetchUserData = React.useCallback(async (userId: string, retryCount = 0) => {
     console.log(`AuthProvider - fetchUserData starting for userId: ${userId}, retry: ${retryCount}`);
     
     if (isInitializing.current) {
@@ -344,7 +344,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [session]);
 
   // Crear franquiciado si no existe
-  const createFranchisee = useCallback(async (userId: string) => {
+  const createFranchisee = React.useCallback(async (userId: string) => {
     console.log('AuthProvider - Creating franchisee for userId:', userId);
     try {
       const { data: newFranchisee, error } = await supabase
@@ -379,7 +379,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [session]);
 
   // Cargar restaurantes del franquiciado
-  const fetchRestaurants = useCallback(async (franchiseeId: string) => {
+  const fetchRestaurants = React.useCallback(async (franchiseeId: string) => {
     console.log('AuthProvider - Fetching restaurants for franchisee:', franchiseeId);
     try {
       if (franchiseeId.startsWith('temp-')) {
@@ -410,7 +410,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Inicialización del sistema de autenticación
-  useEffect(() => {
+  React.useEffect(() => {
     if (authInitialized.current) return;
     
     console.log('AuthProvider - Initializing authentication system');
@@ -493,7 +493,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [fetchUserData]);
 
   // Acciones de autenticación
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = React.useCallback(async (email: string, password: string) => {
     console.log('AuthProvider - Starting sign in for:', email);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -517,7 +517,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
+  const signUp = React.useCallback(async (email: string, password: string, fullName: string) => {
     console.log('AuthProvider - Starting sign up for:', email);
     try {
       const redirectUrl = `${window.location.origin}/`;
@@ -549,7 +549,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const signOut = useCallback(async () => {
+  const signOut = React.useCallback(async () => {
     console.log('AuthProvider - Starting sign out');
     try {
       if (isImpersonating) {
@@ -572,27 +572,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [isImpersonating]);
 
   // Acciones de impersonación
-  const startImpersonation = useCallback((franchisee: Franchisee) => {
+  const startImpersonation = React.useCallback((franchisee: Franchisee) => {
     setImpersonatedFranchisee(franchisee);
     sessionStorage.setItem('impersonatedFranchisee', JSON.stringify(franchisee));
     toast.success(`Impersonando a ${franchisee.franchisee_name}`);
   }, []);
 
-  const stopImpersonation = useCallback(() => {
+  const stopImpersonation = React.useCallback(() => {
     setImpersonatedFranchisee(null);
     sessionStorage.removeItem('impersonatedFranchisee');
     toast.success('Impersonación terminada');
   }, []);
 
   // Refetch manual de datos
-  const refetchUserData = useCallback(async () => {
+  const refetchUserData = React.useCallback(async () => {
     if (currentUserId.current) {
       console.log('AuthProvider - Manual refetch requested');
       await fetchUserData(currentUserId.current);
     }
   }, [fetchUserData]);
 
-  const getDebugInfo = useCallback(() => ({
+  const getDebugInfo = React.useCallback(() => ({
     user: user ? { 
       id: user.id, 
       email: user.email, 
