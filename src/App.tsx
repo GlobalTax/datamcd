@@ -28,6 +28,11 @@ import FranchiseesPage from "./pages/FranchiseesPage";
 import FranchiseeDetailPage from "./pages/FranchiseeDetailPage";
 import AdvisorPage from "./pages/AdvisorPage";
 
+// Importar páginas de integraciones
+import IntegrationsPage from "./pages/IntegrationsPage";
+import IntegrationStatusPage from "./pages/IntegrationStatusPage";
+import BiloopPage from "./pages/BiloopPage";
+
 // Placeholder components for missing pages
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div className="min-h-screen flex items-center justify-center">
@@ -78,11 +83,6 @@ function App() {
                     <EmployeePage />
                   </ProtectedRoute>
                 } />
-                <Route path="/orquest" element={
-                  <ProtectedRoute>
-                    <OrquestPage />
-                  </ProtectedRoute>
-                } />
                 <Route path="/profit-loss/:siteNumber" element={
                   <ProtectedRoute>
                     <ProfitLossPage />
@@ -91,11 +91,6 @@ function App() {
                 <Route path="/settings" element={
                   <ProtectedRoute>
                     <SettingsPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/system-config" element={
-                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                    <SystemConfigPage />
                   </ProtectedRoute>
                 } />
 
@@ -113,7 +108,21 @@ function App() {
                   </ProtectedRoute>
                 } />
 
-                {/* Nueva página de Gestión de Franquiciados */}
+                {/* Estado de integraciones (para franquiciados) */}
+                <Route path="/integration-status" element={
+                  <ProtectedRoute>
+                    <IntegrationStatusPage />
+                  </ProtectedRoute>
+                } />
+
+                {/* SECCIÓN DE ADMINISTRACIÓN - Solo para admins */}
+                <Route path="/system-config" element={
+                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                    <SystemConfigPage />
+                  </ProtectedRoute>
+                } />
+
+                {/* Página de Gestión de Franquiciados */}
                 <Route path="/franchisees" element={
                   <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
                     <FranchiseesPage />
@@ -122,6 +131,41 @@ function App() {
                 
                 {/* Detalle de Franquiciado */}
                 <Route path="/franchisees/:franchiseeId" element={
+                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                    <FranchiseeDetailPage />
+                  </ProtectedRoute>
+                } />
+
+                {/* Integraciones Externas (para administradores) */}
+                <Route path="/integrations" element={
+                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                    <IntegrationsPage />
+                  </ProtectedRoute>
+                } />
+
+                {/* Orquest (solo administradores) */}
+                <Route path="/orquest" element={
+                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                    <OrquestPage />
+                  </ProtectedRoute>
+                } />
+
+                {/* Biloop (solo administradores) */}
+                <Route path="/biloop" element={
+                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                    <BiloopPage />
+                  </ProtectedRoute>
+                } />
+
+                {/* Advisor Page */}
+                <Route path="/advisor" element={
+                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                    <AdvisorPage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Detalle de Franquiciado desde Advisor */}
+                <Route path="/advisor/franchisee/:franchiseeId" element={
                   <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
                     <FranchiseeDetailPage />
                   </ProtectedRoute>
@@ -148,26 +192,9 @@ function App() {
                     <PlaceholderPage title="Análisis" />
                   </ProtectedRoute>
                 } />
-                <Route path="/advisor" element={
-                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                    <AdvisorPage />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Detalle de Franquiciado desde Advisor */}
-                <Route path="/advisor/franchisee/:franchiseeId" element={
-                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                    <FranchiseeDetailPage />
-                  </ProtectedRoute>
-                } />
                 <Route path="/historical-data" element={
                   <ProtectedRoute>
                     <PlaceholderPage title="Datos Históricos" />
-                  </ProtectedRoute>
-                } />
-                <Route path="/biloop" element={
-                  <ProtectedRoute>
-                    <PlaceholderPage title="Biloop" />
                   </ProtectedRoute>
                 } />
 

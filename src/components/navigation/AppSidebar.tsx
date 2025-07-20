@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -12,7 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, Shield, UserCheck } from 'lucide-react';
+import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, AlertTriangle, Receipt, Shield, UserCheck, Plug, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 
@@ -53,19 +54,14 @@ const menuItems = [
     icon: Database,
   },
   {
-    title: "Orquest",
-    url: "/orquest",
-    icon: Cog,
-  },
-  {
     title: "Incidencias",
     url: "/incidents",
     icon: AlertTriangle,
   },
   {
-    title: "Biloop",
-    url: "/biloop",
-    icon: Receipt,
+    title: "Estado Integraciones",
+    url: "/integration-status",
+    icon: Activity,
   },
 ];
 
@@ -75,6 +71,21 @@ const adminMenuItems = [
     title: "Franquiciados",
     url: "/franchisees",
     icon: UserCheck,
+  },
+  {
+    title: "Integraciones Externas",
+    url: "/integrations",
+    icon: Plug,
+  },
+  {
+    title: "Orquest",
+    url: "/orquest",
+    icon: Database,
+  },
+  {
+    title: "Biloop",
+    url: "/biloop",
+    icon: Receipt,
   },
   {
     title: "Configuración Sistema",
