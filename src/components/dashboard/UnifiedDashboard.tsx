@@ -7,14 +7,13 @@ import { RefreshCw, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useHRMetrics } from '@/hooks/useHRMetrics';
-import { useHRNotifications } from '@/hooks/useHRNotifications';
 import { MetricsWidget } from './widgets/MetricsWidget';
 import { RestaurantsWidget } from './widgets/RestaurantsWidget';
 import { QuickActionsWidget } from './widgets/QuickActionsWidget';
 import { StatusWidget } from './widgets/StatusWidget';
 import { HRDashboardWidget } from './widgets/HRDashboardWidget';
 import { HRTrendsChart } from './widgets/HRTrendsChart';
-import { HRNotifications } from './widgets/HRNotifications';
+import { AdvancedHRNotifications } from './widgets/AdvancedHRNotifications';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { LoadingState } from '@/components/layout/LoadingState';
 
@@ -33,7 +32,6 @@ export const UnifiedDashboard: React.FC = () => {
   } = useDashboardData();
 
   const { metrics: hrMetrics, loading: hrLoading } = useHRMetrics(effectiveFranchisee?.id);
-  const { notifications, dismissNotification } = useHRNotifications();
 
   const handleRefresh = () => {
     window.location.reload();
@@ -132,7 +130,7 @@ export const UnifiedDashboard: React.FC = () => {
               {/* Métricas principales */}
               <MetricsWidget metrics={metrics} userRole={user?.role} />
 
-              {/* Dashboard de RRHH - Nuevo Widget Principal */}
+              {/* Dashboard de RRHH - Widget Principal */}
               <HRDashboardWidget metrics={hrMetrics} loading={hrLoading} />
 
               {/* Layout principal */}
@@ -147,11 +145,10 @@ export const UnifiedDashboard: React.FC = () => {
 
                 {/* Sidebar */}
                 <div className="space-y-6">
-                  {/* Notificaciones de RRHH */}
-                  <HRNotifications 
-                    notifications={notifications}
-                    onDismiss={dismissNotification}
-                    onViewAll={() => navigate('/employees')}
+                  {/* Sistema avanzado de notificaciones de RRHH */}
+                  <AdvancedHRNotifications 
+                    franchiseeId={effectiveFranchisee?.id}
+                    onViewAll={() => navigate('/notifications')}
                   />
                   
                   <QuickActionsWidget userRole={user?.role} />

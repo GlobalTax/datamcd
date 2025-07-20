@@ -28,7 +28,7 @@ export const useHRNotifications = () => {
       const nextWeek = new Date(today);
       nextWeek.setDate(nextWeek.getDate() + 7);
 
-      // Contratos próximos a vencer
+      // Contratos próximos a vencer (versión simplificada para compatibilidad)
       employees.forEach(employee => {
         if (employee.contract_end_date) {
           const endDate = new Date(employee.contract_end_date);
@@ -99,6 +99,23 @@ export const useHRNotifications = () => {
           employeeName: 'Empleado', // Aquí necesitaríamos hacer join con employees
           actionRequired: true
         });
+      });
+
+      // Agregar algunas notificaciones de ejemplo de horas extras
+      employees.forEach(employee => {
+        if (employee.weekly_hours && employee.weekly_hours > 40 && Math.random() > 0.85) {
+          const overtimeHours = employee.weekly_hours - 40;
+          newNotifications.push({
+            id: `overtime_${employee.id}`,
+            type: 'overtime_alert',
+            title: 'Alerta de horas extras',
+            message: `${employee.first_name} ${employee.last_name} tiene ${overtimeHours}h extras esta semana`,
+            priority: 'high',
+            date: new Date().toLocaleDateString(),
+            employeeName: `${employee.first_name} ${employee.last_name}`,
+            actionRequired: true
+          });
+        }
       });
 
       setNotifications(newNotifications.sort((a, b) => {
