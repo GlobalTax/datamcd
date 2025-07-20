@@ -1,21 +1,23 @@
 
 import React, { useState } from 'react';
 import { useAllFranchisees } from '@/hooks/useAllFranchisees';
-import { useBaseRestaurants } from '@/hooks/useBaseRestaurants';
 import { FranchiseeCard } from '@/components/FranchiseeCard';
+import { FranchiseesTable } from './FranchiseesTable';
 import { RestaurantAssignmentDialog } from '@/components/RestaurantAssignmentDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Search, RefreshCw, Building2 } from 'lucide-react';
+import { Users, Plus, Search, RefreshCw, Building2, Grid, List } from 'lucide-react';
 import { Franchisee } from '@/types/auth';
+import { useNavigate } from 'react-router-dom';
 
 export const FranchiseesManagement = () => {
   const { franchisees, loading, refetch } = useAllFranchisees();
-  const { restaurants: baseRestaurants } = useBaseRestaurants();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFranchisee, setSelectedFranchisee] = useState<Franchisee | null>(null);
   const [showAssignmentDialog, setShowAssignmentDialog] = useState(false);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
 
   const filteredFranchisees = franchisees.filter(franchisee =>
     franchisee.franchisee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -38,11 +40,15 @@ export const FranchiseesManagement = () => {
     console.log('Delete franchisee:', franchisee);
   };
 
+  const handleViewDetails = (franchisee: Franchisee) => {
+    navigate(`/advisor/franchisee/${franchisee.id}`);
+  };
+
   // Calcular estadísticas
   const totalFranchisees = franchisees.length;
   const activeFranchisees = franchisees.filter(f => f.total_restaurants && f.total_restaurants > 0).length;
   const totalAssignedRestaurants = franchisees.reduce((sum, f) => sum + (f.total_restaurants || 0), 0);
-  const unassignedRestaurants = baseRestaurants.length - totalAssignedRestaurants;
+  const franchiseesWithoutAccount = franchisees.filter(f => !f.user_id).length;
 
   if (loading) {
     return (
@@ -66,10 +72,33 @@ export const FranchiseesManagement = () => {
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
               {activeFranchisees} activos
             </Badge>
+            {franchiseesWithoutAccount > 0 && (
+              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                {franchiseesWithoutAccount} sin cuenta
+              </Badge>
+            )}
           </div>
         </div>
         
         <div className="flex gap-2">
+          <div className="flex border rounded-lg">
+            <Button
+              variant={viewMode === 'cards' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('cards')}
+              className="rounded-r-none"
+            >
+              <Grid className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+              className="rounded-l-none"
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
           <Button variant="outline" size="sm" onClick={refetch}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Actualizar
@@ -110,12 +139,12 @@ export const FranchiseesManagement = () => {
             </div>
           </div>
         </div>
-        <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-4">
+        <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-4">
           <div className="flex items-center gap-3">
-            <Building2 className="h-8 w-8 text-orange-600" />
+            <Users className="h-8 w-8 text-yellow-600" />
             <div>
-              <h4 className="font-semibold text-orange-900">Sin Asignar</h4>
-              <p className="text-2xl font-bold text-orange-700">{unassignedRestaurants}</p>
+              <h4 className="font-semibold text-yellow-900">Sin Cuenta</h4>
+              <p className="text-2xl font-bold text-yellow-700">{franchiseesWithoutAccount}</p>
             </div>
           </div>
         </div>
@@ -134,28 +163,38 @@ export const FranchiseesManagement = () => {
         </div>
       </div>
 
-      {/* Grid de franquiciados */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredFranchisees.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <Users className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No se encontraron franquiciados</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Comienza creando un nuevo franquiciado'}
-            </p>
-          </div>
-        ) : (
-          filteredFranchisees.map((franchisee) => (
-            <FranchiseeCard
-              key={franchisee.id}
-              franchisee={franchisee}
-              onEdit={handleEditFranchisee}
-              onDelete={handleDeleteFranchisee}
-              onAssignRestaurant={handleAssignRestaurant}
-            />
-          ))
-        )}
-      </div>
+      {/* Vista de contenido */}
+      {viewMode === 'table' ? (
+        <FranchiseesTable
+          franchisees={filteredFranchisees}
+          onEdit={handleEditFranchisee}
+          onDelete={handleDeleteFranchisee}
+          onAssignRestaurant={handleAssignRestaurant}
+          onViewDetails={handleViewDetails}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredFranchisees.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <Users className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No se encontraron franquiciados</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Comienza creando un nuevo franquiciado'}
+              </p>
+            </div>
+          ) : (
+            filteredFranchisees.map((franchisee) => (
+              <FranchiseeCard
+                key={franchisee.id}
+                franchisee={franchisee}
+                onEdit={handleEditFranchisee}
+                onDelete={handleDeleteFranchisee}
+                onAssignRestaurant={handleAssignRestaurant}
+              />
+            ))
+          )}
+        </div>
+      )}
 
       {/* Dialog de asignación de restaurantes */}
       <RestaurantAssignmentDialog

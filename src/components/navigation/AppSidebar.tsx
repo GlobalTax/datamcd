@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -13,7 +12,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, Shield } from 'lucide-react';
+import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, Shield, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 
@@ -72,6 +71,11 @@ const menuItems = [
 
 // Elementos de administración solo para admins
 const adminMenuItems = [
+  {
+    title: "Franquiciados",
+    url: "/franchisees",
+    icon: UserCheck,
+  },
   {
     title: "Configuración Sistema",
     url: "/system-config",
