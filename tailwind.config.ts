@@ -20,9 +20,16 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'manrope': ['Manrope', 'sans-serif'],
+				'inter': ['Inter', 'system-ui', 'sans-serif'],
+				'manrope': ['Manrope', 'Inter', 'system-ui', 'sans-serif'],
 			},
 			colors: {
+				// McDonald's Brand Colors
+				'mc-yellow': 'hsl(43, 100%, 58%)',
+				'mc-red': 'hsl(8, 85%, 48%)',
+				'mc-dark-red': 'hsl(8, 85%, 38%)',
+				'mc-light-yellow': 'hsl(43, 100%, 68%)',
+				
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
@@ -71,6 +78,12 @@ export default {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			spacing: {
+				'4': '1rem',    /* 16px */
+				'8': '2rem',    /* 32px */ 
+				'16': '4rem',   /* 64px */
+				'24': '6rem',   /* 96px */
 			},
 			keyframes: {
 				'accordion-down': {
