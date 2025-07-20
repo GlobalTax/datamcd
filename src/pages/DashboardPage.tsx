@@ -5,6 +5,7 @@ import { StandardLayout } from '@/components/layout/StandardLayout';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
 import { RestaurantsSection } from '@/components/dashboard/RestaurantsSection';
 import { QuickActions } from '@/components/dashboard/QuickActions';
+import { FranchiseesSection } from '@/components/admin/FranchiseesSection';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useUnifiedRestaurants } from '@/hooks/useUnifiedRestaurants';
 import { LoadingState } from '@/components/layout/LoadingState';
@@ -113,27 +114,34 @@ const DashboardPage = () => {
 
         {/* Panel específico para asesores */}
         {isAdvisor && !isImpersonating && (
-          <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-red-900 mb-4">Panel de Asesor</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-lg p-4 border border-red-100">
-                <h4 className="font-medium text-gray-900">Total Restaurantes</h4>
-                <p className="text-2xl font-bold text-red-600">{stats.total}</p>
-                <p className="text-sm text-gray-600">{stats.assigned} asignados</p>
-              </div>
-              <div className="bg-white rounded-lg p-4 border border-red-100">
-                <h4 className="font-medium text-gray-900">Disponibles</h4>
-                <p className="text-2xl font-bold text-orange-600">{stats.available}</p>
-                <p className="text-sm text-gray-600">Sin asignar</p>
-              </div>
-              <div className="bg-white rounded-lg p-4 border border-red-100">
-                <h4 className="font-medium text-gray-900">Franquiciados</h4>
-                <p className="text-2xl font-bold text-red-600">
-                  {new Set(restaurants.filter(r => r.isAssigned).map(r => r.franchisee_info?.id)).size}
-                </p>
-                <p className="text-sm text-gray-600">Activos</p>
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-red-900 mb-4">Panel de Asesor</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white rounded-lg p-4 border border-red-100">
+                  <h4 className="font-medium text-gray-900">Total Restaurantes</h4>
+                  <p className="text-2xl font-bold text-red-600">{stats.total}</p>
+                  <p className="text-sm text-gray-600">{stats.assigned} asignados</p>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-red-100">
+                  <h4 className="font-medium text-gray-900">Disponibles</h4>
+                  <p className="text-2xl font-bold text-orange-600">{stats.available}</p>
+                  <p className="text-sm text-gray-600">Sin asignar</p>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-red-100">
+                  <h4 className="font-medium text-gray-900">Franquiciados</h4>
+                  <p className="text-2xl font-bold text-red-600">
+                    {new Set(restaurants.filter(r => r.isAssigned).map(r => r.franchisee_info?.id)).size}
+                  </p>
+                  <p className="text-sm text-gray-600">Activos</p>
+                </div>
               </div>
             </div>
+            
+            <FranchiseesSection 
+              totalFranchisees={new Set(restaurants.filter(r => r.isAssigned).map(r => r.franchisee_info?.id)).size}
+              activeFranchisees={new Set(restaurants.filter(r => r.isAssigned).map(r => r.franchisee_info?.id)).size}
+            />
           </div>
         )}
       </div>

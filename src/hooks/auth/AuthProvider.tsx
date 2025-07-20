@@ -193,7 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await createFranchisee(userId);
         }
       } else {
-        console.log(`AuthProvider - User role is ${profile.role}, skipping franchisee data`);
+        console.log(`AuthProvider - User role is ${profile.role}, no franchisee data needed`);
         setFranchisee(null);
         setRestaurants([]);
       }
@@ -224,6 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('AuthProvider - Using fallback profile:', fallbackProfile);
       setUser(fallbackProfile);
       
+      // Solo crear franquiciado si el rol es franchisee
       if (fallbackProfile.role === 'franchisee') {
         await createFranchisee(userId);
       }
