@@ -44,7 +44,7 @@ function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'admin', 'superadmin', 'asesor']}>
                     <OptimizedDashboardPage />
                   </ProtectedRoute>
                 }
@@ -52,7 +52,7 @@ function App() {
               <Route
                 path="/dashboard-legacy"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'admin', 'superadmin', 'asesor']}>
                     <DashboardPage />
                   </ProtectedRoute>
                 }
