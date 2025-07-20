@@ -1,14 +1,17 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Users, Clock, Calendar, DollarSign } from 'lucide-react';
+import { Plus, Users, Clock, Calendar, DollarSign, BarChart3, Settings } from 'lucide-react';
 import { EmployeeList } from './EmployeeList';
 import { EmployeeForm } from './EmployeeForm';
 import { EmployeeStats as EmployeeStatsComponent } from './EmployeeStats';
 import { TimeTrackingView } from './TimeTrackingView';
 import { TimeOffView } from './TimeOffView';
 import { PayrollView } from './PayrollView';
+import { LaborDashboardTab } from './LaborDashboardTab';
+import { IntegrationTab } from './IntegrationTab';
 import { useEmployees } from '@/hooks/useEmployees';
 
 interface EmployeeManagementProps {
@@ -21,7 +24,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
   restaurantName
 }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [activeTab, setActiveTab] = useState('list');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const { employees, loading, stats, createEmployee, updateEmployee, deleteEmployee, refetch } = useEmployees(restaurantId);
 
   const handleCreateEmployee = async (employeeData: any) => {
@@ -75,7 +78,11 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Dashboard
+          </TabsTrigger>
           <TabsTrigger value="list" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Empleados
@@ -92,7 +99,25 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
             <DollarSign className="w-4 h-4" />
             Nóminas
           </TabsTrigger>
+          <TabsTrigger value="integration" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Integración
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard">
+          <Card>
+            <CardHeader>
+              <CardTitle>Dashboard Laboral</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LaborDashboardTab 
+                restaurantId={restaurantId}
+                restaurantName={restaurantName}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="list">
           <Card>
@@ -140,6 +165,20 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
             </CardHeader>
             <CardContent>
               <PayrollView employees={employees} restaurantId={restaurantId} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="integration">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestión de Integraciones</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <IntegrationTab 
+                restaurantId={restaurantId}
+                restaurantName={restaurantName}
+              />
             </CardContent>
           </Card>
         </TabsContent>

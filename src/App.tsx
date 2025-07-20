@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -138,11 +139,6 @@ function App() {
                     <PlaceholderPage title="Análisis" />
                   </ProtectedRoute>
                 } />
-                <Route path="/workers" element={
-                  <ProtectedRoute>
-                    <PlaceholderPage title="Trabajadores" />
-                  </ProtectedRoute>
-                } />
                 <Route path="/advisor" element={
                   <ProtectedRoute>
                     <PlaceholderPage title="Panel Asesor" />
@@ -151,11 +147,6 @@ function App() {
                 <Route path="/historical-data" element={
                   <ProtectedRoute>
                     <PlaceholderPage title="Datos Históricos" />
-                  </ProtectedRoute>
-                } />
-                <Route path="/labor-dashboard" element={
-                  <ProtectedRoute>
-                    <PlaceholderPage title="Panel Laboral" />
                   </ProtectedRoute>
                 } />
                 <Route path="/biloop" element={
