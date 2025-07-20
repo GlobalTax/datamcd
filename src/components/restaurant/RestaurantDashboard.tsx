@@ -2,21 +2,35 @@
 import React, { useState } from 'react';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useOptimizedFranchiseeRestaurants } from '@/hooks/useOptimizedFranchiseeRestaurants';
+import { useAllRestaurants } from '@/hooks/useAllRestaurants';
 import { RestaurantMetricsGrid } from './RestaurantMetricsGrid';
 import { RestaurantQuickManagement } from './RestaurantQuickManagement';
 import { RestaurantAlertsWidget } from './RestaurantAlertsWidget';
 import { RestaurantPerformanceChart } from './RestaurantPerformanceChart';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Plus, RefreshCw, Filter } from 'lucide-react';
+import { Building2, Plus, RefreshCw, Filter, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const RestaurantDashboard = () => {
   const navigate = useNavigate();
   const { user, franchisee } = useUnifiedAuth();
-  const { restaurants, loading, refetch } = useOptimizedFranchiseeRestaurants();
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
 
+  // Usar hook apropiado según el rol del usuario
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  
+  // Hook para admin/superadmin - ve todos los restaurantes
+  const adminData = useAllRestaurants();
+  
+  // Hook para franchisee - ve solo sus restaurantes
+  const franchiseeData = useOptimizedFranchiseeRestaurants();
+  
+  // Seleccionar los datos apropiados según el rol
+  const { restaurants, loading, refetch } = isAdmin ? adminData : franchiseeData;
+
+  console.log('RestaurantDashboard - User role:', user?.role);
+  console.log('RestaurantDashboard - Using admin data:', isAdmin);
   console.log('RestaurantDashboard - Restaurants:', restaurants.length);
 
   const handleRefresh = () => {
@@ -45,14 +59,31 @@ export const RestaurantDashboard = () => {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Building2 className="w-6 h-6 text-primary" />
-            <h2 className="text-2xl font-bold text-foreground">Dashboard de Restaurantes</h2>
+            <h2 className="text-2xl font-bold text-foreground">
+              {isAdmin ? 'Dashboard Global de Restaurantes' : 'Dashboard de Restaurantes'}
+            </h2>
           </div>
           <Badge variant="secondary" className="text-sm">
             {filteredRestaurants.length} restaurantes
           </Badge>
+          {isAdmin && (
+            <Badge variant="outline" className="text-sm bg-blue-50 text-blue-700 border-blue-200">
+              Vista Superadmin
+            </Badge>
+          )}
         </div>
         
         <div className="flex gap-2">
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/franchisees')}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Franquiciados
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -87,7 +118,7 @@ export const RestaurantDashboard = () => {
         <div className="space-y-6">
           <RestaurantAlertsWidget 
             restaurants={filteredRestaurants}
-            franchiseeId={franchisee?.id}
+            franchiseeId={isAdmin ? undefined : franchisee?.id}
           />
         </div>
       </div>

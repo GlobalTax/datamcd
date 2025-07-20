@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -21,6 +20,9 @@ import SystemConfigPage from "./pages/SystemConfigPage";
 // Importar páginas de restaurantes
 import RestaurantDashboardPage from "./pages/RestaurantDashboardPage";
 import RestaurantManagementPage from "./pages/RestaurantManagementPage";
+
+// Importar nueva página de Gestión de Franquiciados
+import FranchiseesPage from "./pages/FranchiseesPage";
 
 // Placeholder components for missing pages
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -95,6 +97,13 @@ function App() {
               <Route path="/restaurant/manage" element={
                 <ProtectedRoute>
                   <RestaurantManagementPage />
+                </ProtectedRoute>
+              } />
+
+              {/* Nueva página de Gestión de Franquiciados */}
+              <Route path="/franchisees" element={
+                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                  <FranchiseesPage />
                 </ProtectedRoute>
               } />
 
