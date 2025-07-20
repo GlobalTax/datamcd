@@ -50,13 +50,19 @@ export const useDashboardData = (): DashboardData => {
   const metrics = useMemo((): DashboardMetrics => {
     const activeRestaurants = restaurants.length > 0 ? restaurants : unifiedRestaurants;
     
-    const totalRevenue = activeRestaurants.reduce((sum, r) => 
-      sum + (r.last_year_revenue || r.assignment?.last_year_revenue || 0), 0
-    );
+    const totalRevenue = activeRestaurants.reduce((sum, r) => {
+      // Manejar tanto Restaurant como UnifiedRestaurant
+      const revenue = ('assignment' in r && r.assignment?.last_year_revenue) || 
+                     ('last_year_revenue' in r && r.last_year_revenue) || 0;
+      return sum + revenue;
+    }, 0);
     
-    const totalRent = activeRestaurants.reduce((sum, r) => 
-      sum + ((r.monthly_rent || r.assignment?.monthly_rent || 0) * 12), 0
-    );
+    const totalRent = activeRestaurants.reduce((sum, r) => {
+      // Manejar tanto Restaurant como UnifiedRestaurant
+      const rent = ('assignment' in r && r.assignment?.monthly_rent) || 
+                   ('monthly_rent' in r && r.monthly_rent) || 0;
+      return sum + (rent * 12);
+    }, 0);
 
     const operatingIncome = totalRevenue - totalRent;
     const operatingMargin = totalRevenue > 0 ? (operatingIncome / totalRevenue) * 100 : 0;
