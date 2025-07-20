@@ -7,11 +7,13 @@ import { Badge } from '@/components/ui/badge';
 interface FranchiseesSectionProps {
   totalFranchisees: number;
   activeFranchisees: number;
+  isSuperAdmin?: boolean;
 }
 
 export const FranchiseesSection: React.FC<FranchiseesSectionProps> = ({
   totalFranchisees,
-  activeFranchisees
+  activeFranchisees,
+  isSuperAdmin = false
 }) => {
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
@@ -21,7 +23,7 @@ export const FranchiseesSection: React.FC<FranchiseesSectionProps> = ({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Gestión de Franquiciados
+            {isSuperAdmin ? "Gestión Global de Franquiciados" : "Gestión de Franquiciados"}
           </CardTitle>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm">

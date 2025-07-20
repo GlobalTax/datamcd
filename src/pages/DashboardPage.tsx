@@ -38,8 +38,9 @@ const DashboardPage = () => {
     );
   }
 
-  // Determinar si es asesor
-  const isAdvisor = user?.role === 'asesor' || user?.role === 'admin' || user?.role === 'superadmin';
+  // Determinar si es asesor/administrador global
+  const isGlobalAdmin = user?.role === 'asesor' || user?.role === 'admin' || user?.role === 'superadmin';
+  const isSuperAdmin = user?.role === 'superadmin';
 
   // Preparar datos para mostrar - adaptar formato para compatibilidad
   const displayRestaurants = restaurants.map(restaurant => ({
@@ -63,20 +64,22 @@ const DashboardPage = () => {
   }));
 
   // Para franquiciados, filtrar solo restaurantes asignados
-  const franchiseeRestaurants = isAdvisor ? restaurants : restaurants.filter(r => r.isAssigned);
+  const franchiseeRestaurants = isGlobalAdmin ? restaurants : restaurants.filter(r => r.isAssigned);
   const franchiseeId = effectiveFranchisee?.id || '';
 
   return (
     <StandardLayout
-      title={isAdvisor ? "Panel de Gestión Global" : "Mi Dashboard"}
-      description={isAdvisor ? 
-        "Gestión completa de restaurantes y franquiciados" : 
-        "Panel principal de gestión de mis restaurantes"
+      title={isSuperAdmin ? "Panel de Gestión Global" : isGlobalAdmin ? "Panel de Asesor" : "Mi Dashboard"}
+      description={isSuperAdmin ? 
+        "Control total del sistema - Restaurantes, Franquiciados y Usuarios" : 
+        isGlobalAdmin ? 
+          "Gestión de restaurantes y franquiciados asignados" : 
+          "Panel principal de gestión de mis restaurantes"
       }
     >
       <div className="space-y-6">
-        {/* Banner de impersonación para asesores */}
-        {isImpersonating && isAdvisor && (
+        {/* Banner de impersonación para administradores */}
+        {isImpersonating && isGlobalAdmin && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -88,7 +91,7 @@ const DashboardPage = () => {
         )}
 
         <DashboardSummary 
-          totalRestaurants={isAdvisor ? stats.total : franchiseeRestaurants.length}
+          totalRestaurants={isGlobalAdmin ? stats.total : franchiseeRestaurants.length}
           displayRestaurants={displayRestaurants}
           isTemporaryData={restaurants.length === 0}
         />
@@ -112,11 +115,13 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* Panel específico para asesores */}
-        {isAdvisor && !isImpersonating && (
+        {/* Panel específico para administradores globales */}
+        {isGlobalAdmin && !isImpersonating && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-red-900 mb-4">Panel de Asesor</h3>
+              <h3 className="text-lg font-semibold text-red-900 mb-4">
+                {isSuperAdmin ? "Panel de Superadministrador" : "Panel de Asesor"}
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-lg p-4 border border-red-100">
                   <h4 className="font-medium text-gray-900">Total Restaurantes</h4>
@@ -129,11 +134,11 @@ const DashboardPage = () => {
                   <p className="text-sm text-gray-600">Sin asignar</p>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-red-100">
-                  <h4 className="font-medium text-gray-900">Franquiciados</h4>
+                  <h4 className="font-medium text-gray-900">Franquiciados Activos</h4>
                   <p className="text-2xl font-bold text-red-600">
                     {new Set(restaurants.filter(r => r.isAssigned).map(r => r.franchisee_info?.id)).size}
                   </p>
-                  <p className="text-sm text-gray-600">Activos</p>
+                  <p className="text-sm text-gray-600">Con restaurantes</p>
                 </div>
               </div>
             </div>
@@ -141,6 +146,7 @@ const DashboardPage = () => {
             <FranchiseesSection 
               totalFranchisees={new Set(restaurants.filter(r => r.isAssigned).map(r => r.franchisee_info?.id)).size}
               activeFranchisees={new Set(restaurants.filter(r => r.isAssigned).map(r => r.franchisee_info?.id)).size}
+              isSuperAdmin={isSuperAdmin}
             />
           </div>
         )}

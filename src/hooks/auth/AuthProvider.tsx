@@ -99,6 +99,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const currentUserId = useRef<string | null>(null);
   const isInitializing = useRef(false);
 
+  // Función para sincronizar IDs entre auth.users y profiles
+  const syncUserProfile = useCallback(async (authUser: User) => {
+    try {
+      // Primero verificar si existe el perfil por ID
+      const { data: profileById } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+
+      if (profileById) {
+        return profileById;
+      }
+
+      // Si no existe por ID, buscar por email
+      const { data: profileByEmail } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', authUser.email)
+        .single();
+
+      if (profileByEmail && profileByEmail.id !== authUser.id) {
+        console.log('Sincronizando ID de perfil para:', authUser.email);
+        // Actualizar el ID del perfil para que coincida con auth.users
+        const { data: updatedProfile, error } = await supabase
+          .from('profiles')
+          .update({ id: authUser.id })
+          .eq('email', authUser.email)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error sincronizando perfil:', error);
+          return null;
+        }
+        return updatedProfile;
+      }
+
+      return profileByEmail;
+    } catch (error) {
+      console.error('Error en sincronización de perfil:', error);
+      return null;
+    }
+  }, []);
+
   // Franquiciado efectivo (impersonado o real)
   const effectiveFranchisee = impersonatedFranchisee || franchisee;
   const isImpersonating = Boolean(impersonatedFranchisee);
@@ -137,30 +182,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', userId)
         .maybeSingle();
 
-      // 2. Si no encuentra por ID, buscar por email como fallback
-      if (!profileData && session?.user?.email) {
-        console.log('AuthProvider - Profile not found by ID, trying by email:', session.user.email);
-        const { data: profileByEmail, error: emailError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('email', session.user.email)
-          .maybeSingle();
-        
-        profileData = profileByEmail;
-        profileError = emailError;
-        
-        // Si encontramos por email pero el ID no coincide, actualizamos el ID
-        if (profileData && profileData.id !== userId) {
-          console.log('AuthProvider - Syncing profile ID from', profileData.id, 'to', userId);
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ id: userId })
-            .eq('email', session.user.email);
-          
-          if (!updateError) {
-            profileData.id = userId;
-          }
-        }
+      // 2. Si no encuentra por ID, usar función de sincronización
+      if (!profileData && session?.user) {
+        console.log('AuthProvider - Profile not found by ID, attempting sync...');
+        profileData = await syncUserProfile(session.user);
+        profileError = null;
       }
 
       let profile: UserProfile;

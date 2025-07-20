@@ -33,7 +33,7 @@ export const useUnifiedRestaurants = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchUnifiedRestaurants = async () => {
-    if (!user || !['asesor', 'admin', 'superadmin'].includes(user.role)) {
+    if (!user || !['asesor', 'admin', 'superadmin', 'franchisee'].includes(user.role)) {
       console.log('User role not authorized for unified restaurants:', user?.role);
       setLoading(false);
       return;
@@ -44,7 +44,9 @@ export const useUnifiedRestaurants = () => {
       setError(null);
       console.log('Fetching unified restaurants for user:', user.id, 'with role:', user.role);
 
-      // Obtener todos los restaurantes base
+      const isGlobalAdmin = ['admin', 'superadmin', 'asesor'].includes(user.role);
+
+      // Obtener todos los restaurantes base (superadmins ven todos)
       const { data: baseRestaurants, error: baseError } = await supabase
         .from('base_restaurants')
         .select('*')
@@ -57,7 +59,7 @@ export const useUnifiedRestaurants = () => {
       }
 
       // Obtener todas las asignaciones con información del franquiciado
-      const { data: assignments, error: assignmentError } = await supabase
+      let assignmentQuery = supabase
         .from('franchisee_restaurants')
         .select(`
           *,
@@ -68,8 +70,22 @@ export const useUnifiedRestaurants = () => {
             city,
             state
           )
-        `)
-        .eq('status', 'active');
+        `);
+
+      // Si no es admin global, filtrar por franquiciado específico
+      if (!isGlobalAdmin) {
+        const { data: userFranchisee } = await supabase
+          .from('franchisees')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (userFranchisee) {
+          assignmentQuery = assignmentQuery.eq('franchisee_id', userFranchisee.id);
+        }
+      }
+
+      const { data: assignments, error: assignmentError } = await assignmentQuery.eq('status', 'active');
 
       if (assignmentError) {
         console.error('Error fetching restaurant assignments:', assignmentError);
