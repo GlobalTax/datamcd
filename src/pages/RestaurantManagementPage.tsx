@@ -4,10 +4,16 @@ import { useRestaurantManagement } from '@/hooks/useRestaurantManagement';
 import { useRestaurantUpdate } from '@/hooks/useRestaurantUpdate';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
-import RestaurantHeader from '@/components/restaurant/RestaurantHeader';
-import RestaurantCard from '@/components/restaurant/RestaurantCard';
-import EmptyRestaurantsState from '@/components/restaurant/EmptyRestaurantsState';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, Grid, Download, Settings } from 'lucide-react';
+import RestaurantTable from '@/components/restaurant/RestaurantTable';
+import RestaurantMetrics from '@/components/restaurant/RestaurantMetrics';
+import RestaurantFilters from '@/components/restaurant/RestaurantFilters';
+import RestaurantEditModal from '@/components/restaurant/RestaurantEditModal';
+import RestaurantCard from '@/components/restaurant/RestaurantCard';
+import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
 
 const RestaurantManagementPage = () => {
   const { 
@@ -20,37 +26,73 @@ const RestaurantManagementPage = () => {
   } = useRestaurantManagement();
   
   const { updateRestaurant, isUpdating } = useRestaurantUpdate();
-  const [editingRestaurant, setEditingRestaurant] = useState<string | null>(null);
-  const [editData, setEditData] = useState<any>({});
+  
+  const [filteredRestaurants, setFilteredRestaurants] = useState<FranchiseeRestaurant[]>([]);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<FranchiseeRestaurant | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+
+  // Usar restaurants filtrados o todos si no hay filtros
+  const displayRestaurants = filteredRestaurants.length > 0 || 
+    Object.values(filters || {}).some(v => v !== '') ? 
+    filteredRestaurants : restaurants;
 
   console.log('RestaurantManagementPage - User:', user ? { id: user.id, role: user.role } : null);
   console.log('RestaurantManagementPage - Can view all restaurants:', canViewAllRestaurants);
   console.log('RestaurantManagementPage - Restaurants:', restaurants.length);
 
-  const handleEdit = (restaurant: any) => {
-    setEditingRestaurant(restaurant.id);
-    setEditData({
-      monthly_rent: restaurant.monthly_rent || 0,
-      last_year_revenue: restaurant.last_year_revenue || 0,
-      franchise_fee_percentage: restaurant.franchise_fee_percentage || 4.0,
-      advertising_fee_percentage: restaurant.advertising_fee_percentage || 4.0,
-      notes: restaurant.notes || ''
-    });
+  const handleEdit = (restaurant: FranchiseeRestaurant) => {
+    setSelectedRestaurant(restaurant);
+    setIsEditModalOpen(true);
   };
 
-  const handleSave = async (restaurantId: string) => {
+  const handleView = (restaurant: FranchiseeRestaurant) => {
+    // Por ahora, usar la misma función que editar
+    handleEdit(restaurant);
+  };
+
+  const handleSave = async (restaurantId: string, editData: any) => {
     const success = await updateRestaurant(restaurantId, editData);
     
     if (success) {
-      setEditingRestaurant(null);
-      setEditData({});
       refetch();
+      return true;
     }
+    return false;
   };
 
-  const handleCancel = () => {
-    setEditingRestaurant(null);
-    setEditData({});
+  const handleCloseModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedRestaurant(null);
+  };
+
+  const handleExport = () => {
+    // Implementar exportación a CSV
+    const csvContent = displayRestaurants.map(restaurant => ({
+      'Sitio': restaurant.base_restaurant?.site_number || '',
+      'Nombre': restaurant.base_restaurant?.restaurant_name || '',
+      'Ciudad': restaurant.base_restaurant?.city || '',
+      'Estado': restaurant.status || '',
+      'Renta Mensual': restaurant.monthly_rent || 0,
+      'Ingresos Anuales': restaurant.last_year_revenue || 0,
+      'Franquiciado': canViewAllRestaurants ? (restaurant as any).franchisee_display_name || '' : ''
+    }));
+
+    const headers = Object.keys(csvContent[0] || {});
+    const csvString = [
+      headers.join(','),
+      ...csvContent.map(row => headers.map(header => `"${row[header as keyof typeof row]}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `restaurantes_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const formatNumber = (value: number | undefined | null): string => {
@@ -120,60 +162,116 @@ const RestaurantManagementPage = () => {
                   </Badge>
                 )}
                 <Badge variant="secondary">
-                  {restaurants.length} restaurantes
+                  {displayRestaurants.length} de {restaurants.length} restaurantes
                 </Badge>
               </div>
             </div>
           </header>
 
           <main className="flex-1 p-6">
-            <div className="space-y-6">
-              <RestaurantHeader 
-                franchiseeName={
-                  canViewAllRestaurants 
-                    ? 'Sistema Global McDonald\'s' 
-                    : (franchisee?.franchisee_name || 'Franquiciado')
-                }
-                restaurantCount={restaurants.length}
-              />
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Cargando restaurantes...</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Métricas */}
+                <RestaurantMetrics 
+                  restaurants={displayRestaurants}
+                  canViewAllRestaurants={canViewAllRestaurants}
+                />
 
-              {loading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Cargando restaurantes...</p>
-                </div>
-              ) : (
-                <div className="grid gap-6">
-                  {restaurants.map((restaurant) => (
-                    <div key={restaurant.id} className="relative">
-                      {canViewAllRestaurants && (
-                        <div className="absolute top-2 right-2 z-10">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                            {(restaurant as any).franchisee_display_name}
-                          </Badge>
-                        </div>
-                      )}
-                      <RestaurantCard
-                        restaurant={restaurant}
-                        editingRestaurant={editingRestaurant}
-                        editData={editData}
-                        setEditData={setEditData}
-                        onEdit={handleEdit}
-                        onSave={handleSave}
-                        onCancel={handleCancel}
-                        formatNumber={formatNumber}
-                        isUpdating={isUpdating}
-                      />
-                    </div>
-                  ))}
+                {/* Filtros y controles */}
+                <div className="flex items-center justify-between">
+                  <RestaurantFilters
+                    restaurants={restaurants}
+                    canViewAllRestaurants={canViewAllRestaurants}
+                    onFiltersChange={setFilteredRestaurants}
+                  />
                   
-                  {restaurants.length === 0 && <EmptyRestaurantsState />}
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={handleExport}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Exportar
+                    </Button>
+                    
+                    <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                      <Button
+                        variant={viewMode === 'table' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('table')}
+                        className="h-8"
+                      >
+                        <Table className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('cards')}
+                        className="h-8"
+                      >
+                        <Grid className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* Contenido principal */}
+                {viewMode === 'table' ? (
+                  <RestaurantTable
+                    restaurants={displayRestaurants}
+                    canViewAllRestaurants={canViewAllRestaurants}
+                    onEdit={handleEdit}
+                    onView={handleView}
+                    loading={false}
+                  />
+                ) : (
+                  <div className="grid gap-6">
+                    {displayRestaurants.map((restaurant) => (
+                      <div key={restaurant.id} className="relative">
+                        {canViewAllRestaurants && (
+                          <div className="absolute top-2 right-2 z-10">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                              {(restaurant as any).franchisee_display_name}
+                            </Badge>
+                          </div>
+                        )}
+                        <RestaurantCard
+                          restaurant={restaurant}
+                          editingRestaurant={null}
+                          editData={{}}
+                          setEditData={() => {}}
+                          onEdit={handleEdit}
+                          onSave={() => Promise.resolve()}
+                          onCancel={() => {}}
+                          formatNumber={formatNumber}
+                          isUpdating={false}
+                        />
+                      </div>
+                    ))}
+                    
+                    {displayRestaurants.length === 0 && (
+                      <div className="text-center py-12">
+                        <p className="text-gray-500">No se encontraron restaurantes con los filtros aplicados.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </main>
         </SidebarInset>
       </div>
+
+      {/* Modal de edición */}
+      <RestaurantEditModal
+        restaurant={selectedRestaurant}
+        isOpen={isEditModalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSave}
+        isUpdating={isUpdating}
+      />
     </SidebarProvider>
   );
 };
