@@ -6,10 +6,15 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useHRMetrics } from '@/hooks/useHRMetrics';
+import { useHRNotifications } from '@/hooks/useHRNotifications';
 import { MetricsWidget } from './widgets/MetricsWidget';
 import { RestaurantsWidget } from './widgets/RestaurantsWidget';
 import { QuickActionsWidget } from './widgets/QuickActionsWidget';
 import { StatusWidget } from './widgets/StatusWidget';
+import { HRDashboardWidget } from './widgets/HRDashboardWidget';
+import { HRTrendsChart } from './widgets/HRTrendsChart';
+import { HRNotifications } from './widgets/HRNotifications';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { LoadingState } from '@/components/layout/LoadingState';
 
@@ -26,6 +31,9 @@ export const UnifiedDashboard: React.FC = () => {
     isImpersonating,
     effectiveFranchisee
   } = useDashboardData();
+
+  const { metrics: hrMetrics, loading: hrLoading } = useHRMetrics(effectiveFranchisee?.id);
+  const { notifications, dismissNotification } = useHRNotifications();
 
   const handleRefresh = () => {
     window.location.reload();
@@ -55,6 +63,16 @@ export const UnifiedDashboard: React.FC = () => {
     if (isGlobalAdmin) return "Gestión de restaurantes y franquiciados asignados";
     return "Panel principal de gestión de mis restaurantes";
   };
+
+  // Datos de ejemplo para gráfico de tendencias RRHH
+  const hrTrendsData = [
+    { month: 'Ene', empleados: 28, costoLaboral: 125000, horasTrabajadas: 4480, rotacion: 2.1 },
+    { month: 'Feb', empleados: 30, costoLaboral: 130000, horasTrabajadas: 4800, rotacion: 1.8 },
+    { month: 'Mar', empleados: 32, costoLaboral: 135000, horasTrabajadas: 5120, rotacion: 1.5 },
+    { month: 'Abr', empleados: 31, costoLaboral: 132000, horasTrabajadas: 4960, rotacion: 2.3 },
+    { month: 'May', empleados: 33, costoLaboral: 138000, horasTrabajadas: 5280, rotacion: 1.9 },
+    { month: 'Jun', empleados: 35, costoLaboral: 142000, horasTrabajadas: 5600, rotacion: 1.6 },
+  ];
 
   return (
     <SidebarProvider>
@@ -114,15 +132,28 @@ export const UnifiedDashboard: React.FC = () => {
               {/* Métricas principales */}
               <MetricsWidget metrics={metrics} userRole={user?.role} />
 
+              {/* Dashboard de RRHH - Nuevo Widget Principal */}
+              <HRDashboardWidget metrics={hrMetrics} loading={hrLoading} />
+
               {/* Layout principal */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Columna principal */}
                 <div className="lg:col-span-2 space-y-6">
                   <RestaurantsWidget restaurants={restaurants} />
+                  
+                  {/* Gráficos de tendencias RRHH */}
+                  <HRTrendsChart data={hrTrendsData} loading={hrLoading} />
                 </div>
 
                 {/* Sidebar */}
                 <div className="space-y-6">
+                  {/* Notificaciones de RRHH */}
+                  <HRNotifications 
+                    notifications={notifications}
+                    onDismiss={dismissNotification}
+                    onViewAll={() => navigate('/employees')}
+                  />
+                  
                   <QuickActionsWidget userRole={user?.role} />
                   <StatusWidget
                     user={user}
