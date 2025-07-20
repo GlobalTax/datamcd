@@ -99,47 +99,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const currentUserId = useRef<string | null>(null);
   const isInitializing = useRef(false);
 
-  // Función para sincronizar IDs entre auth.users y profiles
-  const syncUserProfile = useCallback(async (authUser: User) => {
+  // Función mejorada para validar y sincronizar IDs entre auth.users y profiles
+  const validateAndSyncUserProfile = useCallback(async (authUser: User) => {
+    console.log(`🔍 AuthProvider - Validating profile sync for user:`, {
+      authUserId: authUser.id,
+      email: authUser.email
+    });
+
     try {
-      // Primero verificar si existe el perfil por ID
-      const { data: profileById } = await supabase
+      // Primero verificar si existe el perfil por ID (lo ideal)
+      const { data: profileById, error: profileByIdError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
-        .single();
+        .maybeSingle();
+
+      if (profileByIdError) {
+        console.warn('⚠️ AuthProvider - Error querying profile by ID:', profileByIdError);
+      }
 
       if (profileById) {
+        console.log('✅ AuthProvider - Profile found by ID, sync is correct');
         return profileById;
       }
 
-      // Si no existe por ID, buscar por email
-      const { data: profileByEmail } = await supabase
+      // Si no existe por ID, buscar por email para detectar desincronización
+      const { data: profileByEmail, error: profileByEmailError } = await supabase
         .from('profiles')
         .select('*')
         .eq('email', authUser.email)
-        .single();
+        .maybeSingle();
+
+      if (profileByEmailError) {
+        console.warn('⚠️ AuthProvider - Error querying profile by email:', profileByEmailError);
+        return null;
+      }
 
       if (profileByEmail && profileByEmail.id !== authUser.id) {
-        console.log('Sincronizando ID de perfil para:', authUser.email);
-        // Actualizar el ID del perfil para que coincida con auth.users
-        const { data: updatedProfile, error } = await supabase
+        console.warn('🚨 AuthProvider - ID MISMATCH DETECTED!', {
+          authUserId: authUser.id,
+          profileId: profileByEmail.id,
+          email: authUser.email,
+          message: 'This indicates a critical sync issue between auth.users and profiles'
+        });
+
+        // Log crítico para alertar sobre el problema
+        console.error('🚨 CRITICAL: User profile ID mismatch detected for email:', authUser.email);
+        console.error('Auth User ID:', authUser.id);
+        console.error('Profile ID:', profileByEmail.id);
+        
+        // Intentar corregir automáticamente
+        console.log('🔧 AuthProvider - Attempting automatic ID sync correction...');
+        const { data: updatedProfile, error: updateError } = await supabase
           .from('profiles')
           .update({ id: authUser.id })
           .eq('email', authUser.email)
           .select()
           .single();
 
-        if (error) {
-          console.error('Error sincronizando perfil:', error);
+        if (updateError) {
+          console.error('❌ AuthProvider - Failed to sync profile ID:', updateError);
+          // Log detallado del error para debugging
+          console.error('Update error details:', {
+            code: updateError.code,
+            message: updateError.message,
+            details: updateError.details,
+            hint: updateError.hint
+          });
           return null;
         }
+
+        console.log('✅ AuthProvider - Profile ID sync corrected successfully');
         return updatedProfile;
       }
 
       return profileByEmail;
     } catch (error) {
-      console.error('Error en sincronización de perfil:', error);
+      console.error('❌ AuthProvider - Critical error in profile validation:', error);
       return null;
     }
   }, []);
@@ -182,10 +218,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', userId)
         .maybeSingle();
 
-      // 2. Si no encuentra por ID, usar función de sincronización
+      // 2. Si no encuentra por ID, usar función de validación y sincronización
       if (!profileData && session?.user) {
-        console.log('AuthProvider - Profile not found by ID, attempting sync...');
-        profileData = await syncUserProfile(session.user);
+        console.log('AuthProvider - Profile not found by ID, attempting validation and sync...');
+        profileData = await validateAndSyncUserProfile(session.user);
         profileError = null;
       }
 
@@ -384,11 +420,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Función para manejar cambios de estado de autenticación
     const handleAuthStateChange = async (event: string, newSession: Session | null) => {
-      console.log(`AuthProvider - Auth state change: ${event}`, {
+      console.log(`🔄 AuthProvider - Auth state change: ${event}`, {
         hasSession: !!newSession,
         userId: newSession?.user?.id,
-        email: newSession?.user?.email
+        email: newSession?.user?.email,
+        timestamp: new Date().toISOString()
       });
+
+      // Log adicional para debugging de sincronización de IDs
+      if (newSession?.user) {
+        console.log('📊 AuthProvider - User session details:', {
+          id: newSession.user.id,
+          email: newSession.user.email,
+          emailConfirmed: !!newSession.user.email_confirmed_at,
+          lastSignIn: newSession.user.last_sign_in_at,
+          role: newSession.user.role
+        });
+      }
       
       setSession(newSession);
       
