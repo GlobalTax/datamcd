@@ -79,7 +79,7 @@ export const useAllRestaurants = () => {
             updated_at,
             created_by
           ),
-          franchisees!inner(
+          franchisees(
             id,
             franchisee_name,
             company_name,
@@ -88,7 +88,6 @@ export const useAllRestaurants = () => {
             state
           )
         `)
-        .eq('status', 'active')
         .order('assigned_at', { ascending: false });
 
       console.log('useAllRestaurants - Query result:', { data: data?.length || 0, error });

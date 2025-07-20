@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useOptimizedFranchiseeRestaurants } from '@/hooks/useOptimizedFranchiseeRestaurants';
 import { useAllRestaurants } from '@/hooks/useAllRestaurants';
@@ -7,15 +7,23 @@ import { RestaurantMetricsGrid } from './RestaurantMetricsGrid';
 import { RestaurantQuickManagement } from './RestaurantQuickManagement';
 import { RestaurantAlertsWidget } from './RestaurantAlertsWidget';
 import { RestaurantPerformanceChart } from './RestaurantPerformanceChart';
+import { RestaurantAdvancedSearch } from './RestaurantAdvancedSearch';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Plus, RefreshCw, Filter, Users } from 'lucide-react';
+import { Building2, Plus, RefreshCw, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const RestaurantDashboard = () => {
   const navigate = useNavigate();
   const { user, franchisee } = useUnifiedAuth();
-  const [selectedFilter, setSelectedFilter] = useState<string>('all');
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const [searchFilters, setSearchFilters] = useState({
+    search: '',
+    city: '',
+    status: '',
+    franchisee: '',
+    restaurantType: ''
+  });
 
   // Usar hook apropiado según el rol del usuario
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
@@ -37,12 +45,52 @@ export const RestaurantDashboard = () => {
     refetch();
   };
 
-  const filteredRestaurants = restaurants.filter(restaurant => {
-    if (selectedFilter === 'all') return true;
-    if (selectedFilter === 'active') return restaurant.status === 'active';
-    if (selectedFilter === 'inactive') return restaurant.status !== 'active';
-    return true;
-  });
+  const filteredRestaurants = useMemo(() => {
+    return restaurants.filter(restaurant => {
+      // Filtro de búsqueda de texto
+      if (searchFilters.search) {
+        const searchTerm = searchFilters.search.toLowerCase();
+        const restaurantName = (restaurant.base_restaurant?.restaurant_name || '').toLowerCase();
+        const siteNumber = (restaurant.base_restaurant?.site_number || '').toLowerCase();
+        const address = (restaurant.base_restaurant?.address || '').toLowerCase();
+        const city = (restaurant.base_restaurant?.city || '').toLowerCase();
+        const franchiseeName = ((restaurant as any).franchisees?.franchisee_name || restaurant.base_restaurant?.franchisee_name || '').toLowerCase();
+        
+        if (!restaurantName.includes(searchTerm) && 
+            !siteNumber.includes(searchTerm) && 
+            !address.includes(searchTerm) && 
+            !city.includes(searchTerm) &&
+            !franchiseeName.includes(searchTerm)) {
+          return false;
+        }
+      }
+
+      // Filtro por ciudad
+      if (searchFilters.city && restaurant.base_restaurant?.city !== searchFilters.city) {
+        return false;
+      }
+
+      // Filtro por estado
+      if (searchFilters.status && restaurant.status !== searchFilters.status) {
+        return false;
+      }
+
+      // Filtro por franquiciado
+      if (searchFilters.franchisee) {
+        const franchiseeName = (restaurant as any).franchisees?.franchisee_name || restaurant.base_restaurant?.franchisee_name;
+        if (franchiseeName !== searchFilters.franchisee) {
+          return false;
+        }
+      }
+
+      // Filtro por tipo de restaurante
+      if (searchFilters.restaurantType && restaurant.base_restaurant?.restaurant_type !== searchFilters.restaurantType) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [restaurants, searchFilters]);
 
   if (loading) {
     return (
@@ -84,14 +132,6 @@ export const RestaurantDashboard = () => {
               Franquiciados
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSelectedFilter(selectedFilter === 'all' ? 'active' : 'all')}
-          >
-            <Filter className="w-4 h-4 mr-2" />
-            {selectedFilter === 'all' ? 'Mostrar Activos' : 'Mostrar Todos'}
-          </Button>
           <Button variant="outline" size="sm" onClick={handleRefresh}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Actualizar
@@ -102,6 +142,15 @@ export const RestaurantDashboard = () => {
           </Button>
         </div>
       </div>
+
+      {/* Búsqueda y filtros avanzados */}
+      <RestaurantAdvancedSearch
+        filters={searchFilters}
+        onFiltersChange={setSearchFilters}
+        restaurants={restaurants}
+        isExpanded={searchExpanded}
+        onToggleExpanded={() => setSearchExpanded(!searchExpanded)}
+      />
 
       {/* Grid de métricas principales */}
       <RestaurantMetricsGrid restaurants={filteredRestaurants} />
