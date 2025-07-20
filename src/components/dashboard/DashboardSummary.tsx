@@ -16,38 +16,30 @@ export const DashboardSummary = ({
   displayRestaurants, 
   isTemporaryData = false 
 }: DashboardSummaryProps) => {
-  const { user, effectiveFranchisee, isImpersonating } = useUnifiedAuth();
+  const { user, effectiveFranchisee } = useUnifiedAuth();
 
-  console.log('DashboardSummary - Props:', {
-    totalRestaurants,
-    restaurantsCount: displayRestaurants?.length || 0,
-    isTemporaryData
-  });
-
-  const safeRestaurants = Array.isArray(displayRestaurants) ? displayRestaurants.filter(r => r && typeof r === 'object') : [];
-  const safeTotalRestaurants = typeof totalRestaurants === 'number' ? totalRestaurants : 0;
+  // Validar y filtrar restaurantes seguros
+  const safeRestaurants = Array.isArray(displayRestaurants) ? 
+    displayRestaurants.filter(r => r && typeof r === 'object') : [];
+  const safeTotalRestaurants = typeof totalRestaurants === 'number' && totalRestaurants >= 0 ? 
+    totalRestaurants : 0;
   
   const isAdvisor = user?.role === 'asesor' || user?.role === 'admin' || user?.role === 'superadmin';
   
-  // Calcular métricas
+  // Calcular métricas de forma segura
   const activeRestaurants = safeRestaurants.filter(r => {
     try {
       return r?.status === 'active' || !r?.status;
-    } catch (error) {
-      console.warn('DashboardSummary - Error filtering restaurant:', error);
+    } catch {
       return false;
     }
   }).length;
   
   const totalRevenue = safeRestaurants.reduce((sum, r) => {
     try {
-      const revenue = r?.lastYearRevenue;
-      if (typeof revenue === 'number' && !isNaN(revenue)) {
-        return sum + revenue;
-      }
-      return sum;
-    } catch (error) {
-      console.warn('DashboardSummary - Error calculating revenue:', error);
+      const revenue = Number(r?.lastYearRevenue) || 0;
+      return sum + (isNaN(revenue) ? 0 : revenue);
+    } catch {
       return sum;
     }
   }, 0);
@@ -56,14 +48,13 @@ export const DashboardSummary = ({
 
   // Contar franquiciados únicos (solo para asesores)
   const uniqueFranchisees = isAdvisor ? 
-    new Set(safeRestaurants.filter(r => r.franchiseeName).map(r => r.franchiseeName)).size : 0;
+    new Set(safeRestaurants.filter(r => r?.franchiseeName).map(r => r.franchiseeName)).size : 0;
 
   const handleRefresh = () => {
-    console.log('DashboardSummary - Refreshing page');
     try {
       window.location.reload();
     } catch (error) {
-      console.error('DashboardSummary - Error refreshing page:', error);
+      console.error('Error refreshing page:', error);
     }
   };
 
@@ -154,7 +145,7 @@ export const DashboardSummary = ({
               {isAdvisor ? uniqueFranchisees : (isTemporaryData ? 'Temporal' : 'Activo')}
             </div>
             <p className="text-xs text-muted-foreground">
-              {isAdvisor ? 'Activos en sistema' : (isTemporaryData ? 'Datos sin conexión' : 'Todos los sistemas operativos')}
+              {isAdvisor ? 'Activos en sistema' : (isTemporaryData ? 'Datos sin conexión' : 'Sistema operativo')}
             </p>
           </CardContent>
         </Card>
@@ -207,15 +198,14 @@ export const DashboardSummary = ({
             <div className="space-y-4">
               {safeRestaurants.slice(0, 5).map((restaurant, index) => {
                 if (!restaurant || typeof restaurant !== 'object') {
-                  console.warn('DashboardSummary - Invalid restaurant at index:', index);
                   return null;
                 }
 
-                const restaurantId = restaurant.id || `restaurant-${index}-${Date.now()}`;
-                const restaurantName = restaurant.name || restaurant.restaurant_name || `Restaurante ${restaurant.siteNumber || restaurant.site_number || index + 1}`;
-                const location = restaurant.location || `${restaurant.city || 'Ciudad'}, ${restaurant.address || 'Dirección'}`;
-                const siteNumber = restaurant.siteNumber || restaurant.site_number || 'N/A';
-                const revenue = typeof restaurant.lastYearRevenue === 'number' ? restaurant.lastYearRevenue : 0;
+                const restaurantId = restaurant.id || `restaurant-${index}`;
+                const restaurantName = restaurant.name || restaurant.restaurant_name || `Restaurante ${restaurant.site_number || index + 1}`;
+                const location = restaurant.location || `${restaurant.city || 'Ciudad'}`;
+                const siteNumber = restaurant.site_number || restaurant.siteNumber || 'N/A';
+                const revenue = Number(restaurant.lastYearRevenue) || 0;
                 const status = restaurant.status || 'active';
                 const franchiseeName = restaurant.franchiseeName;
 

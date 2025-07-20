@@ -37,7 +37,10 @@ const DashboardPage = () => {
     );
   }
 
-  // Determinar qué restaurantes mostrar según el rol
+  // Determinar si es asesor
+  const isAdvisor = user?.role === 'asesor' || user?.role === 'admin' || user?.role === 'superadmin';
+
+  // Preparar datos para mostrar - adaptar formato para compatibilidad
   const displayRestaurants = restaurants.map(restaurant => ({
     id: restaurant.id,
     name: restaurant.restaurant_name,
@@ -54,16 +57,13 @@ const DashboardPage = () => {
     status: restaurant.assignment?.status || 'active',
     lastYearRevenue: restaurant.assignment?.last_year_revenue || 0,
     baseRent: restaurant.assignment?.monthly_rent || 0,
-    isOwnedByMcD: false
+    isOwnedByMcD: false,
+    isAssigned: restaurant.isAssigned
   }));
 
-  // Datos específicos para franquiciados vs asesores
-  const isAdvisor = user?.role === 'asesor' || user?.role === 'admin' || user?.role === 'superadmin';
-  const franchiseeId = effectiveFranchisee?.id || '';
-  
-  // Para asesores: mostrar todos los restaurantes con filtros
-  // Para franquiciados: mostrar solo sus restaurantes
+  // Para franquiciados, filtrar solo restaurantes asignados
   const franchiseeRestaurants = isAdvisor ? restaurants : restaurants.filter(r => r.isAssigned);
+  const franchiseeId = effectiveFranchisee?.id || '';
 
   return (
     <StandardLayout
@@ -75,7 +75,7 @@ const DashboardPage = () => {
     >
       <div className="space-y-6">
         {/* Banner de impersonación para asesores */}
-        {isImpersonating && (
+        {isImpersonating && isAdvisor && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -87,9 +87,9 @@ const DashboardPage = () => {
         )}
 
         <DashboardSummary 
-          totalRestaurants={stats.total}
+          totalRestaurants={isAdvisor ? stats.total : franchiseeRestaurants.length}
           displayRestaurants={displayRestaurants}
-          isTemporaryData={false}
+          isTemporaryData={restaurants.length === 0}
         />
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
