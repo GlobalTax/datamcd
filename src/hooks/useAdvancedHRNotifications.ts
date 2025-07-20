@@ -62,7 +62,7 @@ export const useAdvancedHRNotifications = (franchiseeId?: string) => {
           .eq('franchisee_id', franchiseeId)
           .single();
 
-        if (data && !error) {
+        if (data && !error && data.configuration && typeof data.configuration === 'object') {
           setSettings({ ...DEFAULT_SETTINGS, ...data.configuration });
         }
       } catch (error) {
@@ -309,6 +309,7 @@ export const useAdvancedHRNotifications = (franchiseeId?: string) => {
         await supabase
           .from('integration_configs')
           .upsert({
+            advisor_id: '00000000-0000-0000-0000-000000000000', // UUID nulo para configuraciones de franquiciado
             franchisee_id: franchiseeId,
             integration_type: 'hr_notifications',
             config_name: 'notification_settings',
