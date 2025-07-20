@@ -11,12 +11,18 @@ export interface UnifiedRestaurant {
   address: string;
   city: string;
   state?: string;
+  autonomous_community?: string;
   country?: string;
   postal_code?: string;
   restaurant_type?: string;
+  opening_date?: string;
+  created_at?: string;
   franchisee_info?: {
     id: string;
     franchisee_name: string;
+    company_name?: string;
+    city?: string;
+    state?: string;
     user_id?: string;
   };
   assignment?: {
@@ -26,6 +32,8 @@ export interface UnifiedRestaurant {
     franchise_end_date?: string;
     last_year_revenue?: number;
     monthly_rent?: number;
+    average_monthly_sales?: number;
+    assigned_at?: string;
   };
   isAssigned: boolean;
 }
