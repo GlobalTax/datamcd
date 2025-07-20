@@ -2,27 +2,19 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
-import { UnifiedAuthProvider } from '@/contexts/UnifiedAuthContext';
+import { AuthProvider } from '@/hooks/auth/AuthProvider';
 import { FranchiseeProvider } from '@/contexts/FranchiseeContext';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { AdminRoute } from '@/components/AdminRoute';
 
 // Pages
-import LoginPage from '@/pages/LoginPage';
 import UnifiedDashboardPage from '@/pages/UnifiedDashboardPage';
 import DashboardPage from '@/pages/DashboardPage';
 import RestaurantManagementPage from '@/pages/RestaurantManagementPage';
-import EmployeesPage from '@/pages/EmployeesPage';
-import SchedulingPage from '@/pages/SchedulingPage';
-import PayrollPage from '@/pages/PayrollPage';
-import BudgetPage from '@/pages/BudgetPage';
 import ProfitLossPage from '@/pages/ProfitLossPage';
-import ValuationPage from '@/pages/ValuationPage';
-import IncidentsPage from '@/pages/IncidentsPage';
 import SettingsPage from '@/pages/SettingsPage';
 import AnalysisPage from '@/pages/AnalysisPage';
 import FranchiseesPage from '@/pages/FranchiseesPage';
-import NotificationsPage from '@/pages/NotificationsPage';
 import OrquestPage from '@/pages/OrquestPage';
 import BiloopPage from '@/pages/BiloopPage';
 import IntegrationsPage from '@/pages/IntegrationsPage';
@@ -40,13 +32,13 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <UnifiedAuthProvider>
+      <AuthProvider>
         <FranchiseeProvider>
           <Router>
             <div className="min-h-screen bg-gray-50">
               <Routes>
                 {/* Public routes */}
-                <Route path="/login" element={<LoginPage />} />
+                <Route path="/login" element={<div>Login Page - Coming Soon</div>} />
                 
                 {/* Protected routes */}
                 <Route path="/" element={
@@ -75,25 +67,25 @@ function App() {
 
                 <Route path="/employees" element={
                   <ProtectedRoute>
-                    <EmployeesPage />
+                    <div>Employees Page - Coming Soon</div>
                   </ProtectedRoute>
                 } />
 
                 <Route path="/scheduling" element={
                   <ProtectedRoute>
-                    <SchedulingPage />
+                    <div>Scheduling Page - Coming Soon</div>
                   </ProtectedRoute>
                 } />
 
                 <Route path="/payroll" element={
                   <ProtectedRoute>
-                    <PayrollPage />
+                    <div>Payroll Page - Coming Soon</div>
                   </ProtectedRoute>
                 } />
 
                 <Route path="/annual-budget" element={
                   <ProtectedRoute>
-                    <BudgetPage />
+                    <div>Budget Page - Coming Soon</div>
                   </ProtectedRoute>
                 } />
 
@@ -105,13 +97,13 @@ function App() {
 
                 <Route path="/valuation" element={
                   <ProtectedRoute>
-                    <ValuationPage />
+                    <div>Valuation Page - Coming Soon</div>
                   </ProtectedRoute>
                 } />
 
                 <Route path="/incidents" element={
                   <ProtectedRoute>
-                    <IncidentsPage />
+                    <div>Incidents Page - Coming Soon</div>
                   </ProtectedRoute>
                 } />
 
@@ -129,7 +121,7 @@ function App() {
 
                 <Route path="/notifications" element={
                   <ProtectedRoute>
-                    <NotificationsPage />
+                    <div>Notifications Page - Coming Soon</div>
                   </ProtectedRoute>
                 } />
 
@@ -171,7 +163,7 @@ function App() {
             <Toaster richColors position="top-right" />
           </Router>
         </FranchiseeProvider>
-      </UnifiedAuthProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

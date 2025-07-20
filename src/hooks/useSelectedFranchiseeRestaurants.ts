@@ -18,10 +18,15 @@ export const useSelectedFranchiseeRestaurants = () => {
     // Si es un admin con franquiciado seleccionado, filtrar por ese franquiciado
     if (selectedFranchisee && ['admin', 'superadmin'].includes(user?.role)) {
       return activeRestaurants.filter(restaurant => {
-        // Verificar diferentes formas en que puede estar relacionado el franquiciado
-        return restaurant.franchisee_info?.id === selectedFranchisee.id ||
-               restaurant.franchisee_id === selectedFranchisee.id ||
-               restaurant.base_restaurant?.franchisee_name === selectedFranchisee.franchisee_name;
+        // Type guard para UnifiedRestaurant
+        if ('franchisee_info' in restaurant && restaurant.franchisee_info) {
+          return restaurant.franchisee_info.id === selectedFranchisee.id;
+        }
+        // Type guard para Restaurant  
+        if ('franchisee_id' in restaurant) {
+          return restaurant.franchisee_id === selectedFranchisee.id;
+        }
+        return false;
       });
     }
     
