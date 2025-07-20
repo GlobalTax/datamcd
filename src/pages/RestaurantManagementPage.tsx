@@ -1,25 +1,31 @@
 
 import React, { useState } from 'react';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
-import { useOptimizedFranchiseeRestaurants } from '@/hooks/useOptimizedFranchiseeRestaurants';
+import { useRestaurantManagement } from '@/hooks/useRestaurantManagement';
 import { useRestaurantUpdate } from '@/hooks/useRestaurantUpdate';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import RestaurantHeader from '@/components/restaurant/RestaurantHeader';
 import RestaurantCard from '@/components/restaurant/RestaurantCard';
 import EmptyRestaurantsState from '@/components/restaurant/EmptyRestaurantsState';
+import { Badge } from '@/components/ui/badge';
 
 const RestaurantManagementPage = () => {
-  const { user, franchisee } = useUnifiedAuth();
-  const { restaurants, loading, refetch } = useOptimizedFranchiseeRestaurants();
+  const { 
+    restaurants, 
+    loading, 
+    refetch, 
+    canViewAllRestaurants, 
+    user, 
+    franchisee 
+  } = useRestaurantManagement();
+  
   const { updateRestaurant, isUpdating } = useRestaurantUpdate();
   const [editingRestaurant, setEditingRestaurant] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
 
   console.log('RestaurantManagementPage - User:', user ? { id: user.id, role: user.role } : null);
-  console.log('RestaurantManagementPage - Franchisee:', franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null);
-  console.log('RestaurantManagementPage - Restaurants:', restaurants.length, restaurants);
-  console.log('RestaurantManagementPage - Loading:', loading);
+  console.log('RestaurantManagementPage - Can view all restaurants:', canViewAllRestaurants);
+  console.log('RestaurantManagementPage - Restaurants:', restaurants.length);
 
   const handleEdit = (restaurant: any) => {
     setEditingRestaurant(restaurant.id);
@@ -38,7 +44,6 @@ const RestaurantManagementPage = () => {
     if (success) {
       setEditingRestaurant(null);
       setEditData({});
-      // Refrescar los datos
       refetch();
     }
   };
@@ -66,17 +71,19 @@ const RestaurantManagementPage = () => {
     );
   }
 
-  if (user.role !== 'franchisee') {
+  // Permitir acceso a admin, superadmin y franchisee
+  if (!['franchisee', 'admin', 'superadmin'].includes(user.role)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Acceso no autorizado. Solo para franquiciados.</p>
+          <p className="text-gray-600">Acceso no autorizado.</p>
         </div>
       </div>
     );
   }
 
-  if (!franchisee) {
+  // Para franchisees, verificar que tengan datos de franquiciado
+  if (user.role === 'franchisee' && !franchisee) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -94,18 +101,39 @@ const RestaurantManagementPage = () => {
         <SidebarInset className="flex-1">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-white px-6">
             <SidebarTrigger className="-ml-1" />
-            <div className="flex-1">
-              <h1 className="text-lg font-semibold text-gray-900">Gestión de Restaurantes</h1>
-              <p className="text-sm text-gray-500">
-                Administra la información de tus restaurantes
-              </p>
+            <div className="flex-1 flex items-center justify-between">
+              <div>
+                <h1 className="text-lg font-semibold text-gray-900">
+                  {canViewAllRestaurants ? 'Gestión Global de Restaurantes' : 'Gestión de Restaurantes'}
+                </h1>
+                <p className="text-sm text-gray-500">
+                  {canViewAllRestaurants 
+                    ? 'Vista completa de todos los restaurantes del sistema'
+                    : 'Administra la información de tus restaurantes'
+                  }
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {canViewAllRestaurants && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    Vista {user.role === 'superadmin' ? 'Superadmin' : 'Admin'}
+                  </Badge>
+                )}
+                <Badge variant="secondary">
+                  {restaurants.length} restaurantes
+                </Badge>
+              </div>
             </div>
           </header>
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
               <RestaurantHeader 
-                franchiseeName={franchisee.franchisee_name}
+                franchiseeName={
+                  canViewAllRestaurants 
+                    ? 'Sistema Global McDonald\'s' 
+                    : (franchisee?.franchisee_name || 'Franquiciado')
+                }
                 restaurantCount={restaurants.length}
               />
 
@@ -117,18 +145,26 @@ const RestaurantManagementPage = () => {
               ) : (
                 <div className="grid gap-6">
                   {restaurants.map((restaurant) => (
-                    <RestaurantCard
-                      key={restaurant.id}
-                      restaurant={restaurant}
-                      editingRestaurant={editingRestaurant}
-                      editData={editData}
-                      setEditData={setEditData}
-                      onEdit={handleEdit}
-                      onSave={handleSave}
-                      onCancel={handleCancel}
-                      formatNumber={formatNumber}
-                      isUpdating={isUpdating}
-                    />
+                    <div key={restaurant.id} className="relative">
+                      {canViewAllRestaurants && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                            {(restaurant as any).franchisee_display_name}
+                          </Badge>
+                        </div>
+                      )}
+                      <RestaurantCard
+                        restaurant={restaurant}
+                        editingRestaurant={editingRestaurant}
+                        editData={editData}
+                        setEditData={setEditData}
+                        onEdit={handleEdit}
+                        onSave={handleSave}
+                        onCancel={handleCancel}
+                        formatNumber={formatNumber}
+                        isUpdating={isUpdating}
+                      />
+                    </div>
                   ))}
                   
                   {restaurants.length === 0 && <EmptyRestaurantsState />}
