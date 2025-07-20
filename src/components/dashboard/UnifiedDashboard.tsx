@@ -16,8 +16,10 @@ import { HRTrendsChart } from './widgets/HRTrendsChart';
 import { AdvancedHRNotifications } from './widgets/AdvancedHRNotifications';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { LoadingState } from '@/components/layout/LoadingState';
+import { FranchiseeSelector } from './FranchiseeSelector';
+import { FranchiseeProvider } from '@/contexts/FranchiseeContext';
 
-export const UnifiedDashboard: React.FC = () => {
+const UnifiedDashboardContent: React.FC = () => {
   const navigate = useNavigate();
   const {
     metrics,
@@ -83,24 +85,29 @@ export const UnifiedDashboard: React.FC = () => {
           <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-white px-6">
             <SidebarTrigger className="-ml-1" />
             <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-semibold text-gray-900">{getTitle()}</h1>
-                <div className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium ${
-                  connectionStatus === 'online' 
-                    ? 'bg-green-100 text-green-700' 
-                    : connectionStatus === 'offline'
-                      ? 'bg-red-100 text-red-700'
-                      : 'bg-blue-100 text-blue-700'
-                }`}>
-                  <div className={`w-2 h-2 rounded-full ${
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-xl font-semibold text-gray-900">{getTitle()}</h1>
+                  <div className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium ${
                     connectionStatus === 'online' 
-                      ? 'bg-green-500' 
+                      ? 'bg-green-100 text-green-700' 
                       : connectionStatus === 'offline'
-                        ? 'bg-red-500'
-                        : 'bg-blue-500 animate-pulse'
-                  }`}></div>
-                  <span>{connectionStatus === 'online' ? 'Sistema Activo' : connectionStatus === 'offline' ? 'Sin Conexión' : 'Reconectando'}</span>
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${
+                      connectionStatus === 'online' 
+                        ? 'bg-green-500' 
+                        : connectionStatus === 'offline'
+                          ? 'bg-red-500'
+                          : 'bg-blue-500 animate-pulse'
+                    }`}></div>
+                    <span>{connectionStatus === 'online' ? 'Sistema Activo' : connectionStatus === 'offline' ? 'Sin Conexión' : 'Reconectando'}</span>
+                  </div>
                 </div>
+                
+                {/* Selector de Franquiciado */}
+                <FranchiseeSelector />
               </div>
               <p className="text-sm text-gray-500 mt-1">{getDescription()}</p>
             </div>
@@ -166,5 +173,13 @@ export const UnifiedDashboard: React.FC = () => {
         </SidebarInset>
       </div>
     </SidebarProvider>
+  );
+};
+
+export const UnifiedDashboard: React.FC = () => {
+  return (
+    <FranchiseeProvider>
+      <UnifiedDashboardContent />
+    </FranchiseeProvider>
   );
 };

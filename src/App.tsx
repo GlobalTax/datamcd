@@ -1,52 +1,36 @@
 
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./hooks/auth/AuthProvider";
-import { ImpersonationProvider } from "./hooks/useImpersonation";
-import AuthPage from "./pages/AuthPage";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
+import { UnifiedAuthProvider } from '@/contexts/UnifiedAuthContext';
+import { FranchiseeProvider } from '@/contexts/FranchiseeContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { AdminRoute } from '@/components/AdminRoute';
 
-// Importar el nuevo dashboard unificado
-import UnifiedDashboardPage from "./pages/UnifiedDashboardPage";
-
-// Importar páginas reales existentes
-import OrquestPage from "./pages/OrquestPage";
-import EmployeePage from "./pages/EmployeePage";
-import AnnualBudgetPage from "./pages/AnnualBudgetPage";
-import ProfitLossPage from "./pages/ProfitLossPage";
-import SettingsPage from "./pages/SettingsPage";
-import SystemConfigPage from "./pages/SystemConfigPage";
-
-// Importar páginas de restaurantes
-import RestaurantDashboardPage from "./pages/RestaurantDashboardPage";
-import RestaurantManagementPage from "./pages/RestaurantManagementPage";
-
-// Importar nueva página de Gestión de Franquiciados
-import FranchiseesPage from "./pages/FranchiseesPage";
-import FranchiseeDetailPage from "./pages/FranchiseeDetailPage";
-import AdvisorPage from "./pages/AdvisorPage";
-
-// Importar páginas de integraciones
-import IntegrationsPage from "./pages/IntegrationsPage";
-import IntegrationStatusPage from "./pages/IntegrationStatusPage";
-import BiloopPage from "./pages/BiloopPage";
-
-// Placeholder components for missing pages
-const PlaceholderPage = ({ title }: { title: string }) => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="text-2xl font-bold mb-4">{title}</h1>
-      <p className="text-muted-foreground">Esta página está en desarrollo</p>
-    </div>
-  </div>
-);
+// Pages
+import LoginPage from '@/pages/LoginPage';
+import UnifiedDashboardPage from '@/pages/UnifiedDashboardPage';
+import DashboardPage from '@/pages/DashboardPage';
+import RestaurantManagementPage from '@/pages/RestaurantManagementPage';
+import EmployeesPage from '@/pages/EmployeesPage';
+import SchedulingPage from '@/pages/SchedulingPage';
+import PayrollPage from '@/pages/PayrollPage';
+import BudgetPage from '@/pages/BudgetPage';
+import ProfitLossPage from '@/pages/ProfitLossPage';
+import ValuationPage from '@/pages/ValuationPage';
+import IncidentsPage from '@/pages/IncidentsPage';
+import SettingsPage from '@/pages/SettingsPage';
+import AnalysisPage from '@/pages/AnalysisPage';
+import FranchiseesPage from '@/pages/FranchiseesPage';
+import NotificationsPage from '@/pages/NotificationsPage';
+import OrquestPage from '@/pages/OrquestPage';
+import BiloopPage from '@/pages/BiloopPage';
+import IntegrationsPage from '@/pages/IntegrationsPage';
+import IntegrationStatusPage from '@/pages/IntegrationStatusPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutos
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -56,155 +40,138 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ImpersonationProvider>
-          <TooltipProvider>
-            <Toaster />
-            <BrowserRouter>
+      <UnifiedAuthProvider>
+        <FranchiseeProvider>
+          <Router>
+            <div className="min-h-screen bg-gray-50">
               <Routes>
-                {/* Auth Route */}
-                <Route path="/auth" element={<AuthPage />} />
+                {/* Public routes */}
+                <Route path="/login" element={<LoginPage />} />
                 
-                {/* Main Dashboard - Ahora usa el dashboard unificado */}
+                {/* Protected routes */}
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <Navigate to="/dashboard" replace />
+                  </ProtectedRoute>
+                } />
+
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <UnifiedDashboardPage />
                   </ProtectedRoute>
                 } />
 
-                {/* Páginas reales existentes */}
-                <Route path="/annual-budget" element={
+                <Route path="/dashboard-legacy" element={
                   <ProtectedRoute>
-                    <AnnualBudgetPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/employees" element={
-                  <ProtectedRoute>
-                    <EmployeePage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/profit-loss/:siteNumber" element={
-                  <ProtectedRoute>
-                    <ProfitLossPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/settings" element={
-                  <ProtectedRoute>
-                    <SettingsPage />
+                    <DashboardPage />
                   </ProtectedRoute>
                 } />
 
-                {/* Nueva página de Dashboard de Restaurantes */}
-                <Route path="/restaurant" element={
-                  <ProtectedRoute>
-                    <RestaurantDashboardPage />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Ruta para gestión detallada de restaurantes */}
                 <Route path="/restaurant/manage" element={
                   <ProtectedRoute>
                     <RestaurantManagementPage />
                   </ProtectedRoute>
                 } />
 
-                {/* Estado de integraciones (para franquiciados) */}
+                <Route path="/employees" element={
+                  <ProtectedRoute>
+                    <EmployeesPage />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/scheduling" element={
+                  <ProtectedRoute>
+                    <SchedulingPage />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/payroll" element={
+                  <ProtectedRoute>
+                    <PayrollPage />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/annual-budget" element={
+                  <ProtectedRoute>
+                    <BudgetPage />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/profit-loss" element={
+                  <ProtectedRoute>
+                    <ProfitLossPage />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/valuation" element={
+                  <ProtectedRoute>
+                    <ValuationPage />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/incidents" element={
+                  <ProtectedRoute>
+                    <IncidentsPage />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/analysis" element={
+                  <ProtectedRoute>
+                    <AnalysisPage />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/notifications" element={
+                  <ProtectedRoute>
+                    <NotificationsPage />
+                  </ProtectedRoute>
+                } />
+
                 <Route path="/integration-status" element={
                   <ProtectedRoute>
                     <IntegrationStatusPage />
                   </ProtectedRoute>
                 } />
 
-                {/* SECCIÓN DE ADMINISTRACIÓN - Solo para admins */}
-                <Route path="/system-config" element={
-                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                    <SystemConfigPage />
-                  </ProtectedRoute>
-                } />
-
-                {/* Página de Gestión de Franquiciados */}
+                {/* Admin only routes */}
                 <Route path="/franchisees" element={
-                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                  <AdminRoute>
                     <FranchiseesPage />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Detalle de Franquiciado */}
-                <Route path="/franchisees/:franchiseeId" element={
-                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                    <FranchiseeDetailPage />
-                  </ProtectedRoute>
+                  </AdminRoute>
                 } />
 
-                {/* Integraciones Externas (para administradores) */}
-                <Route path="/integrations" element={
-                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                    <IntegrationsPage />
-                  </ProtectedRoute>
-                } />
-
-                {/* Orquest (solo administradores) */}
                 <Route path="/orquest" element={
-                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                  <AdminRoute>
                     <OrquestPage />
-                  </ProtectedRoute>
+                  </AdminRoute>
                 } />
 
-                {/* Biloop (solo administradores) */}
                 <Route path="/biloop" element={
-                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                  <AdminRoute>
                     <BiloopPage />
-                  </ProtectedRoute>
+                  </AdminRoute>
                 } />
 
-                {/* Advisor Page */}
-                <Route path="/advisor" element={
-                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                    <AdvisorPage />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Detalle de Franquiciado desde Advisor */}
-                <Route path="/advisor/franchisee/:franchiseeId" element={
-                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                    <FranchiseeDetailPage />
-                  </ProtectedRoute>
+                <Route path="/integrations" element={
+                  <AdminRoute>
+                    <IntegrationsPage />
+                  </AdminRoute>
                 } />
 
-                {/* Páginas placeholder temporales restantes */}
-                <Route path="/incidents" element={
-                  <ProtectedRoute>
-                    <PlaceholderPage title="Incidencias" />
-                  </ProtectedRoute>
-                } />
-                <Route path="/valuation" element={
-                  <ProtectedRoute>
-                    <PlaceholderPage title="Valoración" />
-                  </ProtectedRoute>
-                } />
-                <Route path="/profit-loss" element={
-                  <ProtectedRoute>
-                    <PlaceholderPage title="P&L" />
-                  </ProtectedRoute>
-                } />
-                <Route path="/analysis" element={
-                  <ProtectedRoute>
-                    <PlaceholderPage title="Análisis" />
-                  </ProtectedRoute>
-                } />
-                <Route path="/historical-data" element={
-                  <ProtectedRoute>
-                    <PlaceholderPage title="Datos Históricos" />
-                  </ProtectedRoute>
-                } />
-
-                {/* Redirect root to dashboard */}
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                {/* Catch all route */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </ImpersonationProvider>
-      </AuthProvider>
+            </div>
+            <Toaster richColors position="top-right" />
+          </Router>
+        </FranchiseeProvider>
+      </UnifiedAuthProvider>
     </QueryClientProvider>
   );
 }

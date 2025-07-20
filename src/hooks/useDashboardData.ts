@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useUnifiedRestaurants } from '@/hooks/useUnifiedRestaurants';
+import { useFranchiseeContext } from '@/contexts/FranchiseeContext';
 
 export interface DashboardMetrics {
   totalRestaurants: number;
@@ -42,15 +43,37 @@ export const useDashboardData = (): DashboardData => {
     loading: restaurantsLoading 
   } = useUnifiedRestaurants();
 
+  const { selectedFranchisee } = useFranchiseeContext();
+
   const [error, setError] = useState<string | null>(null);
 
   const loading = authLoading || restaurantsLoading;
 
-  // Calcular métricas principales
-  const metrics = useMemo((): DashboardMetrics => {
+  // Usar el franquiciado seleccionado del contexto cuando esté disponible
+  const currentFranchisee = selectedFranchisee || effectiveFranchisee || franchisee;
+
+  // Filtrar restaurantes según el franquiciado seleccionado
+  const filteredRestaurants = useMemo(() => {
     const activeRestaurants = restaurants.length > 0 ? restaurants : unifiedRestaurants;
     
-    const totalRevenue = activeRestaurants.reduce((sum, r) => {
+    if (!currentFranchisee) return activeRestaurants;
+    
+    // Si es un admin con franquiciado seleccionado, filtrar por ese franquiciado
+    if (selectedFranchisee && ['admin', 'superadmin'].includes(user?.role)) {
+      return activeRestaurants.filter(restaurant => {
+        // Verificar diferentes formas en que puede estar relacionado el franquiciado
+        return restaurant.franchisee_info?.id === selectedFranchisee.id ||
+               restaurant.franchisee_id === selectedFranchisee.id ||
+               restaurant.base_restaurant?.franchisee_name === selectedFranchisee.franchisee_name;
+      });
+    }
+    
+    return activeRestaurants;
+  }, [restaurants, unifiedRestaurants, currentFranchisee, selectedFranchisee, user?.role]);
+
+  // Calcular métricas principales con los restaurantes filtrados
+  const metrics = useMemo((): DashboardMetrics => {
+    const totalRevenue = filteredRestaurants.reduce((sum, r) => {
       // Manejar tanto Restaurant como UnifiedRestaurant con verificaciones de propiedades
       let revenue = 0;
       if ('assignment' in r && r.assignment?.last_year_revenue) {
@@ -61,7 +84,7 @@ export const useDashboardData = (): DashboardData => {
       return sum + revenue;
     }, 0);
     
-    const totalRent = activeRestaurants.reduce((sum, r) => {
+    const totalRent = filteredRestaurants.reduce((sum, r) => {
       // Manejar tanto Restaurant como UnifiedRestaurant con verificaciones de propiedades
       let rent = 0;
       if ('assignment' in r && r.assignment?.monthly_rent) {
@@ -75,10 +98,10 @@ export const useDashboardData = (): DashboardData => {
     const operatingIncome = totalRevenue - totalRent;
     const operatingMargin = totalRevenue > 0 ? (operatingIncome / totalRevenue) * 100 : 0;
     const averageROI = totalRent > 0 ? (operatingIncome / totalRent) * 100 : 0;
-    const averageRevenue = activeRestaurants.length > 0 ? totalRevenue / activeRestaurants.length : 0;
+    const averageRevenue = filteredRestaurants.length > 0 ? totalRevenue / filteredRestaurants.length : 0;
 
     return {
-      totalRestaurants: activeRestaurants.length,
+      totalRestaurants: filteredRestaurants.length,
       totalRevenue,
       averageRevenue,
       operatingMargin,
@@ -87,18 +110,18 @@ export const useDashboardData = (): DashboardData => {
       tasks: 5, // Mock data - sería calculado desde tareas reales
       revenueGrowth: 8.2 // Mock data - sería calculado con datos históricos
     };
-  }, [restaurants, unifiedRestaurants]);
+  }, [filteredRestaurants]);
 
   const dashboardData: DashboardData = {
     metrics,
-    restaurants: restaurants.length > 0 ? restaurants : unifiedRestaurants,
-    franchisee: effectiveFranchisee || franchisee,
+    restaurants: filteredRestaurants,
+    franchisee: currentFranchisee,
     user,
     loading,
     error,
     connectionStatus,
     isImpersonating,
-    effectiveFranchisee
+    effectiveFranchisee: currentFranchisee
   };
 
   return dashboardData;
