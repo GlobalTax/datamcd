@@ -57,11 +57,15 @@ export const AdvancedReportsPage: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('base_restaurants')
-        .select('id, name, site_number')
-        .order('name');
+        .select('id, restaurant_name, site_number')
+        .order('restaurant_name');
 
       if (error) throw error;
-      setRestaurants(data || []);
+      setRestaurants(data?.map(r => ({
+        id: r.id,
+        name: r.restaurant_name,
+        site_number: r.site_number
+      })) || []);
     } catch (error) {
       console.error('Error fetching restaurants:', error);
       toast.error('Error al cargar restaurantes');
@@ -226,27 +230,23 @@ export const AdvancedReportsPage: React.FC = () => {
         {reportData && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <KpiChip
-              title="Estado del Reporte"
               value={reportData.summary.status === 'completed' ? 'Completado' : 'Procesando'}
-              icon={getStatusIcon(reportData.summary.status)}
+              label="Estado del Reporte"
               trend="neutral"
             />
             <KpiChip
-              title="Total de Registros"
               value={reportData.summary.totalRecords.toString()}
-              icon={<FileText className="w-4 h-4" />}
+              label="Total de Registros"
               trend="neutral"
             />
             <KpiChip
-              title="Período"
               value={reportData.summary.dateRange}
-              icon={<Calendar className="w-4 h-4" />}
+              label="Período"
               trend="neutral"
             />
             <KpiChip
-              title="Generado"
               value={new Date(reportData.generatedAt).toLocaleTimeString()}
-              icon={<RefreshCw className="w-4 h-4" />}
+              label="Generado"
               trend="neutral"
             />
           </div>
@@ -319,10 +319,11 @@ export const AdvancedReportsPage: React.FC = () => {
             </Tabs>
           ) : (
             <AlertBanner
-              type="info"
+              variant="info"
               title="Sin datos"
-              message="Configura los filtros y genera tu primer reporte"
-            />
+            >
+              Configura los filtros y genera tu primer reporte
+            </AlertBanner>
           )}
         </div>
       </div>

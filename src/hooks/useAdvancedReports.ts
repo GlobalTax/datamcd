@@ -5,12 +5,13 @@ import { toast } from 'sonner';
 
 export interface ReportTemplate {
   id: string;
-  name: string;
+  template_name: string;
   description?: string;
-  type: 'financial' | 'payroll' | 'incidents' | 'performance' | 'comparative' | 'operational';
+  report_type: string;
   configuration: Record<string, any>;
   is_public: boolean;
   created_at: string;
+  advisor_id: string;
 }
 
 export interface ScheduledReport {
@@ -36,7 +37,16 @@ export const useAdvancedReports = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTemplates(data || []);
+      setTemplates(data?.map(template => ({
+        id: template.id,
+        template_name: template.template_name,
+        description: template.description,
+        report_type: template.report_type,
+        configuration: template.configuration as Record<string, any>,
+        is_public: template.is_public,
+        created_at: template.created_at,
+        advisor_id: template.advisor_id
+      })) || []);
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast.error('Error al cargar plantillas de reportes');
@@ -50,13 +60,29 @@ export const useAdvancedReports = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('advisor_report_templates')
-        .insert([template])
+        .insert([{
+          template_name: template.template_name,
+          description: template.description,
+          report_type: template.report_type,
+          configuration: template.configuration,
+          is_public: template.is_public,
+          advisor_id: template.advisor_id
+        }])
         .select()
         .single();
 
       if (error) throw error;
       
-      setTemplates(prev => [data, ...prev]);
+      setTemplates(prev => [{
+        id: data.id,
+        template_name: data.template_name,
+        description: data.description,
+        report_type: data.report_type,
+        configuration: data.configuration as Record<string, any>,
+        is_public: data.is_public,
+        created_at: data.created_at,
+        advisor_id: data.advisor_id
+      }, ...prev]);
       toast.success('Plantilla creada exitosamente');
       return data;
     } catch (error) {
@@ -80,7 +106,16 @@ export const useAdvancedReports = () => {
 
       if (error) throw error;
       
-      setTemplates(prev => prev.map(t => t.id === id ? data : t));
+      setTemplates(prev => prev.map(t => t.id === id ? {
+        id: data.id,
+        template_name: data.template_name,
+        description: data.description,
+        report_type: data.report_type,
+        configuration: data.configuration as Record<string, any>,
+        is_public: data.is_public,
+        created_at: data.created_at,
+        advisor_id: data.advisor_id
+      } : t));
       toast.success('Plantilla actualizada exitosamente');
       return data;
     } catch (error) {
