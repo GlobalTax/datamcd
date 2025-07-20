@@ -18,6 +18,10 @@ import ProfitLossPage from "./pages/ProfitLossPage";
 import SettingsPage from "./pages/SettingsPage";
 import SystemConfigPage from "./pages/SystemConfigPage";
 
+// Importar páginas de restaurantes
+import RestaurantDashboardPage from "./pages/RestaurantDashboardPage";
+import RestaurantManagementPage from "./pages/RestaurantManagementPage";
+
 // Placeholder components for missing pages
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div className="min-h-screen flex items-center justify-center">
@@ -80,15 +84,24 @@ function App() {
                 </ProtectedRoute>
               } />
 
-              {/* Páginas placeholder temporales */}
+              {/* Nueva página de Dashboard de Restaurantes */}
+              <Route path="/restaurant" element={
+                <ProtectedRoute>
+                  <RestaurantDashboardPage />
+                </ProtectedRoute>
+              } />
+              
+              {/* Ruta para gestión detallada de restaurantes */}
+              <Route path="/restaurant/manage" element={
+                <ProtectedRoute>
+                  <RestaurantManagementPage />
+                </ProtectedRoute>
+              } />
+
+              {/* Páginas placeholder temporales restantes */}
               <Route path="/incidents" element={
                 <ProtectedRoute>
                   <PlaceholderPage title="Incidencias" />
-                </ProtectedRoute>
-              } />
-              <Route path="/restaurant" element={
-                <ProtectedRoute>
-                  <PlaceholderPage title="Restaurante" />
                 </ProtectedRoute>
               } />
               <Route path="/valuation" element={
