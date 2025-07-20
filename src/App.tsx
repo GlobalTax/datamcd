@@ -25,6 +25,8 @@ import RestaurantManagementPage from "./pages/RestaurantManagementPage";
 
 // Importar nueva página de Gestión de Franquiciados
 import FranchiseesPage from "./pages/FranchiseesPage";
+import FranchiseeDetailPage from "./pages/FranchiseeDetailPage";
+import AdvisorPage from "./pages/AdvisorPage";
 
 // Placeholder components for missing pages
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -117,6 +119,13 @@ function App() {
                     <FranchiseesPage />
                   </ProtectedRoute>
                 } />
+                
+                {/* Detalle de Franquiciado */}
+                <Route path="/franchisees/:franchiseeId" element={
+                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                    <FranchiseeDetailPage />
+                  </ProtectedRoute>
+                } />
 
                 {/* Páginas placeholder temporales restantes */}
                 <Route path="/incidents" element={
@@ -140,8 +149,15 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/advisor" element={
-                  <ProtectedRoute>
-                    <PlaceholderPage title="Panel Asesor" />
+                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                    <AdvisorPage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Detalle de Franquiciado desde Advisor */}
+                <Route path="/advisor/franchisee/:franchiseeId" element={
+                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                    <FranchiseeDetailPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/historical-data" element={
