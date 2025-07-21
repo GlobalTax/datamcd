@@ -14,13 +14,12 @@ const Index = () => {
   const { user, loading } = useAuth();
   const [hasNavigated, setHasNavigated] = useState(false);
 
-  // Función memoizada para manejar la navegación
-  const handleNavigation = useCallback(() => {
-    if (!user || loading || hasNavigated) return;
+  useEffect(() => {
+    if (loading || hasNavigated) return;
     
-    setHasNavigated(true);
-    
-    try {
+    if (user) {
+      setHasNavigated(true);
+      
       // Redirigir usuarios autenticados según su rol
       if (['asesor', 'admin', 'superadmin'].includes(user.role)) {
         navigate('/advisor', { replace: true });
@@ -30,23 +29,8 @@ const Index = () => {
         // Reset para roles desconocidos
         setHasNavigated(false);
       }
-    } catch (error) {
-      console.error('Error durante navegación:', error);
-      setHasNavigated(false);
     }
   }, [user, loading, hasNavigated, navigate]);
-
-  useEffect(() => {
-    if (!loading) {
-      if (user) {
-        // Pequeño delay para evitar problemas de timing
-        const timeoutId = setTimeout(handleNavigation, 100);
-        return () => clearTimeout(timeoutId);
-      } else {
-        setHasNavigated(false);
-      }
-    }
-  }, [user, loading, handleNavigation]);
 
   // Mostrar loading mientras se determina el estado de autenticación
   if (loading) {
