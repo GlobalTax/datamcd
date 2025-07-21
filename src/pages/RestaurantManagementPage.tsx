@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useRestaurantManagement } from '@/hooks/useRestaurantManagement';
 import { useRestaurantUpdate } from '@/hooks/useRestaurantUpdate';
+import { useFranchiseeContext } from '@/contexts/FranchiseeContext';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,7 @@ import RestaurantCard from '@/components/restaurant/RestaurantCard';
 import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
 
 const RestaurantManagementPage = () => {
+  const { selectedFranchisee } = useFranchiseeContext();
   const { 
     restaurants, 
     loading, 
@@ -149,7 +151,7 @@ const RestaurantManagementPage = () => {
                 </h1>
                 <p className="text-sm text-gray-500">
                   {canViewAllRestaurants 
-                    ? 'Vista completa de todos los restaurantes del sistema'
+                    ? `Vista de restaurantes${selectedFranchisee ? ` - ${selectedFranchisee.franchisee_name}` : ''}`
                     : 'Administra la información de tus restaurantes'
                   }
                 </p>

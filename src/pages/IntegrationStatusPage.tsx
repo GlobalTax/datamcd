@@ -15,7 +15,7 @@ import {
   Truck,
   RefreshCw
 } from 'lucide-react';
-import { useFranchisees } from '@/hooks/useFranchisees';
+import { useFranchiseeContext } from '@/contexts/FranchiseeContext';
 
 interface IntegrationStatus {
   id: string;
@@ -29,7 +29,7 @@ interface IntegrationStatus {
 }
 
 const IntegrationStatusPage: React.FC = () => {
-  const { franchisees } = useFranchisees();
+  const { selectedFranchisee } = useFranchiseeContext();
   const [integrations, setIntegrations] = useState<IntegrationStatus[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -134,7 +134,10 @@ const IntegrationStatusPage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold">Estado de Integraciones</h1>
           <p className="text-muted-foreground">
-            Monitorea el estado de sincronización de tus sistemas externos
+            {selectedFranchisee 
+              ? `Integraciones de ${selectedFranchisee.franchisee_name}`
+              : 'Monitorea el estado de sincronización de tus sistemas externos'
+            }
           </p>
         </div>
         <div className="flex items-center space-x-2">

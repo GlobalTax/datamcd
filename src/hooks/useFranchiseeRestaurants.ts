@@ -2,11 +2,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useFranchiseeContext } from '@/contexts/FranchiseeContext';
 import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
 import { toast } from 'sonner';
 
 export const useFranchiseeRestaurants = (franchiseeId?: string) => {
   const { user, franchisee, restaurants: authRestaurants } = useUnifiedAuth();
+  const { selectedFranchisee } = useFranchiseeContext();
   const [restaurants, setRestaurants] = useState<FranchiseeRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,8 +35,13 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
         return;
       }
 
-      if (!franchisee) {
-        console.log('useFranchiseeRestaurants - No franchisee data found for user');
+      // Usar el franquiciado seleccionado del contexto, o el del usuario si es franchisee
+      const targetFranchisee = franchiseeId ? 
+        { id: franchiseeId } : 
+        (selectedFranchisee || franchisee);
+
+      if (!targetFranchisee) {
+        console.log('useFranchiseeRestaurants - No franchisee data found');
         setRestaurants([]);
         setError('No se encontró información del franquiciado');
         setLoading(false);
@@ -42,7 +49,7 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
       }
 
       // Si es un franquiciado temporal, usar datos del contexto de autenticación
-      if (franchisee.id.startsWith('temp-')) {
+      if (targetFranchisee.id.startsWith('temp-')) {
         console.log('useFranchiseeRestaurants - Temporary franchisee detected, skipping database query');
         
         // Para franquiciados temporales, crear un array vacío ya que no tienen restaurantes reales
@@ -59,7 +66,7 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
       setLoading(true);
       setError(null);
 
-      console.log('useFranchiseeRestaurants - Fetching restaurants for real franchisee:', franchisee.id);
+      console.log('useFranchiseeRestaurants - Fetching restaurants for real franchisee:', targetFranchisee.id);
 
       const { data, error } = await supabase
         .from('franchisee_restaurants')
@@ -88,7 +95,7 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
             created_by
           )
         `)
-        .eq('franchisee_id', franchisee.id)
+        .eq('franchisee_id', targetFranchisee.id)
         .eq('status', 'active');
 
       console.log('useFranchiseeRestaurants - Query result:', { data: data?.length || 0, error });
@@ -126,7 +133,7 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
   useEffect(() => {
     console.log('useFranchiseeRestaurants - useEffect triggered');
     fetchRestaurants();
-  }, [user?.id, franchisee?.id]);
+  }, [user?.id, franchisee?.id, selectedFranchisee?.id, franchiseeId]);
 
   return {
     restaurants,
