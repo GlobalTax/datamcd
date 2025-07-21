@@ -1,60 +1,78 @@
 
-import { useMemo } from 'react';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
-import { useUnifiedRestaurants } from '@/hooks/useUnifiedRestaurants';
-import { useFranchiseeSpecificRestaurants } from '@/hooks/useFranchiseeSpecificRestaurants';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useFranchiseeContext } from '@/contexts/FranchiseeContext';
+import { useAuth } from '@/hooks/auth/AuthProvider';
 
 export const useSelectedFranchiseeRestaurants = () => {
-  const { user, restaurants: authRestaurants } = useUnifiedAuth();
-  const { selectedFranchisee } = useFranchiseeContext();
-  
-  // Usar el hook específico cuando hay un franquiciado seleccionado
-  const { 
-    restaurants: specificRestaurants, 
-    loading: specificLoading 
-  } = useFranchiseeSpecificRestaurants(selectedFranchisee?.id);
-  
-  // Hook unificado como fallback
-  const { 
-    restaurants: unifiedRestaurants, 
-    loading: unifiedLoading 
-  } = useUnifiedRestaurants(selectedFranchisee?.id);
+  const { selectedFranchisee, isLoading: franchiseeLoading } = useFranchiseeContext();
+  const { user, loading: authLoading } = useAuth();
 
-  const filteredRestaurants = useMemo(() => {
-    console.log('useSelectedFranchiseeRestaurants - Computing filtered restaurants');
-    console.log('selectedFranchisee:', selectedFranchisee?.franchisee_name);
-    console.log('specificRestaurants count:', specificRestaurants.length);
-    console.log('unifiedRestaurants count:', unifiedRestaurants.length);
-    console.log('authRestaurants count:', authRestaurants.length);
-    
-    // Si hay franquiciado seleccionado, usar restaurantes específicos
-    if (selectedFranchisee) {
-      if (user?.role && ['admin', 'superadmin'].includes(user.role)) {
-        // Para admins, usar los restaurantes específicos del franquiciado seleccionado
-        const restaurants = specificRestaurants.length > 0 ? specificRestaurants : unifiedRestaurants;
-        console.log('Admin view - returning restaurants for selected franchisee:', restaurants.length);
-        return restaurants;
+  const {
+    data: restaurants = [],
+    isLoading: queryLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['restaurants', selectedFranchisee?.id],
+    queryFn: async () => {
+      if (!selectedFranchisee?.id) {
+        console.log('useSelectedFranchiseeRestaurants - No selected franchisee');
+        return [];
       }
-    }
-    
-    // Para franquiciados normales o cuando no hay selección específica
-    const activeRestaurants = authRestaurants.length > 0 ? authRestaurants : unifiedRestaurants;
-    console.log('Default view - returning active restaurants:', activeRestaurants.length);
-    return activeRestaurants;
-  }, [authRestaurants, unifiedRestaurants, specificRestaurants, selectedFranchisee, user?.role]);
 
-  const loading = specificLoading || unifiedLoading;
+      console.log('useSelectedFranchiseeRestaurants - Fetching restaurants for:', selectedFranchisee.franchisee_name);
 
-  console.log('useSelectedFranchiseeRestaurants - Final result:', {
-    restaurantsCount: filteredRestaurants.length,
-    loading,
-    selectedFranchisee: selectedFranchisee?.franchisee_name
+      // Para IDs temporales, devolver datos mock
+      if (selectedFranchisee.id.startsWith('temp-')) {
+        console.log('useSelectedFranchiseeRestaurants - Using mock data for temp franchisee');
+        return [
+          {
+            id: 'temp-restaurant-1',
+            franchisee_id: selectedFranchisee.id,
+            base_restaurant_id: 'temp-base-1',
+            status: 'active',
+            franchise_start_date: '2020-01-01',
+            last_year_revenue: 1200000,
+            monthly_rent: 8000,
+            base_restaurant: {
+              id: 'temp-base-1',
+              restaurant_name: 'McDonald\'s Centro',
+              site_number: 'M001',
+              address: 'Calle Principal 123',
+              city: 'Madrid'
+            }
+          }
+        ];
+      }
+
+      const { data, error } = await supabase
+        .from('franchisee_restaurants')
+        .select(`
+          *,
+          base_restaurant:base_restaurants(*)
+        `)
+        .eq('franchisee_id', selectedFranchisee.id)
+        .eq('status', 'active');
+
+      if (error) {
+        console.error('useSelectedFranchiseeRestaurants - Error:', error);
+        throw error;
+      }
+
+      console.log(`useSelectedFranchiseeRestaurants - Loaded ${data?.length || 0} restaurants`);
+      return data || [];
+    },
+    enabled: !authLoading && !franchiseeLoading && !!selectedFranchisee && !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutos
   });
 
+  const isLoading = authLoading || franchiseeLoading || queryLoading;
+
   return {
-    restaurants: filteredRestaurants,
-    loading,
-    selectedFranchisee
+    restaurants,
+    isLoading,
+    error,
+    refetch
   };
 };

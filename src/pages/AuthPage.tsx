@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useAuth } from '@/hooks/auth/AuthProvider';
 import { Loader2, Store } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -19,7 +20,7 @@ const AuthPage = () => {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
   
-  const { signIn, signUp, user, loading } = useUnifiedAuth();
+  const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,10 +32,10 @@ const AuthPage = () => {
       console.log('AuthPage - User role:', user.role);
       console.log('AuthPage - Determining redirect...');
       
-      // Redirigir usuarios con roles de admin, superadmin o asesor al panel de asesor
+      // Redirigir usuarios con roles de admin, superadmin o asesor al panel correspondiente
       if (['admin', 'superadmin', 'asesor'].includes(user.role)) {
-        console.log('AuthPage - Redirecting admin/superadmin to /advisor');
-        navigate('/advisor', { replace: true });
+        console.log('AuthPage - Redirecting admin/superadmin to /dashboard');
+        navigate('/dashboard', { replace: true });
       } else {
         console.log('AuthPage - Redirecting franchisee to /dashboard');
         navigate('/dashboard', { replace: true });
@@ -47,11 +48,19 @@ const AuthPage = () => {
     setIsLoading(true);
     
     console.log('AuthPage - Starting sign in process');
-    const result = await signIn(email, password);
     
-    // Solo mostrar error si hay uno, el éxito se maneja en useAuth
-    if (result?.error) {
-      console.log('AuthPage - Sign in error:', result.error);
+    try {
+      const result = await signIn(email, password);
+      
+      if (result?.error) {
+        console.log('AuthPage - Sign in error:', result.error);
+        toast.error(result.error);
+      } else {
+        toast.success('Sesión iniciada correctamente');
+      }
+    } catch (error: any) {
+      console.error('AuthPage - Unexpected sign in error:', error);
+      toast.error('Error inesperado al iniciar sesión');
     }
     
     setIsLoading(false);
@@ -61,7 +70,20 @@ const AuthPage = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    await signUp(email, password, fullName);
+    try {
+      const result = await signUp(email, password, fullName);
+      
+      if (result?.error) {
+        console.log('AuthPage - Sign up error:', result.error);
+        toast.error(result.error);
+      } else {
+        toast.success('Cuenta creada. Revisa tu email para confirmar.');
+        setActiveTab('signin');
+      }
+    } catch (error: any) {
+      console.error('AuthPage - Unexpected sign up error:', error);
+      toast.error('Error inesperado al registrarse');
+    }
     
     setIsLoading(false);
   };
@@ -70,15 +92,22 @@ const AuthPage = () => {
     e.preventDefault();
     setIsResettingPassword(true);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/auth`,
-    });
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
 
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Se ha enviado un enlace de recuperación a tu correo electrónico');
-      setResetEmail('');
+      if (error) {
+        console.error('AuthPage - Password reset error:', error);
+        toast.error(error.message);
+      } else {
+        toast.success('Se ha enviado un enlace de recuperación a tu correo electrónico');
+        setResetEmail('');
+        setActiveTab('signin');
+      }
+    } catch (error: any) {
+      console.error('AuthPage - Unexpected password reset error:', error);
+      toast.error('Error inesperado al recuperar contraseña');
     }
 
     setIsResettingPassword(false);
@@ -88,7 +117,10 @@ const AuthPage = () => {
     console.log('AuthPage - Showing loading state');
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+          <p className="mt-2 text-gray-600">Verificando autenticación...</p>
+        </div>
       </div>
     );
   }
@@ -108,7 +140,7 @@ const AuthPage = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-center">Acceso para Franquiciados</CardTitle>
+            <CardTitle className="text-center">Acceso al Portal</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -268,19 +300,6 @@ const AuthPage = () => {
                 </form>
               </TabsContent>
             </Tabs>
-
-            <div className="mt-6 pt-4 border-t text-center">
-              <p className="text-sm text-gray-600">
-                ¿Eres administrador de McDonald's?{' '}
-                <button
-                  onClick={() => navigate('/advisor-auth')}
-                  className="text-blue-600 hover:text-blue-700 underline font-medium"
-                >
-                  Accede aquí
-                </button>
-              </p>
-            </div>
-
           </CardContent>
         </Card>
       </div>

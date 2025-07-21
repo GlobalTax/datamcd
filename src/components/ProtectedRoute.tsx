@@ -17,18 +17,20 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
 
   // Detectar modo desarrollo
   useEffect(() => {
-    const isDev = window.location.hostname === 'localhost' || window.location.hostname.includes('lovable');
+    const isDev = window.location.hostname === 'localhost' || 
+                  window.location.hostname.includes('lovable') ||
+                  window.location.hostname.includes('preview');
     setDebugMode(isDev);
   }, []);
 
-  // Timeout para evitar loading infinito - reducido para debugging
+  // Timeout para evitar loading infinito
   useEffect(() => {
     if (loading) {
       const timeoutId = setTimeout(() => {
         console.log('ProtectedRoute - Loading timeout reached');
         console.log('ProtectedRoute - Debug info:', getDebugInfo?.());
         setShowTimeout(true);
-      }, 10000); // Reducido a 10 segundos para detectar problemas más rápido
+      }, 8000);
 
       return () => clearTimeout(timeoutId);
     } else {
@@ -69,7 +71,7 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
 
   console.log('ProtectedRoute - User found:', { email: user.email, role: user.role });
 
-  // Check if user has required role - usando allowedRoles principalmente
+  // Verificar roles permitidos
   if (allowedRoles && allowedRoles.length > 0) {
     if (!allowedRoles.includes(user.role)) {
       console.log('ProtectedRoute - User role not in allowed roles:', user.role, allowedRoles);
@@ -92,7 +94,7 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
     }
   }
 
-  // Check if user has required role - para admin permitir también superadmin
+  // Verificar rol requerido específico
   if (requiredRole) {
     if (requiredRole === 'admin') {
       // Si se requiere admin, permitir admin y superadmin
