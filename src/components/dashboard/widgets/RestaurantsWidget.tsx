@@ -13,7 +13,7 @@ interface RestaurantsWidgetProps {
 
 export const RestaurantsWidget: React.FC<RestaurantsWidgetProps> = ({ restaurants }) => {
   const navigate = useNavigate();
-  const { selectedFranchisee, loading: franchiseeLoading } = useFranchiseeContext();
+  const { selectedFranchisee, isLoading: franchiseeLoading } = useFranchiseeContext();
 
   const formatCurrency = (value: number | undefined | null): string => {
     if (value === undefined || value === null || isNaN(value)) {
