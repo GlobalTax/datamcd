@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRouteProps) => {
-  const { user, loading, getDebugInfo } = useAuth();
+  const { user, loading } = useAuth();
   const [showTimeout, setShowTimeout] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
 
@@ -28,7 +28,6 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
     if (loading) {
       const timeoutId = setTimeout(() => {
         console.log('ProtectedRoute - Loading timeout reached');
-        console.log('ProtectedRoute - Debug info:', getDebugInfo?.());
         setShowTimeout(true);
       }, 8000);
 
@@ -36,7 +35,7 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
     } else {
       setShowTimeout(false);
     }
-  }, [loading, getDebugInfo]);
+  }, [loading]);
 
   // Si está cargando y no hemos alcanzado el timeout, mostrar spinner
   if (loading && !showTimeout) {
@@ -48,7 +47,8 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
           {debugMode && (
             <div className="mt-4 p-4 bg-gray-100 rounded-lg text-left text-sm max-w-md">
               <strong>Debug Info:</strong>
-              <pre className="text-xs">{JSON.stringify(getDebugInfo?.(), null, 2)}</pre>
+              <p className="text-xs">Loading: {loading ? 'true' : 'false'}</p>
+              <p className="text-xs">User: {user ? 'found' : 'not found'}</p>
             </div>
           )}
         </div>
@@ -59,7 +59,6 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
   // Si hemos alcanzado el timeout, redirigir a auth
   if (showTimeout) {
     console.log('ProtectedRoute - Timeout reached, redirecting to auth');
-    console.log('ProtectedRoute - Final debug info:', getDebugInfo?.());
     return <Navigate to="/auth" replace />;
   }
 
@@ -82,12 +81,13 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
             <p className="text-gray-600 mt-2">No tienes permisos para acceder a esta página.</p>
             <p className="text-sm text-gray-500 mt-1">Rol actual: {user.role}</p>
             <p className="text-sm text-gray-500">Roles permitidos: {allowedRoles.join(', ')}</p>
-            {debugMode && (
-              <div className="mt-4 p-4 bg-gray-100 rounded-lg text-left text-sm max-w-md mx-auto">
-                <strong>Debug Info:</strong>
-                <pre className="text-xs">{JSON.stringify(getDebugInfo?.(), null, 2)}</pre>
-              </div>
-            )}
+             {debugMode && (
+               <div className="mt-4 p-4 bg-gray-100 rounded-lg text-left text-sm max-w-md mx-auto">
+                 <strong>Debug Info:</strong>
+                 <p className="text-xs">User role: {user.role}</p>
+                 <p className="text-xs">Allowed roles: {allowedRoles?.join(', ')}</p>
+               </div>
+             )}
           </div>
         </div>
       );
