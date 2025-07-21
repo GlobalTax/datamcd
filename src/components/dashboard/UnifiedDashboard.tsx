@@ -26,7 +26,7 @@ const UnifiedDashboardContent: React.FC = () => {
   const { user, franchisee, connectionStatus, isImpersonating, effectiveFranchisee } = useUnifiedAuth();
   
   // Usar el hook que maneja la selección de franquiciado
-  const { restaurants, loading: restaurantsLoading, selectedFranchisee } = useSelectedFranchiseeRestaurants();
+  const { restaurants, isLoading: restaurantsLoading, selectedFranchisee } = useSelectedFranchiseeRestaurants();
   
   const { metrics: hrMetrics, loading: hrLoading } = useHRMetrics(effectiveFranchisee?.id);
 
@@ -38,22 +38,20 @@ const UnifiedDashboardContent: React.FC = () => {
   const metrics = React.useMemo(() => {
     const totalRevenue = restaurants.reduce((sum, r) => {
       let revenue = 0;
-      if ('assignment' in r && r.assignment?.last_year_revenue) {
-        revenue = r.assignment.last_year_revenue;
-      } else if ('last_year_revenue' in r && r.last_year_revenue) {
-        revenue = r.last_year_revenue;
+      // Corregir acceso a propiedades con tipos apropiados
+      if (r && typeof r === 'object' && 'last_year_revenue' in r) {
+        revenue = (r as any).last_year_revenue || 0;
       }
       return sum + revenue;
     }, 0);
     
     const totalRent = restaurants.reduce((sum, r) => {
       let rent = 0;
-      if ('assignment' in r && r.assignment?.monthly_rent) {
-        rent = r.assignment.monthly_rent;
-      } else if ('monthly_rent' in r && r.monthly_rent) {
-        rent = r.monthly_rent;
+      // Corregir acceso a propiedades con tipos apropiados
+      if (r && typeof r === 'object' && 'monthly_rent' in r) {
+        rent = ((r as any).monthly_rent || 0) * 12;
       }
-      return sum + (rent * 12);
+      return sum + rent;
     }, 0);
 
     const operatingIncome = totalRevenue - totalRent;

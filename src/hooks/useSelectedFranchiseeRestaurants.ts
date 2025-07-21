@@ -67,12 +67,14 @@ export const useSelectedFranchiseeRestaurants = () => {
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
 
-  const isLoading = authLoading || franchiseeLoading || queryLoading;
+  const loading = authLoading || franchiseeLoading || queryLoading;
 
   return {
     restaurants,
-    isLoading,
+    loading,
+    isLoading: loading,
     error,
-    refetch
+    refetch,
+    selectedFranchisee
   };
 };
