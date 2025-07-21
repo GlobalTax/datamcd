@@ -5,8 +5,10 @@ import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useSelectedFranchiseeRestaurants } from '@/hooks/useSelectedFranchiseeRestaurants';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useHRMetrics } from '@/hooks/useHRMetrics';
+import { useFranchiseeContext } from '@/contexts/FranchiseeContext';
 import { MetricsWidget } from './widgets/MetricsWidget';
 import { RestaurantsWidget } from './widgets/RestaurantsWidget';
 import { QuickActionsWidget } from './widgets/QuickActionsWidget';
@@ -21,26 +23,58 @@ import { FranchiseeProvider } from '@/contexts/FranchiseeContext';
 
 const UnifiedDashboardContent: React.FC = () => {
   const navigate = useNavigate();
-  const {
-    metrics,
-    restaurants,
-    franchisee,
-    user,
-    loading,
-    error,
-    connectionStatus,
-    isImpersonating,
-    effectiveFranchisee
-  } = useDashboardData();
-
+  const { user, franchisee, connectionStatus, isImpersonating, effectiveFranchisee } = useUnifiedAuth();
+  
+  // Usar el hook que maneja la selección de franquiciado
+  const { restaurants, loading: restaurantsLoading, selectedFranchisee } = useSelectedFranchiseeRestaurants();
+  
   const { metrics: hrMetrics, loading: hrLoading } = useHRMetrics(effectiveFranchisee?.id);
 
   const handleRefresh = () => {
     window.location.reload();
   };
 
+  // Calcular métricas basadas en los restaurantes filtrados
+  const metrics = React.useMemo(() => {
+    const totalRevenue = restaurants.reduce((sum, r) => {
+      let revenue = 0;
+      if ('assignment' in r && r.assignment?.last_year_revenue) {
+        revenue = r.assignment.last_year_revenue;
+      } else if ('last_year_revenue' in r && r.last_year_revenue) {
+        revenue = r.last_year_revenue;
+      }
+      return sum + revenue;
+    }, 0);
+    
+    const totalRent = restaurants.reduce((sum, r) => {
+      let rent = 0;
+      if ('assignment' in r && r.assignment?.monthly_rent) {
+        rent = r.assignment.monthly_rent;
+      } else if ('monthly_rent' in r && r.monthly_rent) {
+        rent = r.monthly_rent;
+      }
+      return sum + (rent * 12);
+    }, 0);
+
+    const operatingIncome = totalRevenue - totalRent;
+    const operatingMargin = totalRevenue > 0 ? (operatingIncome / totalRevenue) * 100 : 0;
+    const averageROI = totalRent > 0 ? (operatingIncome / totalRent) * 100 : 0;
+    const averageRevenue = restaurants.length > 0 ? totalRevenue / restaurants.length : 0;
+
+    return {
+      totalRestaurants: restaurants.length,
+      totalRevenue,
+      averageRevenue,
+      operatingMargin,
+      averageROI,
+      alerts: 3,
+      tasks: 5,
+      revenueGrowth: 8.2
+    };
+  }, [restaurants]);
+
   // Mostrar loading solo durante la carga inicial
-  if (loading && !user) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingState />
@@ -110,6 +144,11 @@ const UnifiedDashboardContent: React.FC = () => {
                 <FranchiseeSelector />
               </div>
               <p className="text-sm text-gray-500 mt-1">{getDescription()}</p>
+              {selectedFranchisee && (
+                <p className="text-xs text-blue-600 mt-1">
+                  Mostrando datos de: {selectedFranchisee.franchisee_name}
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <Button 

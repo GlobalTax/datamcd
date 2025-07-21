@@ -45,7 +45,7 @@ export interface RestaurantStats {
   byFranchisee: Record<string, number>;
 }
 
-export const useUnifiedRestaurants = () => {
+export const useUnifiedRestaurants = (specificFranchiseeId?: string) => {
   const { user, effectiveFranchisee } = useUnifiedAuth();
   const [restaurants, setRestaurants] = useState<UnifiedRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,12 +57,12 @@ export const useUnifiedRestaurants = () => {
       return;
     }
 
-    console.log('Fetching unified restaurants for user:', user.id, 'with role:', user.role);
+    console.log('Fetching unified restaurants for user:', user.id, 'with role:', user.role, 'specific franchisee:', specificFranchiseeId);
     
     try {
       setError(null);
 
-      const { data: baseRestaurants, error: baseError } = await supabase
+      let baseQuery = supabase
         .from('base_restaurants')
         .select(`
           id,
@@ -78,12 +78,14 @@ export const useUnifiedRestaurants = () => {
         `)
         .order('restaurant_name');
 
+      const { data: baseRestaurants, error: baseError } = await baseQuery;
+
       if (baseError) {
         console.error('Error fetching base restaurants:', baseError);
         throw baseError;
       }
 
-      const { data: assignments, error: assignmentsError } = await supabase
+      let assignmentsQuery = supabase
         .from('franchisee_restaurants')
         .select(`
           id,
@@ -102,9 +104,15 @@ export const useUnifiedRestaurants = () => {
         `)
         .eq('status', 'active');
 
+      // Si se especifica un franquiciado, filtrar las asignaciones
+      if (specificFranchiseeId) {
+        assignmentsQuery = assignmentsQuery.eq('franchisee_id', specificFranchiseeId);
+      }
+
+      const { data: assignments, error: assignmentsError } = await assignmentsQuery;
+
       if (assignmentsError) {
         console.error('Error fetching assignments:', assignmentsError);
-        // No lanzar error, solo log - las asignaciones son opcionales
       }
 
       // Unificar datos
@@ -130,14 +138,23 @@ export const useUnifiedRestaurants = () => {
         };
       });
 
-      setRestaurants(unifiedRestaurants);
+      // Si se especifica un franquiciado, filtrar solo los restaurantes asignados a él
+      const filteredRestaurants = specificFranchiseeId 
+        ? unifiedRestaurants.filter(r => r.franchisee_info?.id === specificFranchiseeId)
+        : unifiedRestaurants;
+
+      setRestaurants(filteredRestaurants);
       
-      const assignedCount = unifiedRestaurants.filter(r => r.isAssigned).length;
-      const totalCount = unifiedRestaurants.length;
+      const assignedCount = filteredRestaurants.filter(r => r.isAssigned).length;
+      const totalCount = filteredRestaurants.length;
       
       console.log('Successfully unified restaurants:', totalCount, 'total');
       console.log('Assigned restaurants:', assignedCount);
       console.log('Available restaurants:', totalCount - assignedCount);
+      
+      if (specificFranchiseeId) {
+        console.log('Restaurants for specific franchisee:', specificFranchiseeId, 'count:', totalCount);
+      }
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
@@ -146,12 +163,12 @@ export const useUnifiedRestaurants = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, specificFranchiseeId]);
 
   // Usar queries optimizadas para evitar bucles infinitos
   const { loading: queryLoading } = useOptimizedQueries(
     fetchRestaurants,
-    [user?.id, user?.role],
+    [user?.id, user?.role, specificFranchiseeId],
     {
       debounceMs: 500,
       maxRetries: 1,
