@@ -39,7 +39,7 @@ export const FranchiseeProvider: React.FC<FranchiseeProviderProps> = ({ children
   const { user, loading: authLoading } = useAuth();
   const { getEffectiveFranchisee, isImpersonating } = useImpersonation();
 
-  const effectiveFranchisee = getEffectiveFranchisee(user?.franchisee);
+  const effectiveFranchisee = getEffectiveFranchisee(null); // TODO: Get user franchisee from proper source
   const canSelectFranchisee = ['admin', 'superadmin', 'asesor'].includes(user?.role || '');
 
   // Cargar todos los franquiciados si el usuario es admin

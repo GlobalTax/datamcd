@@ -1,11 +1,11 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+// import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/hooks/auth/AuthProvider';
 import { ImpersonationProvider } from '@/hooks/useImpersonation';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { AdminRoute } from '@/components/AdminRoute';
 import AuthPage from '@/pages/AuthPage';
 import UnifiedDashboardPage from '@/pages/UnifiedDashboardPage';
@@ -66,7 +66,7 @@ function App() {
           </Router>
         </ImpersonationProvider>
       </AuthProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
     </QueryClientProvider>
   );
 }
