@@ -25,18 +25,41 @@ const UnifiedDashboardContent: React.FC = () => {
   const navigate = useNavigate();
   const { user, franchisee, connectionStatus, isImpersonating, effectiveFranchisee } = useUnifiedAuth();
   
+  console.log('UnifiedDashboard - Rendering with user:', user?.email);
+  console.log('UnifiedDashboard - Connection status:', connectionStatus);
+  console.log('UnifiedDashboard - Effective franchisee:', effectiveFranchisee?.franchisee_name);
+  
   // Usar el hook que maneja la selección de franquiciado
   const { restaurants, isLoading: restaurantsLoading, error: restaurantsError } = useSelectedFranchiseeRestaurants();
   const { selectedFranchisee } = useFranchiseeContext();
   
   const { metrics: hrMetrics, loading: hrLoading } = useHRMetrics(effectiveFranchisee?.id);
 
+  console.log('UnifiedDashboard - Restaurants count:', restaurants?.length || 0);
+  console.log('UnifiedDashboard - Restaurants loading:', restaurantsLoading);
+
   const handleRefresh = () => {
+    console.log('UnifiedDashboard - Refreshing page');
     window.location.reload();
   };
 
   // Calcular métricas basadas en los restaurantes filtrados
   const metrics = React.useMemo(() => {
+    console.log('UnifiedDashboard - Calculating metrics for restaurants:', restaurants?.length || 0);
+    
+    if (!restaurants || restaurants.length === 0) {
+      return {
+        totalRestaurants: 0,
+        totalRevenue: 0,
+        averageRevenue: 0,
+        operatingMargin: 0,
+        averageROI: 0,
+        alerts: 0,
+        tasks: 0,
+        revenueGrowth: 0
+      };
+    }
+
     const totalRevenue = restaurants.reduce((sum, r) => {
       const revenue = r.last_year_revenue || 0;
       return sum + revenue;
@@ -64,8 +87,9 @@ const UnifiedDashboardContent: React.FC = () => {
     };
   }, [restaurants]);
 
-  // Mostrar loading solo durante la carga inicial
+  // Mostrar loading solo durante la carga inicial de usuario
   if (!user) {
+    console.log('UnifiedDashboard - No user found, showing loading');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingState />
@@ -98,6 +122,8 @@ const UnifiedDashboardContent: React.FC = () => {
     { month: 'May', empleados: 33, costoLaboral: 138000, horasTrabajadas: 5280, rotacion: 1.9 },
     { month: 'Jun', empleados: 35, costoLaboral: 142000, horasTrabajadas: 5600, rotacion: 1.6 },
   ];
+
+  console.log('UnifiedDashboard - Rendering dashboard with title:', getTitle());
 
   return (
     <SidebarProvider>
@@ -164,6 +190,21 @@ const UnifiedDashboardContent: React.FC = () => {
           {/* Main Content */}
           <main className="flex-1 p-6">
             <div className="space-y-6">
+              {/* Mensaje informativo si no hay datos */}
+              {(!restaurants || restaurants.length === 0) && !restaurantsLoading && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <p className="text-blue-800">
+                      {isGlobalAdmin 
+                        ? "Selecciona un franquiciado para ver sus datos o verifica que existan restaurantes asignados." 
+                        : "No hay restaurantes asignados actualmente. Contacta con tu asesor para más información."
+                      }
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Métricas principales */}
               <MetricsWidget metrics={metrics} userRole={user?.role} />
 
@@ -174,7 +215,7 @@ const UnifiedDashboardContent: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Columna principal */}
                 <div className="lg:col-span-2 space-y-6">
-                  <RestaurantsWidget restaurants={restaurants} />
+                  <RestaurantsWidget restaurants={restaurants || []} />
                   
                   {/* Gráficos de tendencias RRHH */}
                   <HRTrendsChart data={hrTrendsData} loading={hrLoading} />

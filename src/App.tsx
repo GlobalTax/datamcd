@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/hooks/auth/AuthProvider';
 import { ImpersonationProvider } from '@/hooks/useImpersonation';
-import ProtectedRoute from '@/components/ProtectedRoute';
+// import ProtectedRoute from '@/components/ProtectedRoute';
 import { AdminRoute } from '@/components/AdminRoute';
 import AuthPage from '@/pages/AuthPage';
 import UnifiedDashboardPage from '@/pages/UnifiedDashboardPage';
@@ -31,27 +31,19 @@ function App() {
               <Route path="/auth" element={<AuthPage />} />
               <Route
                 path="/"
-                element={
-                  <ProtectedRoute>
-                    <UnifiedDashboardPage />
-                  </ProtectedRoute>
-                }
+                element={<UnifiedDashboardPage />}
+              />
+              <Route
+                path="/dashboard"
+                element={<UnifiedDashboardPage />}
               />
               <Route
                 path="/valuation"
-                element={
-                  <ProtectedRoute>
-                    <ValuationApp />
-                  </ProtectedRoute>
-                }
+                element={<ValuationApp />}
               />
               <Route
                 path="/budget-valuation"
-                element={
-                  <ProtectedRoute>
-                    <BudgetValuationPage />
-                  </ProtectedRoute>
-                }
+                element={<BudgetValuationPage />}
               />
               <Route
                 path="/admin/*"
