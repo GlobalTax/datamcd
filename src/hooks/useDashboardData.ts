@@ -84,7 +84,7 @@ export const useDashboardData = (): DashboardData => {
       if ('assignment' in r && r.assignment?.last_year_revenue) {
         revenue = r.assignment.last_year_revenue;
       } else if ('last_year_revenue' in r && r.last_year_revenue) {
-        revenue = r.last_year_revenue;
+        revenue = r.last_year_revenue as number;
       }
       return sum + revenue;
     }, 0);
@@ -95,7 +95,7 @@ export const useDashboardData = (): DashboardData => {
       if ('assignment' in r && r.assignment?.monthly_rent) {
         rent = r.assignment.monthly_rent;
       } else if ('monthly_rent' in r && r.monthly_rent) {
-        rent = r.monthly_rent;
+        rent = r.monthly_rent as number;
       }
       return sum + (rent * 12);
     }, 0);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, createContext, useCallback } from 'react';
-import { AuthUser, AuthContextType } from '@/types';
+import { AuthUser, AuthContextType } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { performSecurityAudit } from '@/utils/securityCleanup';
 import { useSecureLogging } from '@/hooks/useSecureLogging';
@@ -7,8 +7,18 @@ import { useSecureLogging } from '@/hooks/useSecureLogging';
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  franchisee: null,
+  restaurants: [],
+  connectionStatus: 'online',
+  effectiveFranchisee: null,
+  isImpersonating: false,
+  impersonatedFranchisee: null,
+  startImpersonation: async () => {},
+  stopImpersonation: () => {},
   signIn: async () => ({ data: null, error: null }),
   signOut: async () => ({ error: null }),
+  signUp: async () => ({ data: null, error: null }),
+  getDebugInfo: () => ({}),
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -49,7 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        logUserAction(`Auth event: ${event}`, { hasSession: !!session });
+        logUserAction(`Auth event: ${event}`, `hasSession: ${!!session}`);
         
         if (session?.user) {
           setUser(session.user as AuthUser);
@@ -79,7 +89,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      logUserAction('Attempting sign in', { email });
+      logUserAction('Attempting sign in', `email: ${email}`);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -91,7 +101,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return { data: null, error };
       }
 
-      logUserAction('Sign in successful', { userId: data.user?.id });
+      logUserAction('Sign in successful', `userId: ${data.user?.id}`);
       return { data, error: null };
     } catch (error) {
       logError('Sign in exception', { error, email });
@@ -101,7 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      logUserAction('Attempting sign out', { userId: user?.id });
+      logUserAction('Attempting sign out', `userId: ${user?.id}`);
       
       const { error } = await supabase.auth.signOut();
       
@@ -145,9 +155,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     effectiveFranchisee: null,
     isImpersonating: false,
     impersonatedFranchisee: null,
-    startImpersonation: () => {},
+    startImpersonation: async () => {},
     stopImpersonation: () => {},
-    signUp: async () => ({ error: 'Not implemented' }),
+    signUp: async () => ({ data: null, error: 'Not implemented' }),
   };
 
   return (

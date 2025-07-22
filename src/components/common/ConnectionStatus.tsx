@@ -25,7 +25,7 @@ export const ConnectionStatus: React.FC = () => {
     }
   };
 
-  const config = statusConfig[connectionStatus as keyof typeof statusConfig];
+  const config = statusConfig[connectionStatus];
   if (!config) return null;
 
   const Icon = config.icon;

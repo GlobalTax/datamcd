@@ -71,10 +71,12 @@ export interface AuthContextType {
   effectiveFranchisee?: Franchisee | null;
   isImpersonating?: boolean;
   impersonatedFranchisee?: Franchisee | null;
-  startImpersonation?: (franchisee: Franchisee) => void;
+  startImpersonation?: (franchiseeId: string) => Promise<void>;
   stopImpersonation?: () => void;
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<{ error: any }>;
-  signUp?: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
+  signUp?: (email: string, password: string, fullName: string) => Promise<{ data: any; error: any }>;
   getDebugInfo?: () => any;
 }
+
+export type AuthUser = User;

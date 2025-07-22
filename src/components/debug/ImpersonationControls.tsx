@@ -50,7 +50,7 @@ export const ImpersonationControls: React.FC = () => {
   const handleStartImpersonation = () => {
     const selectedFranchisee = availableFranchisees.find(f => f.id === selectedFranchiseeId);
     if (selectedFranchisee) {
-      startImpersonation(selectedFranchisee);
+      startImpersonation(selectedFranchisee.id);
       setSelectedFranchiseeId('');
     }
   };
