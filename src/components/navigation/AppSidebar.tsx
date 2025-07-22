@@ -65,7 +65,6 @@ const menuItems = [
   },
 ];
 
-// Elementos de administración solo para admins
 const adminMenuItems = [
   {
     title: "Franquiciados",
@@ -103,20 +102,27 @@ export function AppSidebar() {
     franchisee,
     isImpersonating, 
     impersonatedFranchisee,
-    effectiveFranchisee,
-    getDebugInfo
+    effectiveFranchisee
   } = useUnifiedAuth();
 
-  // Log de debugging detallado
-  const debugInfo = getDebugInfo?.() || {};
-  console.log('SIDEBAR DEBUG:', debugInfo);
+  // Log de debugging simplificado y seguro
+  console.log('SIDEBAR DEBUG:', {
+    userEmail: user?.email,
+    userRole: user?.role,
+    isImpersonating,
+    effectiveFranchisee: effectiveFranchisee?.franchisee_name
+  });
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth');
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'asesor';
 
   return (
     <Sidebar className="w-64">
@@ -157,7 +163,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Sección de administración para admins */}
         {isAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
@@ -192,7 +197,7 @@ export function AppSidebar() {
               {isImpersonating ? effectiveFranchisee?.franchisee_name : (user?.full_name || user?.email)}
             </p>
             <p className={`text-xs ${isImpersonating ? 'text-blue-600' : 'text-gray-500'}`}>
-              {isImpersonating ? 'Franquiciado (Vista Asesor)' : 'Franquiciado'}
+              {isImpersonating ? 'Franquiciado (Vista Asesor)' : user?.role || 'Usuario'}
             </p>
           </div>
           
