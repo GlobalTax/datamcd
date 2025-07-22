@@ -4,14 +4,124 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { handleCorsPreflightRequest, createCorsResponse } from '../_shared/cors.ts';
 import { edgeLogger } from '../_shared/edgeLogger.ts';
 
+// Rate Limiting para Edge Functions
+interface RateLimitConfig {
+  windowMs: number;
+  maxRequests: number;
+  blockDuration: number;
+}
+
+const RATE_LIMIT_CONFIG: RateLimitConfig = {
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  maxRequests: 30, // 30 requests por minuto
+  blockDuration: 5 * 60 * 1000 // 5 minutos de bloqueo
+};
+
+// Store en memoria para rate limiting
+const rateLimitStore = new Map<string, { count: number; resetTime: number; blocked?: number }>();
+
+function getClientIP(request: Request): string {
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  const realIP = request.headers.get('x-real-ip');
+  const cfConnectingIP = request.headers.get('cf-connecting-ip');
+  
+  if (cfConnectingIP) return cfConnectingIP;
+  if (realIP) return realIP;
+  if (forwardedFor) return forwardedFor.split(',')[0].trim();
+  
+  return 'unknown';
+}
+
+function checkRateLimit(ip: string): { allowed: boolean; response?: Response } {
+  const now = Date.now();
+  const key = `biloop:${ip}`;
+  const record = rateLimitStore.get(key);
+  
+  // Verificar si está bloqueado
+  if (record?.blocked && record.blocked > now) {
+    return {
+      allowed: false,
+      response: new Response(
+        JSON.stringify({
+          error: 'IP temporarily blocked',
+          message: 'Too many requests. Please wait before trying again.',
+          retryAfter: Math.ceil((record.blocked - now) / 1000)
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': Math.ceil((record.blocked - now) / 1000).toString(),
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+          }
+        }
+      )
+    };
+  }
+  
+  // Crear nueva ventana o verificar límite actual
+  if (!record || record.resetTime < now) {
+    rateLimitStore.set(key, { count: 1, resetTime: now + RATE_LIMIT_CONFIG.windowMs });
+    return { allowed: true };
+  }
+  
+  if (record.count >= RATE_LIMIT_CONFIG.maxRequests) {
+    // Bloquear IP
+    record.blocked = now + RATE_LIMIT_CONFIG.blockDuration;
+    rateLimitStore.set(key, record);
+    
+    console.warn(`🚨 RATE LIMIT: IP ${ip} blocked for ${RATE_LIMIT_CONFIG.blockDuration}ms`);
+    
+    return {
+      allowed: false,
+      response: new Response(
+        JSON.stringify({
+          error: 'Rate limit exceeded',
+          message: 'Too many requests. IP temporarily blocked.',
+          retryAfter: Math.ceil(RATE_LIMIT_CONFIG.blockDuration / 1000)
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': Math.ceil(RATE_LIMIT_CONFIG.blockDuration / 1000).toString(),
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+          }
+        }
+      )
+    };
+  }
+  
+  // Incrementar contador
+  record.count++;
+  rateLimitStore.set(key, record);
+  
+  return { allowed: true };
+}
+
 serve(async (req) => {
   const origin = req.headers.get('origin');
   const requestId = `biloop_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const startTime = Date.now();
+  const clientIP = getClientIP(req);
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return handleCorsPreflightRequest(origin);
+  }
+
+  // Aplicar rate limiting
+  const rateLimitResult = checkRateLimit(clientIP);
+  if (!rateLimitResult.allowed) {
+    edgeLogger.warn('Rate limit exceeded', {
+      functionName: 'biloop-integration',
+      requestId,
+      ip: clientIP,
+      method: req.method
+    });
+    return rateLimitResult.response!;
   }
 
   const context = {

@@ -2048,6 +2048,90 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_blocks: {
+        Row: {
+          blocked_until: string
+          created_at: string
+          endpoint: string
+          id: string
+          ip: string
+          reason: string
+        }
+        Insert: {
+          blocked_until: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip: string
+          reason?: string
+        }
+        Update: {
+          blocked_until?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip?: string
+          reason?: string
+        }
+        Relationships: []
+      }
+      rate_limit_entries: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          ip: string
+          last_request_at: string
+          requests: number
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip: string
+          last_request_at?: string
+          requests?: number
+          window_start: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip?: string
+          last_request_at?: string
+          requests?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
+      rate_limit_violations: {
+        Row: {
+          block_duration: number
+          created_at: string
+          endpoint: string
+          id: string
+          ip: string
+          requests_count: number
+        }
+        Insert: {
+          block_duration: number
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip: string
+          requests_count: number
+        }
+        Update: {
+          block_duration?: number
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip?: string
+          requests_count?: number
+        }
+        Relationships: []
+      }
       restaurant_budgets: {
         Row: {
           budgeted_food_cost: number | null
@@ -2750,6 +2834,10 @@ export type Database = {
       cleanup_local_storage_data: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      cleanup_rate_limit_records: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       cleanup_test_users: {
         Args: Record<PropertyKey, never>
