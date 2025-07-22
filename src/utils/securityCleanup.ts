@@ -129,7 +129,11 @@ export const hasSensitiveData = (): boolean => {
 };
 
 // Función para ejecutar limpieza automática al cargar la app
-export const performSecurityAudit = async (): Promise<void> => {
+export const performSecurityAudit = async (): Promise<{
+  success: boolean;
+  cleanedKeys: string[];
+  error?: string;
+}> => {
   const sensitiveKeys = detectSensitiveData();
   
   if (sensitiveKeys.length > 0) {
@@ -143,5 +147,12 @@ export const performSecurityAudit = async (): Promise<void> => {
     } else {
       console.error('❌ Security cleanup failed:', result.error);
     }
+    
+    return result;
   }
+  
+  return {
+    success: true,
+    cleanedKeys: []
+  };
 };
