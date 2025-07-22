@@ -8,7 +8,7 @@ export interface SecurityAuditResult {
   errors?: string[];
 }
 
-export const performSecurityAudit = async (): Promise<SecurityAuditResult> => {
+export const performSecurityAudit = (): SecurityAuditResult => {
   try {
     let cleanedKeys = 0;
     const errors: string[] = [];
@@ -36,15 +36,7 @@ export const performSecurityAudit = async (): Promise<SecurityAuditResult> => {
       }
     }
 
-    // Limpiar datos de sesión obsoletos en Supabase
-    try {
-      const { error } = await supabase.auth.refreshSession();
-      if (error) {
-        errors.push(`Session refresh failed: ${error.message}`);
-      }
-    } catch (error) {
-      errors.push(`Session cleanup failed: ${error}`);
-    }
+    // Nota: Limpieza de sesión se maneja en AuthProvider
 
     return {
       cleanedKeys,

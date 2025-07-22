@@ -1,15 +1,8 @@
 import React, { useState, useEffect, useContext, createContext, useCallback } from 'react';
-import { AuthUser } from '@/types';
+import { AuthUser, AuthContextType } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { performSecurityAudit } from '@/utils/securityCleanup';
 import { useSecureLogging } from '@/hooks/useSecureLogging';
-
-interface AuthContextType {
-  user: AuthUser | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
-  signOut: () => Promise<{ error: any }>;
-}
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -20,10 +13,6 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-interface Props {
-  children: React.ReactNode;
-}
-
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,16 +20,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Integrar logging seguro
   const { logInfo, logError, logSecurity, logUserAction } = useSecureLogging();
 
-  const performSecurityAudit = useCallback(async () => {
+  const performSecurityAuditCheck = useCallback(async () => {
     try {
       logSecurity('Starting security audit for localStorage');
       
       // Realizar auditoría de seguridad
-      const result = await performSecurityAudit();
+      const result = performSecurityAudit();
       
-      if (result.cleanedKeys.length > 0) {
+      if (result.cleanedKeys > 0) {
         logSecurity('Security cleanup completed', {
-          cleanedKeysCount: result.cleanedKeys.length,
+          cleanedKeysCount: result.cleanedKeys,
           success: result.success
         });
         
@@ -50,14 +39,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         logInfo('Security audit completed - no sensitive data found');
       }
     } catch (error) {
-      logError('Security audit failed', error);
+      logError('Security audit failed', { error });
     }
-  }, [logSecurity, logInfo, logError]);
+  }, [logInfo, logError, logSecurity]);
 
-  // Función para login seguro
-  const signIn = useCallback(async (email: string, password: string) => {
+  // Configurar listener de autenticación
+  useEffect(() => {
+    logInfo('Setting up authentication listener');
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        logUserAction(`Auth event: ${event}`, { hasSession: !!session });
+        
+        if (session?.user) {
+          setUser(session.user as AuthUser);
+        } else {
+          setUser(null);
+        }
+        
+        setLoading(false);
+      }
+    );
+
+    // Verificar sesión inicial
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user as AuthUser);
+      }
+      setLoading(false);
+    });
+
+    // Realizar auditoría de seguridad al inicializar
+    performSecurityAuditCheck();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [logInfo, logUserAction, performSecurityAuditCheck]);
+
+  const signIn = async (email: string, password: string) => {
     try {
-      logUserAction('login_attempt', 'auth', undefined, { email: email.substring(0, 3) + '***' });
+      logUserAction('Attempting sign in', { email });
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -65,113 +87,72 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (error) {
-        logSecurity('Login failed', { 
-          error: error.message, 
-          email: email.substring(0, 3) + '***' 
-        });
-        throw error;
+        logError('Sign in failed', { error: error.message, email });
+        return { data: null, error };
       }
 
-      if (data.user) {
-        logUserAction('login_success', 'auth', data.user.id);
-        // Realizar auditoría de seguridad después del login
-        performSecurityAudit();
-      }
-
+      logUserAction('Sign in successful', { userId: data.user?.id });
       return { data, error: null };
     } catch (error) {
-      logError('Sign in error', error);
+      logError('Sign in exception', { error, email });
       return { data: null, error };
     }
-  }, [logUserAction, logSecurity, logError, performSecurityAudit]);
+  };
 
-  // Función para logout seguro
-  const signOut = useCallback(async () => {
+  const signOut = async () => {
     try {
-      const currentUserId = user?.id;
-      
-      logUserAction('logout_attempt', 'auth', currentUserId);
+      logUserAction('Attempting sign out', { userId: user?.id });
       
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        logError('Logout failed', error);
-        throw error;
+        logError('Sign out failed', { error: error.message });
+        return { error };
       }
+
+      // Limpiar estado local
+      setUser(null);
       
-      // Limpiar datos sensibles al hacer logout
-      performSecurityAudit();
+      // Realizar auditoría de seguridad después del logout
+      await performSecurityAuditCheck();
       
-      logUserAction('logout_success', 'auth', currentUserId);
-      
+      logUserAction('Sign out successful');
       return { error: null };
     } catch (error) {
-      logError('Sign out error', error);
+      logError('Sign out exception', { error });
       return { error };
     }
-  }, [user?.id, logUserAction, logError, performSecurityAudit]);
+  };
 
-  useEffect(() => {
-    const getSession = async () => {
-      try {
-        setLoading(true);
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (session?.user) {
-          setUser(session.user as AuthUser);
-        }
-      } catch (error) {
-        console.error('Error getting session:', error);
-      } finally {
-        setLoading(false);
-      }
+  // Función básica de debug
+  const getDebugInfo = () => {
+    return {
+      user: user ? { id: user.id, email: user.email, role: user.role } : null,
+      loading,
+      timestamp: new Date().toISOString()
     };
-
-    getSession();
-  }, []);
-
-  useEffect(() => {
-    logInfo('AuthProvider mounted');
-    
-    // Realizar auditoría inicial
-    performSecurityAudit();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        logInfo('Auth state changed', { event, hasSession: !!session });
-        
-        setLoading(true);
-        
-        if (event === 'SIGNED_IN' && session?.user) {
-          logUserAction('session_started', 'auth', session.user.id);
-          setUser(session.user as AuthUser);
-        } else if (event === 'SIGNED_OUT') {
-          logUserAction('session_ended', 'auth');
-          setUser(null);
-        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          logInfo('Token refreshed', { userId: session.user.id });
-          setUser(session.user as AuthUser);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      logInfo('AuthProvider unmounting');
-      subscription.unsubscribe();
-    };
-  }, [logInfo, logUserAction, performSecurityAudit]);
+  };
 
   const value: AuthContextType = {
     user,
     loading,
     signIn,
     signOut,
+    getDebugInfo,
+    franchisee: null,
+    restaurants: [],
+    connectionStatus: 'online',
+    effectiveFranchisee: null,
+    isImpersonating: false,
+    impersonatedFranchisee: null,
+    startImpersonation: () => {},
+    stopImpersonation: () => {},
+    signUp: async () => ({ error: 'Not implemented' }),
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
-

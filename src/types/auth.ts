@@ -64,7 +64,6 @@ export interface FranchiseeStaff {
 
 export interface AuthContextType {
   user: User | null;
-  session?: any;
   franchisee?: Franchisee | null;
   restaurants?: Restaurant[];
   loading: boolean;
@@ -74,8 +73,8 @@ export interface AuthContextType {
   impersonatedFranchisee?: Franchisee | null;
   startImpersonation?: (franchisee: Franchisee) => void;
   stopImpersonation?: () => void;
-  signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signOut: () => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
+  signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
+  signOut: () => Promise<{ error: any }>;
+  signUp?: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   getDebugInfo?: () => any;
 }
