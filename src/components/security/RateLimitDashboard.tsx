@@ -1,126 +1,86 @@
-/**
- * Rate Limiting Dashboard - McDonald's Portal
- * 
- * Componente para visualizar y gestionar el estado del rate limiting
- * Solo accesible para administradores
- */
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Shield, Clock, Ban } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { 
+  Shield, 
+  AlertTriangle, 
+  Clock, 
+  Ban, 
+  Trash2, 
+  RefreshCw,
+  Search,
+  TrendingUp
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/auth/AuthProvider';
 import { toast } from 'sonner';
 
-interface RateLimitStats {
-  totalRequests: number;
-  blockedIPs: number;
-  violations: number;
-  topEndpoints: Array<{ endpoint: string; requests: number }>;
-}
-
-interface BlockedIP {
-  ip: string;
+interface RateLimitEntry {
+  id: string;
+  ip_address: string;
   endpoint: string;
-  blocked_until: string;
-  reason: string;
+  request_count: number;
+  window_start: string;
+  window_end: string;
   created_at: string;
 }
 
-interface Violation {
-  ip: string;
+interface RateLimitBlock {
+  id: string;
+  ip_address: string;
+  reason: string;
+  blocked_until: string;
+  created_at: string;
+}
+
+interface RateLimitViolation {
+  id: string;
+  ip_address: string;
   endpoint: string;
-  requests_count: number;
-  block_duration: number;
+  violation_count: number;
+  last_violation: string;
   created_at: string;
 }
 
 export const RateLimitDashboard: React.FC = () => {
-  const { user } = useAuth();
-  const [stats, setStats] = useState<RateLimitStats | null>(null);
-  const [blockedIPs, setBlockedIPs] = useState<BlockedIP[]>([]);
-  const [violations, setViolations] = useState<Violation[]>([]);
+  const [entries, setEntries] = useState<RateLimitEntry[]>([]);
+  const [blocks, setBlocks] = useState<RateLimitBlock[]>([]);
+  const [violations, setViolations] = useState<RateLimitViolation[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Verificar que el usuario sea admin
-  if (!user || !['admin', 'superadmin'].includes(user.role)) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center text-muted-foreground">
-            <Shield className="mx-auto h-12 w-12 mb-4" />
-            <p>Solo administradores pueden acceder a esta funcionalidad</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTab, setSelectedTab] = useState<'entries' | 'blocks' | 'violations'>('entries');
 
   useEffect(() => {
-    loadRateLimitData();
-    
-    // Actualizar cada 30 segundos
-    const interval = setInterval(loadRateLimitData, 30000);
-    return () => clearInterval(interval);
+    loadData();
   }, []);
 
-  const loadRateLimitData = async () => {
+  const loadData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
+      const [entriesResult, blocksResult, violationsResult] = await Promise.all([
+        supabase.from('rate_limit_entries').select('*').order('created_at', { ascending: false }).limit(100),
+        supabase.from('rate_limit_blocks').select('*').order('created_at', { ascending: false }),
+        supabase.from('rate_limit_violations').select('*').order('last_violation', { ascending: false })
+      ]);
 
-      // Obtener estadísticas generales
-      const { data: entries, error: entriesError } = await supabase
-        .from('rate_limit_entries')
-        .select('*')
-        .gte('window_start', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+      if (entriesResult.error) throw entriesResult.error;
+      if (blocksResult.error) throw blocksResult.error;
+      if (violationsResult.error) throw violationsResult.error;
 
-      if (entriesError) throw entriesError;
-
-      // Obtener IPs bloqueadas
-      const { data: blocked, error: blockedError } = await supabase
-        .from('rate_limit_blocks')
-        .select('*')
-        .gte('blocked_until', new Date().toISOString())
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (blockedError) throw blockedError;
-
-      // Obtener violaciones recientes
-      const { data: violationData, error: violationsError } = await supabase
-        .from('rate_limit_violations')
-        .select('*')
-        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (violationsError) throw violationsError;
-
-      // Procesar estadísticas
-      const totalRequests = entries?.reduce((sum, entry) => sum + entry.requests, 0) || 0;
-      const endpointCounts: Record<string, number> = {};
-      
-      entries?.forEach(entry => {
-        endpointCounts[entry.endpoint] = (endpointCounts[entry.endpoint] || 0) + entry.requests;
-      });
-
-      const topEndpoints = Object.entries(endpointCounts)
-        .map(([endpoint, requests]) => ({ endpoint, requests }))
-        .sort((a, b) => b.requests - a.requests)
-        .slice(0, 10);
-
-      setStats({
-        totalRequests,
-        blockedIPs: blocked?.length || 0,
-        violations: violationData?.length || 0,
-        topEndpoints
-      });
-
-      setBlockedIPs(blocked || []);
-      setViolations(violationData || []);
-
+      setEntries(entriesResult.data || []);
+      setBlocks(blocksResult.data || []);
+      setViolations(violationsResult.data || []);
     } catch (error) {
       console.error('Error loading rate limit data:', error);
       toast.error('Error al cargar datos de rate limiting');
@@ -129,209 +89,376 @@ export const RateLimitDashboard: React.FC = () => {
     }
   };
 
-  const unblockIP = async (ip: string) => {
+  const unblockIP = async (ipAddress: string) => {
     try {
       const { error } = await supabase
         .from('rate_limit_blocks')
         .delete()
-        .eq('ip', ip);
+        .eq('ip_address', ipAddress);
 
       if (error) throw error;
 
-      toast.success(`IP ${ip} desbloqueada correctamente`);
-      loadRateLimitData();
+      toast.success(`IP ${ipAddress} desbloqueada`);
+      loadData();
     } catch (error) {
       console.error('Error unblocking IP:', error);
       toast.error('Error al desbloquear IP');
     }
   };
 
-  const cleanupOldRecords = async () => {
+  const blockIP = async (ipAddress: string, reason: string, hours: number = 24) => {
     try {
-      const { error } = await supabase.rpc('cleanup_rate_limit_records');
-      
+      const blockedUntil = new Date();
+      blockedUntil.setHours(blockedUntil.getHours() + hours);
+
+      const { error } = await supabase
+        .from('rate_limit_blocks')
+        .insert({
+          ip_address: ipAddress,
+          reason,
+          blocked_until: blockedUntil.toISOString()
+        });
+
       if (error) throw error;
 
-      toast.success('Registros antiguos eliminados correctamente');
-      loadRateLimitData();
+      toast.success(`IP ${ipAddress} bloqueada por ${hours} horas`);
+      loadData();
     } catch (error) {
-      console.error('Error cleaning up records:', error);
-      toast.error('Error al limpiar registros');
+      console.error('Error blocking IP:', error);
+      toast.error('Error al bloquear IP');
     }
   };
 
-  const formatDuration = (ms: number): string => {
-    const minutes = Math.floor(ms / (1000 * 60));
-    const hours = Math.floor(minutes / 60);
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes % 60}m`;
+  const clearOldEntries = async () => {
+    try {
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+      const { error } = await supabase
+        .from('rate_limit_entries')
+        .delete()
+        .lt('created_at', twentyFourHoursAgo.toISOString());
+
+      if (error) throw error;
+
+      toast.success('Entradas antiguas eliminadas');
+      loadData();
+    } catch (error) {
+      console.error('Error clearing old entries:', error);
+      toast.error('Error al limpiar entradas antiguas');
     }
-    return `${minutes}m`;
   };
 
-  const getSeverityColor = (requestsCount: number): string => {
-    if (requestsCount > 100) return 'destructive';
-    if (requestsCount > 50) return 'secondary';
-    return 'default';
+  const filteredEntries = entries.filter(entry =>
+    entry.ip_address.includes(searchTerm) || entry.endpoint.includes(searchTerm)
+  );
+
+  const filteredBlocks = blocks.filter(block =>
+    block.ip_address.includes(searchTerm) || block.reason.includes(searchTerm)
+  );
+
+  const filteredViolations = violations.filter(violation =>
+    violation.ip_address.includes(searchTerm) || violation.endpoint.includes(searchTerm)
+  );
+
+  const getStatusBadge = (count: number, limit: number = 100) => {
+    const ratio = count / limit;
+    if (ratio >= 0.9) return <Badge variant="destructive">Crítico</Badge>;
+    if (ratio >= 0.7) return <Badge className="bg-yellow-100 text-yellow-800">Advertencia</Badge>;
+    return <Badge variant="secondary">Normal</Badge>;
+  };
+
+  const isBlocked = (ipAddress: string) => {
+    return blocks.some(block => 
+      block.ip_address === ipAddress && 
+      new Date(block.blocked_until) > new Date()
+    );
   };
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center">Cargando datos de seguridad...</div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="w-8 h-8 animate-spin" />
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-2xl font-bold">Rate Limiting Dashboard</h2>
+          <p className="text-muted-foreground">
+            Monitoreo y gestión del sistema de rate limiting
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={loadData} variant="outline">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Actualizar
+          </Button>
+          <Button onClick={clearOldEntries} variant="outline">
+            <Trash2 className="w-4 h-4 mr-2" />
+            Limpiar Antiguas
+          </Button>
+        </div>
+      </div>
+
       {/* Estadísticas generales */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Requests (24h)</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Requests Activos
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalRequests.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{entries.length}</div>
+            <p className="text-xs text-muted-foreground">Últimas 24h</p>
           </CardContent>
         </Card>
-
+        
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">IPs Bloqueadas</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Ban className="w-4 h-4" />
+              IPs Bloqueadas
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats?.blockedIPs}</div>
+            <div className="text-2xl font-bold text-red-600">
+              {blocks.filter(b => new Date(b.blocked_until) > new Date()).length}
+            </div>
+            <p className="text-xs text-muted-foreground">Actualmente</p>
           </CardContent>
         </Card>
-
+        
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Violaciones (24h)</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              Violaciones
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">{stats?.violations}</div>
+            <div className="text-2xl font-bold text-yellow-600">{violations.length}</div>
+            <p className="text-xs text-muted-foreground">Total registradas</p>
           </CardContent>
         </Card>
-
+        
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Acciones</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              Estado Sistema
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <Button onClick={cleanupOldRecords} size="sm" className="w-full">
-              Limpiar Registros
-            </Button>
+            <Badge variant="default" className="bg-green-100 text-green-800">
+              Activo
+            </Badge>
+            <p className="text-xs text-muted-foreground mt-1">Funcionando</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Top endpoints */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Endpoints Más Utilizados (24h)</CardTitle>
-          <CardDescription>
-            Distribución de requests por endpoint
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {stats?.topEndpoints.map((endpoint, index) => (
-              <div key={endpoint.endpoint} className="flex items-center justify-between">
-                <span className="text-sm font-mono">{endpoint.endpoint}</span>
-                <Badge variant="outline">
-                  {endpoint.requests.toLocaleString()} requests
-                </Badge>
-              </div>
-            ))}
+      {/* Buscador */}
+      <div className="flex gap-4 items-end">
+        <div className="flex-1">
+          <Label htmlFor="search">Buscar por IP o endpoint</Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+            <Input
+              id="search"
+              placeholder="192.168.1.1 o /api/auth"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* IPs bloqueadas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Ban className="h-4 w-4" />
-            IPs Bloqueadas Actualmente
-          </CardTitle>
-          <CardDescription>
-            IPs temporalmente bloqueadas por violaciones de rate limiting
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {blockedIPs.length === 0 ? (
-            <p className="text-muted-foreground">No hay IPs bloqueadas actualmente</p>
-          ) : (
-            <div className="space-y-3">
-              {blockedIPs.map((block) => (
-                <div key={`${block.ip}-${block.endpoint}`} 
-                     className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <div className="font-mono text-sm font-medium">{block.ip}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {block.endpoint} • {block.reason}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      <Clock className="inline h-3 w-3 mr-1" />
-                      Hasta: {new Date(block.blocked_until).toLocaleString()}
-                    </div>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => unblockIP(block.ip)}
-                  >
-                    Desbloquear
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Tabs */}
+      <div className="flex gap-2 border-b">
+        <Button
+          variant={selectedTab === 'entries' ? 'default' : 'ghost'}
+          onClick={() => setSelectedTab('entries')}
+        >
+          Requests ({filteredEntries.length})
+        </Button>
+        <Button
+          variant={selectedTab === 'blocks' ? 'default' : 'ghost'}
+          onClick={() => setSelectedTab('blocks')}
+        >
+          Bloqueadas ({filteredBlocks.length})
+        </Button>
+        <Button
+          variant={selectedTab === 'violations' ? 'default' : 'ghost'}
+          onClick={() => setSelectedTab('violations')}
+        >
+          Violaciones ({filteredViolations.length})
+        </Button>
+      </div>
 
-      {/* Violaciones recientes */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Violaciones Recientes (24h)
-          </CardTitle>
-          <CardDescription>
-            Historial de violaciones de rate limiting
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {violations.length === 0 ? (
-            <p className="text-muted-foreground">No se detectaron violaciones</p>
-          ) : (
-            <div className="space-y-2">
-              {violations.slice(0, 20).map((violation, index) => (
-                <div key={index} className="flex items-center justify-between p-2 border-l-2 border-warning pl-3">
-                  <div>
-                    <div className="font-mono text-sm">{violation.ip}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {violation.endpoint} • {violation.requests_count} requests
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant={getSeverityColor(violation.requests_count)}>
-                      Bloqueo: {formatDuration(violation.block_duration)}
-                    </Badge>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {new Date(violation.created_at).toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Contenido de tabs */}
+      {selectedTab === 'entries' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Requests Recientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead>Endpoint</TableHead>
+                  <TableHead>Requests</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Ventana</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredEntries.map((entry) => (
+                  <TableRow key={entry.id}>
+                    <TableCell className="font-mono">{entry.ip_address}</TableCell>
+                    <TableCell>{entry.endpoint}</TableCell>
+                    <TableCell>{entry.request_count}</TableCell>
+                    <TableCell>{getStatusBadge(entry.request_count)}</TableCell>
+                    <TableCell>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(entry.window_start).toLocaleTimeString()} - 
+                        {new Date(entry.window_end).toLocaleTimeString()}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {isBlocked(entry.ip_address) ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => unblockIP(entry.ip_address)}
+                          >
+                            Desbloquear
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => blockIP(entry.ip_address, 'Manual block from dashboard')}
+                          >
+                            Bloquear
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedTab === 'blocks' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>IPs Bloqueadas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead>Razón</TableHead>
+                  <TableHead>Bloqueada hasta</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredBlocks.map((block) => {
+                  const isActive = new Date(block.blocked_until) > new Date();
+                  return (
+                    <TableRow key={block.id}>
+                      <TableCell className="font-mono">{block.ip_address}</TableCell>
+                      <TableCell>{block.reason}</TableCell>
+                      <TableCell>
+                        {new Date(block.blocked_until).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={isActive ? 'destructive' : 'secondary'}>
+                          {isActive ? 'Activo' : 'Expirado'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {isActive && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => unblockIP(block.ip_address)}
+                          >
+                            Desbloquear
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedTab === 'violations' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Violaciones de Rate Limit</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead>Endpoint</TableHead>
+                  <TableHead>Violaciones</TableHead>
+                  <TableHead>Última violación</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredViolations.map((violation) => (
+                  <TableRow key={violation.id}>
+                    <TableCell className="font-mono">{violation.ip_address}</TableCell>
+                    <TableCell>{violation.endpoint}</TableCell>
+                    <TableCell>
+                      <Badge variant={violation.violation_count > 5 ? 'destructive' : 'secondary'}>
+                        {violation.violation_count}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(violation.last_violation).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => blockIP(violation.ip_address, `Multiple violations: ${violation.violation_count}`)}
+                        disabled={isBlocked(violation.ip_address)}
+                      >
+                        {isBlocked(violation.ip_address) ? 'Bloqueada' : 'Bloquear'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
