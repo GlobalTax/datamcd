@@ -107,6 +107,9 @@ class SecureLogger {
     
     if (obj === null || obj === undefined) return obj;
     
+    // Evitar objetos circulares
+    if (typeof obj === 'object' && obj.__sanitized) return '[CIRCULAR_REFERENCE]';
+    
     if (typeof obj === 'string') {
       return this.sanitizeText(obj);
     }
@@ -128,13 +131,24 @@ class SecureLogger {
     }
     
     if (Array.isArray(obj)) {
-      return obj.map(item => this.sanitizeObject(item, depth + 1));
+      return obj.slice(0, 100).map(item => this.sanitizeObject(item, depth + 1));
     }
     
     if (typeof obj === 'object') {
       const sanitized: any = {};
       
-      for (const [key, value] of Object.entries(obj)) {
+      // Marcar como sanitizado para evitar ciclos
+      try {
+        Object.defineProperty(obj, '__sanitized', { value: true, enumerable: false });
+      } catch (e) {
+        // Si no se puede marcar, usar limitación simple
+      }
+      
+      const entries = Object.entries(obj).slice(0, 50); // Limitar entradas
+      
+      for (const [key, value] of entries) {
+        if (key === '__sanitized') continue;
+        
         const lowerKey = key.toLowerCase();
         
         // Remover campos completamente sensibles
