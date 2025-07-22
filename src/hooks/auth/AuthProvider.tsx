@@ -2,6 +2,7 @@ import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
+import { performSecurityAudit } from '@/utils/securityCleanup';
 
 // Tipos consolidados
 interface UserProfile {
@@ -468,6 +469,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         console.log('AuthProvider - Checking initial session...');
         const { data: { session: initialSession } } = await supabase.auth.getSession();
+        
+        // Realizar auditoría de seguridad al cargar la app
+        await performSecurityAudit();
         
         if (initialSession) {
           console.log('AuthProvider - Initial session found');

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,8 +16,14 @@ import {
   Info
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSecureIntegration } from '@/hooks/useSecureIntegration';
+import { useFranchisees } from '@/hooks/useFranchisees';
 
 export const POSIntegrationConfig: React.FC = () => {
+  const { franchisees } = useFranchisees();
+  const currentFranchisee = franchisees?.[0];
+  const { saveConfig, loading } = useSecureIntegration('pos', currentFranchisee?.id);
+
   const [selectedPOS, setSelectedPOS] = useState('');
   const [credentials, setCredentials] = useState({
     endpoint: '',
@@ -39,14 +44,22 @@ export const POSIntegrationConfig: React.FC = () => {
     { value: 'other', label: 'Otro sistema' }
   ];
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     if (!selectedPOS) {
       toast.error('Por favor selecciona un sistema POS');
       return;
     }
 
-    // Simular guardado
-    toast.success('Configuración POS guardada correctamente');
+    await saveConfig({
+      pos_system: selectedPOS,
+      pos_name: selectedPOS.charAt(0).toUpperCase() + selectedPOS.slice(1),
+      endpoint: credentials.endpoint,
+      api_key: credentials.apiKey,
+      username: credentials.username,
+      password: credentials.password,
+      store_id: credentials.storeId,
+      is_enabled: true
+    });
   };
 
   const handleTest = async () => {
@@ -202,9 +215,9 @@ export const POSIntegrationConfig: React.FC = () => {
           <Separator />
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={handleSave} disabled={!selectedPOS}>
+            <Button onClick={handleSave} disabled={!selectedPOS || loading}>
               <Save className="w-4 h-4 mr-2" />
-              Guardar Configuración
+              {loading ? 'Guardando...' : 'Guardar Configuración'}
             </Button>
             
             <Button 

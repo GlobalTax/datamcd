@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +15,8 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSecureIntegration } from '@/hooks/useSecureIntegration';
+import { useFranchisees } from '@/hooks/useFranchisees';
 
 interface DeliveryApp {
   id: string;
@@ -30,6 +31,10 @@ interface DeliveryApp {
 }
 
 export const DeliveryIntegrationConfig: React.FC = () => {
+  const { franchisees } = useFranchisees();
+  const currentFranchisee = franchisees?.[0];
+  const { configs, loading, saveConfig } = useSecureIntegration('delivery', currentFranchisee?.id);
+
   const [deliveryApps, setDeliveryApps] = useState<DeliveryApp[]>([
     {
       id: 'ubereats',
@@ -61,6 +66,20 @@ export const DeliveryIntegrationConfig: React.FC = () => {
     }
   ]);
 
+  // Sincronizar con configuraciones del backend
+  useEffect(() => {
+    if (configs) {
+      setDeliveryApps(prevApps => 
+        prevApps.map(app => {
+          const config = configs.find(c => c.provider_id === app.id);
+          return config 
+            ? { ...app, enabled: config.is_enabled }
+            : app;
+        })
+      );
+    }
+  }, [configs]);
+
   const [testing, setTesting] = useState<string | null>(null);
 
   const handleToggleApp = (appId: string) => {
@@ -86,11 +105,26 @@ export const DeliveryIntegrationConfig: React.FC = () => {
 
   const handleSave = async () => {
     const enabledApps = deliveryApps.filter(app => app.enabled);
+    
     if (enabledApps.length === 0) {
       toast.error('Habilita al menos una aplicación de delivery');
       return;
     }
-    toast.success('Configuración de delivery guardada correctamente');
+
+    for (const app of enabledApps) {
+      const success = await saveConfig({
+        provider_id: app.id,
+        provider_name: app.name,
+        api_key: app.credentials.apiKey,
+        merchant_id: app.credentials.merchantId,
+        webhook_url: app.credentials.webhookUrl,
+        is_enabled: app.enabled
+      });
+      
+      if (!success) {
+        return;
+      }
+    }
   };
 
   const handleTest = async (appId: string) => {
@@ -199,9 +233,9 @@ export const DeliveryIntegrationConfig: React.FC = () => {
           <Separator className="my-6" />
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={loading}>
               <Save className="w-4 h-4 mr-2" />
-              Guardar Configuración
+              {loading ? 'Guardando...' : 'Guardar Configuración'}
             </Button>
             
             <Button variant="secondary">
