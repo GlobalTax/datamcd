@@ -1,11 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { handleCorsPreflightRequest, createCorsResponse } from '../_shared/cors.ts';
 
 interface ConfigRequest {
   integration_type: 'orquest' | 'biloop' | 'quantum';
@@ -14,8 +10,12 @@ interface ConfigRequest {
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreflightRequest(origin, {
+      allowedMethods: ['GET', 'POST', 'OPTIONS']
+    });
   }
 
   try {
@@ -67,13 +67,11 @@ serve(async (req) => {
         }
       };
 
-      return new Response(JSON.stringify({
+      return createCorsResponse({
         config: config || null,
         base_config: baseConfig[integration_type] || {},
         is_configured: !!config
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      }, origin);
     }
 
     if (req.method === 'POST') {
@@ -113,12 +111,10 @@ serve(async (req) => {
         throw configError;
       }
 
-      return new Response(JSON.stringify({
+      return createCorsResponse({
         success: true,
         message: 'Configuration saved successfully'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      }, origin);
     }
 
     throw new Error('Method not allowed');
@@ -126,12 +122,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in secure-config function:', error);
     
-    return new Response(JSON.stringify({
+    return createCorsResponse({
       error: error.message,
       details: 'Configuration management error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    }, origin, {}, 500);
   }
 });

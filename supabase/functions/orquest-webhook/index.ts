@@ -1,20 +1,22 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { handleCorsPreflightRequest, createCorsResponse, createCorsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  const origin = req.headers.get('origin');
+  
+  // Handle CORS preflight requests con restricciones específicas para webhooks
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreflightRequest(origin, {
+      allowedOrigins: getWebhookAllowedOrigins(),
+      allowedMethods: ['POST', 'OPTIONS']
+    });
   }
 
   try {
-    console.log('Orquest webhook called');
+    console.log('Orquest webhook called from origin:', origin);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -64,21 +66,34 @@ serve(async (req) => {
 
     console.log(`Webhook processed successfully: ${event_type} for service ${service_id}`);
 
-    return new Response(
-      JSON.stringify({ success: true, processed: event_type }), 
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+    return createCorsResponse(
+      { success: true, processed: event_type },
+      origin,
+      { allowedOrigins: getWebhookAllowedOrigins() }
     );
 
   } catch (error) {
     console.error('Error in orquest-webhook function:', error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }), 
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+    return createCorsResponse(
+      { success: false, error: error.message },
+      origin,
+      { allowedOrigins: getWebhookAllowedOrigins() },
+      500
     );
   }
 });
+
+function getWebhookAllowedOrigins(): string[] {
+  const webhookOrigins = Deno.env.get('WEBHOOK_ORIGINS');
+  if (webhookOrigins) {
+    return webhookOrigins.split(',').map(origin => origin.trim());
+  }
+  
+  // Orígenes específicos para webhooks de Orquest
+  return [
+    'https://pre-mc.orquest.es',
+    'https://mc.orquest.es',
+    'https://api.orquest.es',
+    'https://ckvqfrppnfhoadcpqhld.lovableproject.com' // Nuestra aplicación
+  ];
+}

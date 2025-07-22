@@ -1,15 +1,14 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { handleCorsPreflightRequest, createCorsResponse } from '../_shared/cors.ts';
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreflightRequest(origin);
   }
 
   try {
@@ -137,9 +136,7 @@ serve(async (req) => {
 
         const data = await retryResponse.json();
         console.log('Retry request successful');
-        return new Response(JSON.stringify(data), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return createCorsResponse(data, origin);
       }
 
       if (!biloopResponse.ok) {
@@ -151,9 +148,7 @@ serve(async (req) => {
       const data = await biloopResponse.json();
       console.log('Biloop API response received successfully');
 
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return createCorsResponse(data, origin);
     } catch (fetchError) {
       clearTimeout(timeoutId);
       if (fetchError.name === 'AbortError') {
@@ -180,16 +175,10 @@ serve(async (req) => {
       errorMessage = 'Authentication error: Invalid Biloop credentials';
     }
     
-    return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        details: 'Biloop integration error',
-        timestamp: new Date().toISOString()
-      }), 
-      {
-        status: statusCode,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return createCorsResponse({
+      error: errorMessage,
+      details: 'Biloop integration error',
+      timestamp: new Date().toISOString()
+    }, origin, {}, statusCode);
   }
 });

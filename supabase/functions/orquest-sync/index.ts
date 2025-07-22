@@ -1,11 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { handleCorsPreflightRequest, createCorsResponse } from '../_shared/cors.ts';
 
 interface OrquestService {
   id: string;
@@ -61,13 +57,15 @@ interface FetchMeasuresRequest {
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreflightRequest(origin);
   }
 
   try {
-    console.log('Orquest sync function called');
+    console.log('Orquest sync function called from origin:', origin);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -78,16 +76,15 @@ serve(async (req) => {
       requestBody = await req.json();
     } catch (error) {
       console.error('Invalid JSON in request body:', error);
-      return new Response(
-        JSON.stringify({ 
+      return createCorsResponse(
+        { 
           success: false,
           error: 'Invalid JSON in request body',
           services_updated: 0 
-        }), 
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        }, 
+        origin,
+        {},
+        400
       );
     }
 
@@ -95,16 +92,15 @@ serve(async (req) => {
     console.log('Action requested:', action, 'for franchisee:', franchiseeId);
 
     if (!franchiseeId) {
-      return new Response(
-        JSON.stringify({ 
+      return createCorsResponse(
+        { 
           success: false,
           error: 'franchiseeId is required',
           services_updated: 0 
-        }), 
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        }, 
+        origin,
+        {},
+        400
       );
     }
 
@@ -120,16 +116,15 @@ serve(async (req) => {
 
     if (configError || !configData) {
       console.error('Orquest configuration not found for franchisee:', franchiseeId);
-      return new Response(
-        JSON.stringify({ 
+      return createCorsResponse(
+        { 
           success: false,
           error: 'Orquest configuration not found for this franchisee',
           services_updated: 0 
-        }), 
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        }, 
+        origin,
+        {},
+        400
       );
     }
 
@@ -148,16 +143,15 @@ serve(async (req) => {
 
     if (!orquestApiKey) {
       console.error('ORQUEST_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ 
+      return createCorsResponse(
+        { 
           success: false,
           error: 'Orquest API key not configured',
           services_updated: 0 
-        }), 
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        }, 
+        origin,
+        {},
+        400
       );
     }
 
@@ -324,16 +318,15 @@ serve(async (req) => {
         }
       } catch (fetchError) {
         console.error('Error calling Orquest API:', fetchError);
-        return new Response(
-          JSON.stringify({ 
+        return createCorsResponse(
+          { 
             success: false,
             error: `Failed to sync with Orquest API: ${fetchError.message}`,
             services_updated: servicesUpdated,
-          }), 
-          {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          }, 
+          origin,
+          {},
+          500
         );
       }
     } else if (action === 'send_measures') {
@@ -341,16 +334,15 @@ serve(async (req) => {
       const { serviceId, measureType, periodFrom, periodTo } = requestBody as SendMeasuresRequest;
       
       if (!serviceId || !measureType || !periodFrom || !periodTo) {
-        return new Response(
-          JSON.stringify({ 
+        return createCorsResponse(
+          { 
             success: false,
             error: 'serviceId, measureType, periodFrom, and periodTo are required for send_measures action',
             measures_sent: 0,
-          }), 
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          }, 
+          origin,
+          {},
+          400
         );
       }
 
@@ -366,16 +358,15 @@ serve(async (req) => {
 
         if (plError || !profitLossData?.length) {
           console.error('No profit & loss data found for period:', periodFrom, periodTo);
-          return new Response(
-            JSON.stringify({ 
+          return createCorsResponse(
+            { 
               success: false,
               error: 'No profit & loss data found for the specified period',
               measures_sent: 0,
-            }), 
-            {
-              status: 404,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
+            }, 
+            origin,
+            {},
+            404
           );
         }
 
@@ -454,17 +445,15 @@ serve(async (req) => {
           throw new Error(`Orquest API error: ${orquestResponse.status} - ${responseText}`);
         }
 
-        return new Response(
-          JSON.stringify({ 
+        return createCorsResponse(
+          { 
             success: true,
             measures_sent: 1,
             measure_type: measureType,
             value: measureValue,
             service_id: serviceId,
-          }), 
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          }, 
+          origin
         );
 
       } catch (error) {
@@ -486,16 +475,15 @@ serve(async (req) => {
           .from('orquest_measures_sent')
           .insert(errorRecord);
 
-        return new Response(
-          JSON.stringify({ 
+        return createCorsResponse(
+          { 
             success: false,
             error: `Failed to send measures to Orquest: ${error.message}`,
             measures_sent: 0,
-          }), 
-          {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          }, 
+          origin,
+          {},
+          500
         );
       }
     } else if (action === 'send_forecast') {
@@ -522,16 +510,15 @@ serve(async (req) => {
 
         if (budgetError || !annualBudgets?.length) {
           console.error('No budget data found for forecast:', budgetError);
-          return new Response(
-            JSON.stringify({ 
+          return createCorsResponse(
+            { 
               success: false,
               error: 'No budget data found for forecast',
               forecasts_sent: 0,
-            }), 
-            {
-              status: 404,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
+            }, 
+            origin,
+            {},
+            404
           );
         }
 
@@ -645,30 +632,27 @@ serve(async (req) => {
           }
         }
 
-        return new Response(
-          JSON.stringify({ 
+        return createCorsResponse(
+          { 
             success: true,
             forecasts_sent: forecastsSent,
             errors_count: errors.length,
             details: { errors }
-          }), 
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          }, 
+          origin
         );
 
       } catch (error) {
         console.error('Error sending forecasts to Orquest:', error);
-        return new Response(
-          JSON.stringify({ 
+        return createCorsResponse(
+          { 
             success: false,
             error: `Failed to send forecasts to Orquest: ${error.message}`,
             forecasts_sent: 0,
-          }), 
-          {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          }, 
+          origin,
+          {},
+          500
         );
       }
     } else if (action === 'fetch_measures') {
@@ -676,16 +660,15 @@ serve(async (req) => {
       const { serviceId, startDate, endDate, demandTypes } = requestBody as FetchMeasuresRequest;
       
       if (!serviceId || !startDate || !endDate) {
-        return new Response(
-          JSON.stringify({ 
+        return createCorsResponse(
+          { 
             success: false,
             error: 'serviceId, startDate, and endDate are required for fetch_measures action',
             measures_fetched: 0,
-          }), 
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          }, 
+          origin,
+          {},
+          400
         );
       }
 
@@ -739,44 +722,40 @@ serve(async (req) => {
           }
         }
 
-        return new Response(
-          JSON.stringify({ 
+        return createCorsResponse(
+          { 
             success: true,
             measures_fetched: measuresInserted,
             service_id: serviceId,
             period: { from: startDate, to: endDate },
-          }), 
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          }, 
+          origin
         );
 
       } catch (error) {
         console.error('Error fetching measures from Orquest:', error);
-        return new Response(
-          JSON.stringify({ 
+        return createCorsResponse(
+          { 
             success: false,
             error: `Failed to fetch measures from Orquest: ${error.message}`,
             measures_fetched: 0,
-          }), 
-          {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          }, 
+          origin,
+          {},
+          500
         );
       }
     } else {
       console.log('Unknown action:', action);
-      return new Response(
-        JSON.stringify({ 
+      return createCorsResponse(
+        { 
           success: false,
           error: `Unknown action: ${action}`,
           services_updated: 0,
-        }), 
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        }, 
+        origin,
+        {},
+        400
       );
     }
 
@@ -789,22 +768,14 @@ serve(async (req) => {
 
     console.log('Sync completed successfully:', response);
 
-    return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return createCorsResponse(response, origin);
 
   } catch (error) {
     console.error('Error in orquest-sync function:', error);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message,
-        services_updated: 0,
-      }), 
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return createCorsResponse({
+      success: false, 
+      error: error.message,
+      services_updated: 0,
+    }, origin, {}, 500);
   }
 });
