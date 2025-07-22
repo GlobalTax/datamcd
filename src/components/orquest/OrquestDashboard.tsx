@@ -59,7 +59,7 @@ export const OrquestDashboard: React.FC = () => {
   
   // Hooks
   const { services, employees, loading, syncWithOrquest, syncEmployeesOnly } = useOrquest(franchiseeId);
-  const { isConfigured, config } = useOrquestConfig(franchiseeId);
+  const { isConfigured, config } = useOrquestConfig();
   const { 
     measures: extendedMeasures, 
     measureTypes, 
