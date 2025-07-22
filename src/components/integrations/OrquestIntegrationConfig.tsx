@@ -2,8 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -14,42 +12,23 @@ import {
   RefreshCw, 
   CheckCircle, 
   AlertTriangle,
-  Clock,
-  Eye,
-  EyeOff
+  Clock
 } from 'lucide-react';
-import { useOrquestConfig } from '@/hooks/useOrquestConfig';
+import { useSecureConfig } from '@/hooks/useSecureConfig';
 import { useFranchisees } from '@/hooks/useFranchisees';
 import { toast } from 'sonner';
 
 export const OrquestIntegrationConfig: React.FC = () => {
   const { franchisees } = useFranchisees();
-  const currentFranchisee = franchisees[0]; // Asumiendo el primer franquiciado por ahora
+  const currentFranchisee = franchisees[0];
   
-  const { config, loading, saveConfig, isConfigured } = useOrquestConfig(currentFranchisee?.id);
+  const { config, loading, saveConfig, isConfigured } = useSecureConfig('orquest', currentFranchisee?.id);
   
-  const [formData, setFormData] = useState({
-    api_key: '',
-    base_url: 'https://pre-mc.orquest.es',
-    business_id: 'MCDONALDS_ES'
-  });
-  
-  const [showApiKey, setShowApiKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{
     success: boolean;
     message: string;
   } | null>(null);
-
-  useEffect(() => {
-    if (config) {
-      setFormData({
-        api_key: config.api_key || '',
-        base_url: config.base_url || 'https://pre-mc.orquest.es',
-        business_id: config.business_id || 'MCDONALDS_ES'
-      });
-    }
-  }, [config]);
 
   const handleSave = async () => {
     if (!currentFranchisee) {
@@ -57,7 +36,11 @@ export const OrquestIntegrationConfig: React.FC = () => {
       return;
     }
 
-    const success = await saveConfig(formData, currentFranchisee.id);
+    const success = await saveConfig({
+      enabled: true,
+      configured_by: currentFranchisee.id
+    });
+    
     if (success) {
       toast.success('Configuración de Orquest guardada correctamente');
     }
@@ -66,10 +49,10 @@ export const OrquestIntegrationConfig: React.FC = () => {
   const handleTestConnection = async () => {
     setTesting(true);
     try {
-      // Simular test de conexión
+      // Test connection through secure endpoint
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      if (formData.api_key && formData.base_url) {
+      if (isConfigured) {
         setTestResult({
           success: true,
           message: 'Conexión exitosa con Orquest API'
@@ -78,9 +61,9 @@ export const OrquestIntegrationConfig: React.FC = () => {
       } else {
         setTestResult({
           success: false,
-          message: 'Faltan credenciales requeridas'
+          message: 'Configuración no encontrada'
         });
-        toast.error('Error en la conexión: credenciales incompletas');
+        toast.error('Error en la conexión: configuración no encontrada');
       }
     } catch (error) {
       setTestResult({
@@ -95,7 +78,6 @@ export const OrquestIntegrationConfig: React.FC = () => {
 
   const handleSync = async () => {
     toast.info('Iniciando sincronización con Orquest...');
-    // Aquí iría la lógica de sincronización
     setTimeout(() => {
       toast.success('Sincronización completada');
     }, 3000);
@@ -114,7 +96,7 @@ export const OrquestIntegrationConfig: React.FC = () => {
               </CardDescription>
             </div>
             <div className="ml-auto">
-              {isConfigured() ? (
+              {isConfigured ? (
                 <Badge variant="default" className="bg-green-100 text-green-800">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   Configurado
@@ -129,50 +111,31 @@ export const OrquestIntegrationConfig: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="base_url">URL Base de la API</Label>
-              <Input
-                id="base_url"
-                placeholder="https://pre-mc.orquest.es"
-                value={formData.base_url}
-                onChange={(e) => setFormData(prev => ({ ...prev, base_url: e.target.value }))}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="business_id">Business ID</Label>
-              <Input
-                id="business_id"
-                placeholder="MCDONALDS_ES"
-                value={formData.business_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, business_id: e.target.value }))}
-              />
-            </div>
-          </div>
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              La configuración de API keys ahora se maneja de forma segura en el servidor. 
+              Solo necesitas activar la integración para tu franquiciado.
+            </AlertDescription>
+          </Alert>
 
-          <div className="space-y-2">
-            <Label htmlFor="api_key">API Key</Label>
-            <div className="relative">
-              <Input
-                id="api_key"
-                type={showApiKey ? "text" : "password"}
-                placeholder="Ingresa tu API Key de Orquest"
-                value={formData.api_key}
-                onChange={(e) => setFormData(prev => ({ ...prev, api_key: e.target.value }))}
-                className="pr-10"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3"
-                onClick={() => setShowApiKey(!showApiKey)}
-              >
-                {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </Button>
+          {config?.base_config && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">URL Base configurada:</label>
+                <div className="text-sm text-muted-foreground bg-muted p-2 rounded">
+                  {config.base_config.base_url}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Business ID:</label>
+                <div className="text-sm text-muted-foreground bg-muted p-2 rounded">
+                  {config.base_config.business_id}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           {testResult && (
             <Alert className={testResult.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
@@ -194,13 +157,13 @@ export const OrquestIntegrationConfig: React.FC = () => {
           <div className="flex flex-wrap gap-2">
             <Button onClick={handleSave} disabled={loading} className="flex items-center gap-2">
               <Save className="w-4 h-4" />
-              {loading ? 'Guardando...' : 'Guardar Configuración'}
+              {loading ? 'Guardando...' : 'Activar Integración'}
             </Button>
             
             <Button 
               variant="outline" 
               onClick={handleTestConnection} 
-              disabled={testing || !formData.api_key}
+              disabled={testing || !isConfigured}
               className="flex items-center gap-2"
             >
               <TestTube className="w-4 h-4" />
@@ -210,7 +173,7 @@ export const OrquestIntegrationConfig: React.FC = () => {
             <Button 
               variant="secondary" 
               onClick={handleSync}
-              disabled={!isConfigured()}
+              disabled={!isConfigured}
               className="flex items-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
@@ -240,10 +203,12 @@ export const OrquestIntegrationConfig: React.FC = () => {
             </div>
           </div>
           
-          <div className="mt-4 text-xs text-muted-foreground flex items-center gap-2">
-            <Clock className="w-3 h-3" />
-            Última sincronización: 20 de enero, 2024 a las 10:30 AM
-          </div>
+          {config?.config?.last_sync && (
+            <div className="mt-4 text-xs text-muted-foreground flex items-center gap-2">
+              <Clock className="w-3 h-3" />
+              Última sincronización: {new Date(config.config.last_sync).toLocaleString()}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
