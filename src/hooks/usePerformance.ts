@@ -33,7 +33,7 @@ export const usePerformance = () => {
       if (navigation) {
         const data: PerformanceData = {
           routeLoadTime: navigation.loadEventEnd - navigation.loadEventStart,
-          totalLoadTime: navigation.loadEventEnd - navigation.navigationStart,
+          totalLoadTime: navigation.loadEventEnd - navigation.fetchStart,
         };
 
         // Agregar información de memoria si está disponible

@@ -49,7 +49,7 @@ export const PerformanceMonitor: React.FC = () => {
           fid: 0, // Se actualizará con PerformanceObserver
           cls: 0, // Se actualizará con PerformanceObserver
           fcp: navigation.loadEventEnd - navigation.fetchStart,
-          routeChangeTime: navigation.loadEventEnd - navigation.navigationStart
+          routeChangeTime: navigation.loadEventEnd - navigation.loadEventStart
         };
 
         setCurrentMetrics(metrics);
@@ -80,7 +80,7 @@ export const PerformanceMonitor: React.FC = () => {
         entries.forEach((entry) => {
           setCurrentMetrics(prev => prev ? {
             ...prev,
-            fid: entry.processingStart - entry.startTime
+            fid: (entry as any).processingStart - entry.startTime
           } : null);
         });
       });
@@ -144,12 +144,12 @@ export const PerformanceMonitor: React.FC = () => {
     };
 
     history.pushState = function(...args) {
-      measureRouteChange(args[2] || window.location.pathname);
+      measureRouteChange(String(args[2] || window.location.pathname));
       return originalPushState.apply(this, args);
     };
 
     history.replaceState = function(...args) {
-      measureRouteChange(args[2] || window.location.pathname);
+      measureRouteChange(String(args[2] || window.location.pathname));
       return originalReplaceState.apply(this, args);
     };
 

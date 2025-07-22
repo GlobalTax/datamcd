@@ -70,6 +70,10 @@ export interface AuthContextType {
   loading: boolean;
   connectionStatus?: 'online' | 'offline' | 'reconnecting';
   effectiveFranchisee?: Franchisee | null;
+  isImpersonating?: boolean;
+  impersonatedFranchisee?: Franchisee | null;
+  startImpersonation?: (franchisee: Franchisee) => void;
+  stopImpersonation?: () => void;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
