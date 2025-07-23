@@ -6,11 +6,11 @@ import { AuthProvider } from '@/hooks/auth/AuthProvider';
 import { ImpersonationProvider } from '@/hooks/useImpersonation';
 import { FranchiseeProvider } from '@/contexts/FranchiseeContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import Dashboard from '@/pages/Dashboard';
+import OptimizedDashboardPage from '@/pages/OptimizedDashboardPage';
 import FranchiseesPage from '@/pages/FranchiseesPage';
 import RestaurantManagementPage from '@/pages/RestaurantManagementPage';
-import LoginPage from '@/pages/LoginPage';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { AuthPage } from '@/pages/AuthPage';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,12 +31,12 @@ function App() {
             <FranchiseeProvider>
               <Router>
                 <Routes>
-                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/auth" element={<AuthPage />} />
                   <Route
                     path="/dashboard"
                     element={
                       <ProtectedRoute>
-                        <Dashboard />
+                        <OptimizedDashboardPage />
                       </ProtectedRoute>
                     }
                   />
