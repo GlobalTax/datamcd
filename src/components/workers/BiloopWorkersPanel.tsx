@@ -37,36 +37,31 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
   // Cargar empresas disponibles al iniciar
   useEffect(() => {
     const loadCompanies = async () => {
-      if (effectiveFranchisee) {
-        try {
-          const companies = await getCompanies();
-          setAvailableCompanies(companies || []);
-          
-          // Si el franquiciado tiene un company_id configurado, usarlo
-          if ((effectiveFranchisee as any).biloop_company_id) {
-            setSelectedCompany((effectiveFranchisee as any).biloop_company_id);
-          } else if (companies && companies.length > 0) {
-            // Si no, usar la primera empresa disponible
-            setSelectedCompany(companies[0].id);
-          }
-        } catch (error) {
-          console.error('Error cargando empresas BILOOP:', error);
+      try {
+        const companies = await getCompanies();
+        setAvailableCompanies(companies || []);
+        
+        // Seleccionar la primera empresa por defecto
+        if (companies && companies.length > 0) {
+          setSelectedCompany(companies[0].id);
         }
+      } catch (error) {
+        console.error('Error cargando empresas BILOOP:', error);
       }
     };
 
     loadCompanies();
-  }, [effectiveFranchisee, getCompanies]);
+  }, [getCompanies]);
 
-  // Early return si no hay franquiciado efectivo
-  if (!effectiveFranchisee) {
+  // Si no hay company_id seleccionado
+  if (!selectedCompany && availableCompanies.length === 0) {
     return (
       <div className="p-6">
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Sin franquiciado seleccionado</AlertTitle>
+          <AlertTitle>Cargando empresas BILOOP</AlertTitle>
           <AlertDescription>
-            Selecciona un franquiciado para acceder a los datos de trabajadores de BILOOP.
+            Cargando lista de empresas disponibles...
           </AlertDescription>
         </Alert>
       </div>
@@ -135,12 +130,8 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
       </div>
 
       <div className="text-sm text-muted-foreground">
-        Franquiciado: <span className="font-semibold">{effectiveFranchisee.franchisee_name}</span>
         {selectedCompany && (
-          <>
-            {" • "}
-            Empresa BILOOP: <span className="font-semibold">{selectedCompany}</span>
-          </>
+          <>Empresa BILOOP: <span className="font-semibold">{selectedCompany}</span></>
         )}
       </div>
 
