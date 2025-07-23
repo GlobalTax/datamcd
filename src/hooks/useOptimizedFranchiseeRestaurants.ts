@@ -25,16 +25,20 @@ export const useOptimizedFranchiseeRestaurants = () => {
         return;
       }
 
+      // Solo ejecutar para usuarios franchisee
       if (user.role !== 'franchisee') {
-        console.log('useOptimizedFranchiseeRestaurants - User is not franchisee, role:', user.role);
+        console.log('useOptimizedFranchiseeRestaurants - User is not franchisee, skipping fetch', {
+          userRole: user.role,
+          userId: user.id
+        });
         setRestaurants([]);
-        setError('Usuario no es franquiciado');
+        setError(null);
         setLoading(false);
         return;
       }
 
       if (!franchisee) {
-        console.log('useOptimizedFranchiseeRestaurants - No franchisee data found for user');
+        console.log('useOptimizedFranchiseeRestaurants - No franchisee data found for franchisee user');
         setRestaurants([]);
         setError('No se encontró información del franquiciado');
         setLoading(false);
@@ -134,9 +138,13 @@ export const useOptimizedFranchiseeRestaurants = () => {
   };
 
   useEffect(() => {
-    console.log('useOptimizedFranchiseeRestaurants - useEffect triggered');
+    console.log('useOptimizedFranchiseeRestaurants - useEffect triggered', {
+      userId: user?.id,
+      userRole: user?.role,
+      franchiseeId: franchisee?.id
+    });
     fetchOptimizedRestaurants();
-  }, [user?.id, franchisee?.id]);
+  }, [user?.id, user?.role, franchisee?.id]);
 
   return {
     restaurants,

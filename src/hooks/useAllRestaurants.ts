@@ -12,7 +12,8 @@ export const useAllRestaurants = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchAllRestaurants = async () => {
-    console.log('useAllRestaurants - Starting fetch for role:', user?.role);
+    console.log('useAllRestaurants - Starting fetch');
+    console.log('useAllRestaurants - User:', user ? { id: user.id, role: user.role } : null);
     
     try {
       if (!user) {
@@ -23,11 +24,14 @@ export const useAllRestaurants = () => {
         return;
       }
 
-      // Solo superadmin y admin pueden ver todos los restaurantes
-      if (!['admin', 'superadmin'].includes(user.role)) {
-        console.log('useAllRestaurants - User role not authorized:', user.role);
+      // Solo ejecutar para usuarios admin, superadmin y asesor
+      if (!['admin', 'superadmin', 'asesor'].includes(user.role || '')) {
+        console.log('useAllRestaurants - User role not authorized, skipping fetch', {
+          userRole: user.role,
+          userId: user.id
+        });
         setRestaurants([]);
-        setError('No tienes permisos para ver todos los restaurantes');
+        setError(null);
         setLoading(false);
         return;
       }
@@ -35,28 +39,12 @@ export const useAllRestaurants = () => {
       setLoading(true);
       setError(null);
 
-      console.log('useAllRestaurants - Fetching all restaurants for admin/superadmin');
+      console.log('useAllRestaurants - Fetching all restaurants for authorized user');
 
-      // Consulta para obtener TODOS los restaurantes con sus franquiciados
       const { data, error } = await supabase
         .from('franchisee_restaurants')
         .select(`
-          id,
-          franchisee_id,
-          base_restaurant_id,
-          franchise_start_date,
-          franchise_end_date,
-          lease_start_date,
-          lease_end_date,
-          monthly_rent,
-          franchise_fee_percentage,
-          advertising_fee_percentage,
-          last_year_revenue,
-          average_monthly_sales,
-          status,
-          notes,
-          assigned_at,
-          updated_at,
+          *,
           base_restaurant:base_restaurants!inner(
             id,
             site_number,
@@ -88,7 +76,8 @@ export const useAllRestaurants = () => {
             state
           )
         `)
-        .order('assigned_at', { ascending: false });
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
 
       console.log('useAllRestaurants - Query result:', { data: data?.length || 0, error });
 
@@ -101,12 +90,12 @@ export const useAllRestaurants = () => {
       }
 
       const validRestaurants = Array.isArray(data) ? data : [];
-      console.log('useAllRestaurants - Setting restaurants:', validRestaurants.length);
+      console.log('useAllRestaurants - Setting all restaurants:', validRestaurants.length);
       setRestaurants(validRestaurants);
       
       if (validRestaurants.length === 0) {
         console.log('useAllRestaurants - No restaurants found');
-        toast.info('No se encontraron restaurantes en la base de datos');
+        toast.info('No se encontraron restaurantes');
       } else {
         console.log(`useAllRestaurants - Found ${validRestaurants.length} restaurants`);
         toast.success(`Se cargaron ${validRestaurants.length} restaurantes`);
@@ -123,7 +112,10 @@ export const useAllRestaurants = () => {
   };
 
   useEffect(() => {
-    console.log('useAllRestaurants - useEffect triggered');
+    console.log('useAllRestaurants - useEffect triggered', {
+      userId: user?.id,
+      userRole: user?.role
+    });
     fetchAllRestaurants();
   }, [user?.id, user?.role]);
 

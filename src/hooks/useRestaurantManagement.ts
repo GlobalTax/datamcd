@@ -12,18 +12,35 @@ export const useRestaurantManagement = () => {
   
   // Determinar si el usuario puede ver todos los restaurantes
   const canViewAllRestaurants = useMemo(() => {
-    const canView = user?.role === 'admin' || user?.role === 'superadmin';
+    if (!user) return false;
+    
+    const canView = ['admin', 'superadmin', 'asesor'].includes(user.role || '');
     
     secureLogger.debug('useRestaurantManagement - Access level determined', {
-      userRole: user?.role,
+      userRole: user.role,
       canViewAllRestaurants: canView,
-      userId: user?.id
+      userId: user.id
     });
     
     return canView;
   }, [user?.role, user?.id]);
+
+  // Determinar si el usuario necesita datos de franquiciado
+  const needsFranchiseeData = useMemo(() => {
+    if (!user) return false;
+    
+    const needsData = user.role === 'franchisee';
+    
+    secureLogger.debug('useRestaurantManagement - Franchisee data requirement', {
+      userRole: user.role,
+      needsData,
+      userId: user.id
+    });
+    
+    return needsData;
+  }, [user?.role, user?.id]);
   
-  // Hook para admin/superadmin - ve todos los restaurantes
+  // Hook para admin/superadmin/asesor - ve todos los restaurantes
   const adminData = useAllRestaurants();
   
   // Hook para franchisee - ve solo sus restaurantes
@@ -47,13 +64,14 @@ export const useRestaurantManagement = () => {
     secureLogger.debug('useRestaurantManagement - Data summary', {
       userRole: user?.role,
       canViewAllRestaurants,
+      needsFranchiseeData,
       restaurantCount: restaurants.length,
       loading,
       hasError: !!error,
       franchiseeId: franchisee?.id,
       franchiseeName: franchisee?.franchisee_name
     });
-  }, [user?.role, canViewAllRestaurants, restaurants.length, loading, error, franchisee?.id, franchisee?.franchisee_name]);
+  }, [user?.role, canViewAllRestaurants, needsFranchiseeData, restaurants.length, loading, error, franchisee?.id, franchisee?.franchisee_name]);
 
   // Formatear restaurantes para mostrar información del franquiciado si es admin
   const formattedRestaurants = useMemo(() => {
@@ -74,12 +92,25 @@ export const useRestaurantManagement = () => {
   const hasValidAccess = useMemo(() => {
     if (!user) return false;
     
-    // Admin y superadmin siempre tienen acceso
-    if (canViewAllRestaurants) return true;
+    // Admin, superadmin y asesor siempre tienen acceso
+    if (canViewAllRestaurants) {
+      secureLogger.debug('useRestaurantManagement - Admin access granted', {
+        userRole: user.role,
+        userId: user.id
+      });
+      return true;
+    }
     
     // Franchisee necesita tener datos de franquiciado
     if (user.role === 'franchisee') {
-      return !!franchisee;
+      const hasAccess = !!franchisee;
+      secureLogger.debug('useRestaurantManagement - Franchisee access check', {
+        userRole: user.role,
+        userId: user.id,
+        hasFranchiseeData: !!franchisee,
+        hasAccess
+      });
+      return hasAccess;
     }
     
     return false;
@@ -92,6 +123,7 @@ export const useRestaurantManagement = () => {
     refetch,
     canViewAllRestaurants,
     hasValidAccess,
+    needsFranchiseeData,
     user,
     franchisee
   };

@@ -42,36 +42,48 @@ export const FranchiseeProvider: React.FC<FranchiseeProviderProps> = ({ children
 
   const effectiveFranchisee = getEffectiveFranchisee(null);
   
-  // Mejorar la verificación de roles con logging detallado
+  // Verificar si el usuario puede seleccionar franquiciados
   const canSelectFranchisee = React.useMemo(() => {
-    const userRole = user?.role;
+    if (!user || authLoading) return false;
+    
+    const userRole = user.role;
     const canSelect = ['admin', 'superadmin', 'asesor'].includes(userRole || '');
     
     secureLogger.debug('FranchiseeContext - Role verification', {
       userRole,
       canSelect,
-      userId: user?.id,
+      userId: user.id,
       authLoading
     });
     
     return canSelect;
   }, [user?.role, user?.id, authLoading]);
 
+  // Verificar si el usuario necesita datos de franquiciado
+  const needsFranchiseeData = React.useMemo(() => {
+    if (!user || authLoading) return false;
+    
+    // Solo usuarios franchisee necesitan datos de franquiciado obligatorios
+    const needsData = user.role === 'franchisee';
+    
+    secureLogger.debug('FranchiseeContext - Franchisee data requirement', {
+      userRole: user.role,
+      needsData,
+      userId: user.id
+    });
+    
+    return needsData;
+  }, [user?.role, user?.id, authLoading]);
+
   // Cargar franquiciados disponibles para usuarios admin
   const loadAvailableFranchisees = React.useCallback(async () => {
     if (!user || authLoading) {
-      secureLogger.debug('FranchiseeContext - Skipping load, no user or auth loading', {
-        hasUser: !!user,
-        authLoading
-      });
+      secureLogger.debug('FranchiseeContext - Skipping load, no user or auth loading');
       return;
     }
     
     if (!canSelectFranchisee) {
-      secureLogger.debug('FranchiseeContext - User cannot select franchisees, clearing list', {
-        userRole: user.role,
-        canSelectFranchisee
-      });
+      secureLogger.debug('FranchiseeContext - User cannot select franchisees, clearing list');
       setAvailableFranchisees([]);
       return;
     }
@@ -119,26 +131,14 @@ export const FranchiseeProvider: React.FC<FranchiseeProviderProps> = ({ children
       return;
     }
 
-    if (isImpersonating && effectiveFranchisee) {
-      secureLogger.info('FranchiseeContext - Using impersonated franchisee', {
-        franchiseeName: effectiveFranchisee.franchisee_name,
-        franchiseeId: effectiveFranchisee.id
+    // Para usuarios admin/superadmin, no necesitan franquiciado por defecto
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      secureLogger.debug('FranchiseeContext - Admin/superadmin user, no franchisee required', {
+        userRole: user.role,
+        userId: user.id
       });
-      setSelectedFranchisee(effectiveFranchisee);
-      return;
-    }
-
-    if (user.role === 'franchisee' && effectiveFranchisee) {
-      secureLogger.info('FranchiseeContext - Using franchisee user data', {
-        franchiseeName: effectiveFranchisee.franchisee_name,
-        franchiseeId: effectiveFranchisee.id
-      });
-      setSelectedFranchisee(effectiveFranchisee);
-      return;
-    }
-
-    if (canSelectFranchisee) {
-      // Para admins, auto-seleccionar el primer franquiciado disponible si no hay uno seleccionado
+      
+      // Auto-seleccionar el primer franquiciado disponible si hay alguno
       if (!selectedFranchisee && availableFranchisees.length > 0) {
         const firstFranchisee = availableFranchisees[0];
         secureLogger.info('FranchiseeContext - Auto-selecting first franchisee for admin', {
@@ -150,14 +150,46 @@ export const FranchiseeProvider: React.FC<FranchiseeProviderProps> = ({ children
       return;
     }
 
-    // No hay franquiciado válido
-    secureLogger.warn('FranchiseeContext - No valid franchisee found', {
-      userRole: user.role,
-      hasEffectiveFranchisee: !!effectiveFranchisee,
-      isImpersonating
-    });
-    setSelectedFranchisee(null);
-  }, [user, authLoading, effectiveFranchisee, isImpersonating, availableFranchisees, canSelectFranchisee, selectedFranchisee]);
+    // Manejar impersonación
+    if (isImpersonating && effectiveFranchisee) {
+      secureLogger.info('FranchiseeContext - Using impersonated franchisee', {
+        franchiseeName: effectiveFranchisee.franchisee_name,
+        franchiseeId: effectiveFranchisee.id
+      });
+      setSelectedFranchisee(effectiveFranchisee);
+      return;
+    }
+
+    // Para usuarios franchisee, usar sus datos
+    if (user.role === 'franchisee' && effectiveFranchisee) {
+      secureLogger.info('FranchiseeContext - Using franchisee user data', {
+        franchiseeName: effectiveFranchisee.franchisee_name,
+        franchiseeId: effectiveFranchisee.id
+      });
+      setSelectedFranchisee(effectiveFranchisee);
+      return;
+    }
+
+    // Para asesor, auto-seleccionar el primer franquiciado disponible
+    if (user.role === 'asesor' && availableFranchisees.length > 0 && !selectedFranchisee) {
+      const firstFranchisee = availableFranchisees[0];
+      secureLogger.info('FranchiseeContext - Auto-selecting first franchisee for asesor', {
+        franchiseeName: firstFranchisee.franchisee_name,
+        franchiseeId: firstFranchisee.id
+      });
+      setSelectedFranchisee(firstFranchisee);
+      return;
+    }
+
+    // Solo mostrar warning si el usuario realmente necesita datos de franquiciado
+    if (needsFranchiseeData && !effectiveFranchisee) {
+      secureLogger.warn('FranchiseeContext - No franchisee data found for user who needs it', {
+        userRole: user.role,
+        needsFranchiseeData,
+        userId: user.id
+      });
+    }
+  }, [user, authLoading, effectiveFranchisee, isImpersonating, availableFranchisees, canSelectFranchisee, selectedFranchisee, needsFranchiseeData]);
 
   // Efectos para cargar y sincronizar datos
   useEffect(() => {

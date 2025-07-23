@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, Grid, Download, Settings, AlertCircle } from 'lucide-react';
+import { Table, Grid, Download, Settings, AlertCircle, RefreshCw } from 'lucide-react';
 import RestaurantTable from '@/components/restaurant/RestaurantTable';
 import RestaurantMetrics from '@/components/restaurant/RestaurantMetrics';
 import RestaurantFilters from '@/components/restaurant/RestaurantFilters';
@@ -26,6 +26,7 @@ const RestaurantManagementPage = () => {
     refetch, 
     canViewAllRestaurants,
     hasValidAccess,
+    needsFranchiseeData,
     user, 
     franchisee 
   } = useRestaurantManagement();
@@ -63,6 +64,10 @@ const RestaurantManagementPage = () => {
   const handleCloseModal = () => {
     setIsEditModalOpen(false);
     setSelectedRestaurant(null);
+  };
+
+  const handleRefresh = () => {
+    refetch();
   };
 
   const handleExport = () => {
@@ -120,7 +125,7 @@ const RestaurantManagementPage = () => {
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Acceso no autorizado</h2>
           <p className="text-gray-600 mb-4">
-            {user.role === 'franchisee' 
+            {needsFranchiseeData 
               ? 'No se encontraron datos de franquiciado para tu cuenta. Contacta al administrador.'
               : 'No tienes permisos para acceder a esta sección.'
             }
@@ -155,7 +160,7 @@ const RestaurantManagementPage = () => {
               <div className="flex items-center gap-2">
                 {canViewAllRestaurants && (
                   <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                    Vista {user.role === 'superadmin' ? 'Superadmin' : 'Admin'}
+                    Vista {user.role === 'superadmin' ? 'Superadmin' : user.role === 'admin' ? 'Admin' : 'Asesor'}
                   </Badge>
                 )}
                 <Badge variant="secondary">
@@ -171,6 +176,15 @@ const RestaurantManagementPage = () => {
                 <AlertCircle className="h-4 w-4 text-red-600" />
                 <AlertDescription className="text-red-800">
                   {error}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="ml-2" 
+                    onClick={handleRefresh}
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Reintentar
+                  </Button>
                 </AlertDescription>
               </Alert>
             )}
@@ -197,6 +211,11 @@ const RestaurantManagementPage = () => {
                   />
                   
                   <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={handleRefresh}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Actualizar
+                    </Button>
+                    
                     <Button variant="outline" onClick={handleExport}>
                       <Download className="h-4 w-4 mr-2" />
                       Exportar
