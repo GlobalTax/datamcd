@@ -64,6 +64,17 @@ export interface BiloopWorker {
   category?: string;
 }
 
+export interface BiloopWorkerConcept {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  type: string;
+  amount?: number;
+  percentage?: number;
+  formula?: string;
+}
+
 export interface BiloopEmployeeTransform {
   employees: BiloopEmployee[];
   companyId: string;
@@ -243,6 +254,14 @@ export const useBiloop = () => {
     return data.workers || data || [];
   };
 
+  const getWorkersConcepts = async (companyId?: string): Promise<BiloopWorkerConcept[]> => {
+    const params: Record<string, string> = {};
+    if (companyId) params.companyId = companyId;
+
+    const data = await callBiloopAPI('/api-global/v1/labor/getWorkersConcepts', 'GET', undefined, params);
+    return data.concepts || data || [];
+  };
+
   const testConnection = async (): Promise<boolean> => {
     try {
       // Probar conexión básica con el endpoint de empresas
@@ -286,5 +305,6 @@ export const useBiloop = () => {
     
     // Métodos específicos para trabajadores (labor)
     getWorkers,
+    getWorkersConcepts,
   };
 };
