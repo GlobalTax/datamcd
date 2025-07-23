@@ -11,34 +11,34 @@ export const useAllFranchisees = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAllFranchisees = async () => {
-    console.log('useAllFranchisees - Starting fetch for role:', user?.role);
+  const fetchFranchisees = async () => {
+    console.log('useAllFranchisees - Starting fetch, user:', user);
     
+    if (!user) {
+      console.log('useAllFranchisees - No user found');
+      setLoading(false);
+      return;
+    }
+
+    if (user.role !== 'admin' && user.role !== 'superadmin') {
+      console.log('useAllFranchisees - User role is not authorized:', user.role);
+      setError('No tienes permisos para ver los franquiciados');
+      toast.error('No tienes permisos para ver los franquiciados');
+      setLoading(false);
+      return;
+    }
+
     try {
-      if (!user) {
-        console.log('useAllFranchisees - No user found');
-        setLoading(false);
-        return;
-      }
-
-      if (!['admin', 'superadmin'].includes(user.role)) {
-        console.log('useAllFranchisees - User role not authorized:', user.role);
-        setError('No tienes permisos para ver los franquiciados');
-        toast.error('No tienes permisos para ver los franquiciados');
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       setError(null);
 
-      console.log('useAllFranchisees - Making Supabase query for all franchisees');
+      console.log('useAllFranchisees - Making Supabase query for franchisees');
       
       const { data: franchiseesData, error: franchiseesError } = await supabase
         .from('franchisees')
         .select(`
           *,
-          profiles:user_id(email, full_name, phone)
+          profiles:user_id(email, full_name)
         `)
         .order('created_at', { ascending: false });
 
@@ -50,34 +50,33 @@ export const useAllFranchisees = () => {
         return;
       }
 
-      // Obtener el conteo de restaurantes por franquiciado
+      console.log('useAllFranchisees - Getting restaurant counts from base_restaurants');
+      
       const { data: restaurantCounts, error: countError } = await supabase
-        .from('franchisee_restaurants')
-        .select('franchisee_id')
-        .eq('status', 'active');
+        .from('base_restaurants')
+        .select('franchisee_name')
+        .not('franchisee_name', 'is', null);
 
       if (countError) {
         console.error('Error fetching restaurant counts:', countError);
       }
 
-      // Crear un mapa de conteos por franquiciado
       const countMap = new Map<string, number>();
       if (restaurantCounts) {
         restaurantCounts.forEach(restaurant => {
-          if (restaurant.franchisee_id) {
-            const currentCount = countMap.get(restaurant.franchisee_id) || 0;
-            countMap.set(restaurant.franchisee_id, currentCount + 1);
+          if (restaurant.franchisee_name) {
+            const currentCount = countMap.get(restaurant.franchisee_name) || 0;
+            countMap.set(restaurant.franchisee_name, currentCount + 1);
           }
         });
       }
 
-      // Agregar el conteo de restaurantes a cada franquiciado
       const franchiseesWithCounts = (franchiseesData || []).map(franchisee => ({
         ...franchisee,
-        total_restaurants: countMap.get(franchisee.id) || 0
+        total_restaurants: countMap.get(franchisee.franchisee_name) || 0
       }));
 
-      console.log('useAllFranchisees - Setting franchisees data with restaurant counts:', franchiseesWithCounts.length);
+      console.log('useAllFranchisees - Setting franchisees data with restaurant counts:', franchiseesWithCounts);
       setFranchisees(franchiseesWithCounts);
       
       if (!franchiseesWithCounts || franchiseesWithCounts.length === 0) {
@@ -85,10 +84,9 @@ export const useAllFranchisees = () => {
         toast.info('No se encontraron franquiciados');
       } else {
         console.log(`useAllFranchisees - Found ${franchiseesWithCounts.length} franchisees`);
-        toast.success(`Se cargaron ${franchiseesWithCounts.length} franquiciados`);
       }
     } catch (err) {
-      console.error('Error in fetchAllFranchisees:', err);
+      console.error('Error in useAllFranchisees:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar los franquiciados';
       setError(errorMessage);
       toast.error(errorMessage);
@@ -97,15 +95,44 @@ export const useAllFranchisees = () => {
     }
   };
 
+  const assignRestaurant = async (franchiseeId: string, baseRestaurantId: string) => {
+    try {
+      const { error } = await supabase
+        .from('franchisee_restaurants')
+        .insert({
+          franchisee_id: franchiseeId,
+          base_restaurant_id: baseRestaurantId,
+          status: 'active'
+        });
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('Este restaurante ya está asignado a este franquiciado');
+        } else {
+          toast.error('Error al asignar el restaurante');
+        }
+        return false;
+      }
+
+      toast.success('Restaurante asignado correctamente');
+      return true;
+    } catch (err) {
+      console.error('Error assigning restaurant:', err);
+      toast.error('Error al asignar el restaurante');
+      return false;
+    }
+  };
+
   useEffect(() => {
     console.log('useAllFranchisees useEffect triggered, user:', user);
-    fetchAllFranchisees();
+    fetchFranchisees();
   }, [user?.id, user?.role]);
 
   return {
     franchisees,
     loading,
     error,
-    refetch: fetchAllFranchisees
+    refetch: fetchFranchisees,
+    assignRestaurant
   };
 };

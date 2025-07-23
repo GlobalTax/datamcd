@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { StandardLayout } from '@/components/layout/StandardLayout';
-import { AdvisorManagement } from '@/components/AdvisorManagement';
+import { FranchiseesManagement } from '@/components/franchisees/FranchiseesManagement';
 
 const FranchiseesPage: React.FC = () => {
   return (
@@ -9,7 +9,7 @@ const FranchiseesPage: React.FC = () => {
       title="Gestión de Franquiciados"
       description="Administración y supervisión de franquiciados"
     >
-      <AdvisorManagement />
+      <FranchiseesManagement />
     </StandardLayout>
   );
 };

@@ -4,14 +4,18 @@ import { useAllFranchisees } from '@/hooks/useAllFranchisees';
 import { FranchiseeCard } from '@/components/FranchiseeCard';
 import { FranchiseesTable } from './FranchiseesTable';
 import { RestaurantAssignmentDialog } from '@/components/RestaurantAssignmentDialog';
+import { UserCreationPanel } from '@/components/admin/UserCreationPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Search, RefreshCw, Building2, Grid, List } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, Plus, Search, RefreshCw, Building2, Grid, List, Shield } from 'lucide-react';
 import { Franchisee } from '@/types/auth';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 export const FranchiseesManagement = () => {
+  const { user } = useAuth();
   const { franchisees, loading, refetch } = useAllFranchisees();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,6 +48,20 @@ export const FranchiseesManagement = () => {
     navigate(`/advisor/franchisee/${franchisee.id}`);
   };
 
+  // Verificar permisos del usuario
+  if (!user || !['superadmin', 'admin'].includes(user.role)) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-gray-500">
+            <Shield className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <p>No tienes permisos para gestionar franquiciados</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // Calcular estadísticas
   const totalFranchisees = franchisees.length;
   const activeFranchisees = franchisees.filter(f => f.total_restaurants && f.total_restaurants > 0).length;
@@ -60,6 +78,9 @@ export const FranchiseesManagement = () => {
 
   return (
     <div className="space-y-6">
+      {/* Panel de creación de usuarios para admins */}
+      <UserCreationPanel />
+      
       {/* Header con estadísticas */}
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-4">
