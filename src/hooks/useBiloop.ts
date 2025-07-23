@@ -49,6 +49,21 @@ export interface BiloopEmployee {
   socialSecurityNumber?: string;
 }
 
+export interface BiloopWorker {
+  id: string;
+  name: string;
+  surname: string;
+  email?: string;
+  phone?: string;
+  dni?: string;
+  position?: string;
+  department?: string;
+  status: 'active' | 'inactive';
+  contractType?: string;
+  workCenter?: string;
+  category?: string;
+}
+
 export interface BiloopEmployeeTransform {
   employees: BiloopEmployee[];
   companyId: string;
@@ -219,6 +234,15 @@ export const useBiloop = () => {
     return data.txtContent || data.file || data;
   };
 
+  // Métodos específicos para trabajadores (labor)
+  const getWorkers = async (companyId?: string): Promise<BiloopWorker[]> => {
+    const params: Record<string, string> = {};
+    if (companyId) params.companyId = companyId;
+
+    const data = await callBiloopAPI('/api-global/v1/labor/getWorkers', 'GET', undefined, params);
+    return data.workers || data || [];
+  };
+
   const testConnection = async (): Promise<boolean> => {
     try {
       // Probar conexión básica con el endpoint de empresas
@@ -259,5 +283,8 @@ export const useBiloop = () => {
     getOverduePayments,
     getMovements,
     transformMovementsToA3ECO,
+    
+    // Métodos específicos para trabajadores (labor)
+    getWorkers,
   };
 };
