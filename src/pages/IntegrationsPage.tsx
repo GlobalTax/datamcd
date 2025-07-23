@@ -1,173 +1,118 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import React from 'react';
+import { StandardLayout } from '@/components/layout/StandardLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Database, 
-  Wifi, 
-  Settings, 
-  AlertTriangle, 
-  CheckCircle,
-  Clock,
-  Truck,
-  Calculator,
-  Users,
-  ShoppingCart
-} from 'lucide-react';
-import { IntegrationStatusDashboard } from '@/components/integrations/IntegrationStatusDashboard';
-import { OrquestIntegrationConfig } from '@/components/integrations/OrquestIntegrationConfig';
-import { POSIntegrationConfig } from '@/components/integrations/POSIntegrationConfig';
-import { AccountingIntegrationConfig } from '@/components/integrations/AccountingIntegrationConfig';
-import { DeliveryIntegrationConfig } from '@/components/integrations/DeliveryIntegrationConfig';
+import { Button } from '@/components/ui/button';
+import { Plug, CheckCircle, AlertTriangle, Settings } from 'lucide-react';
 
-export const IntegrationsPage: React.FC = () => {
-  const [selectedTab, setSelectedTab] = useState('dashboard');
-
-  const integrationTypes = [
-    {
-      id: 'orquest',
-      name: 'Orquest (Planificación)',
-      icon: Users,
-      description: 'Gestión de horarios y personal',
-      status: 'connected',
-      lastSync: '2024-01-20 10:30'
-    },
-    {
-      id: 'pos',
-      name: 'Sistema POS',
-      icon: ShoppingCart,
-      description: 'Punto de venta y transacciones',
-      status: 'disconnected',
-      lastSync: null
-    },
-    {
-      id: 'accounting',
-      name: 'Contabilidad',
-      icon: Calculator,
-      description: 'Quantum, Sage, otros sistemas',
-      status: 'warning',
-      lastSync: '2024-01-19 15:45'
-    },
-    {
-      id: 'delivery',
-      name: 'Delivery Apps',
-      icon: Truck,
-      description: 'Uber Eats, Deliveroo, Glovo',
-      status: 'disconnected',
-      lastSync: null
-    }
+const IntegrationsPage: React.FC = () => {
+  const integrations = [
+    { name: 'Orquest API', status: 'connected', description: 'Gestión de turnos y personal' },
+    { name: 'Biloop', status: 'connected', description: 'Datos de POS y ventas' },
+    { name: 'Payroll Provider', status: 'warning', description: 'Integración de nómina' },
+    { name: 'Real Estate DB', status: 'disconnected', description: 'Valoraciones inmobiliarias' },
   ];
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'connected':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'warning':
-        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
-      case 'disconnected':
-        return <Wifi className="w-4 h-4 text-red-500" />;
-      default:
-        return <Clock className="w-4 h-4 text-gray-400" />;
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'connected':
-        return <Badge variant="default" className="bg-green-100 text-green-800">Conectado</Badge>;
+        return <Badge variant="outline" className="text-green-600 border-green-300">Conectado</Badge>;
       case 'warning':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Advertencia</Badge>;
+        return <Badge variant="outline" className="text-orange-600 border-orange-300">Advertencia</Badge>;
       case 'disconnected':
-        return <Badge variant="destructive">Desconectado</Badge>;
+        return <Badge variant="outline" className="text-red-600 border-red-300">Desconectado</Badge>;
       default:
         return <Badge variant="outline">Desconocido</Badge>;
     }
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Integraciones</h1>
-          <p className="text-muted-foreground">
-            Conecta tus sistemas externos para sincronizar datos automáticamente
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Database className="w-5 h-5 text-blue-600" />
-          <span className="text-sm font-medium">Estado de Conexiones</span>
-        </div>
-      </div>
-
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="orquest">Orquest</TabsTrigger>
-          <TabsTrigger value="pos">Sistema POS</TabsTrigger>
-          <TabsTrigger value="accounting">Contabilidad</TabsTrigger>
-          <TabsTrigger value="delivery">Delivery</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="dashboard" className="space-y-6">
-          <IntegrationStatusDashboard integrations={integrationTypes} />
+    <StandardLayout
+      title="Integraciones Externas"
+      description="Gestión de conexiones con sistemas externos"
+    >
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Integraciones</CardTitle>
+              <Plug className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">4</div>
+              <p className="text-xs text-muted-foreground">Sistemas conectados</p>
+            </CardContent>
+          </Card>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {integrationTypes.map((integration) => {
-              const IconComponent = integration.icon;
-              return (
-                <Card key={integration.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <IconComponent className="w-8 h-8 text-blue-600" />
-                      {getStatusIcon(integration.status)}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Activas</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">2</div>
+              <p className="text-xs text-muted-foreground">Funcionando correctamente</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Con Advertencias</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">1</div>
+              <p className="text-xs text-muted-foreground">Requieren atención</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Desconectadas</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">1</div>
+              <p className="text-xs text-muted-foreground">No disponibles</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Estado de Integraciones</span>
+              <Button variant="outline" size="sm">
+                <Settings className="w-4 h-4 mr-2" />
+                Configurar
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {integrations.map((integration) => (
+                <div key={integration.name} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Plug className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="font-medium">{integration.name}</p>
+                      <p className="text-sm text-muted-foreground">{integration.description}</p>
                     </div>
-                    <CardTitle className="text-lg">{integration.name}</CardTitle>
-                    <CardDescription>{integration.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {getStatusBadge(integration.status)}
-                      {integration.lastSync && (
-                        <div className="text-xs text-muted-foreground">
-                          Última sync: {integration.lastSync}
-                        </div>
-                      )}
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => setSelectedTab(integration.id)}
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Configurar
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="orquest">
-          <OrquestIntegrationConfig />
-        </TabsContent>
-
-        <TabsContent value="pos">
-          <POSIntegrationConfig />
-        </TabsContent>
-
-        <TabsContent value="accounting">
-          <AccountingIntegrationConfig />
-        </TabsContent>
-
-        <TabsContent value="delivery">
-          <DeliveryIntegrationConfig />
-        </TabsContent>
-      </Tabs>
-    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {getStatusBadge(integration.status)}
+                    <Button variant="outline" size="sm">
+                      Configurar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </StandardLayout>
   );
 };
 

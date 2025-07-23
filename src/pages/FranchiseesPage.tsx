@@ -1,15 +1,15 @@
 
 import React from 'react';
 import { StandardLayout } from '@/components/layout/StandardLayout';
-import { FranchiseesManagement } from '@/components/franchisees/FranchiseesManagement';
+import { AdvisorManagement } from '@/components/AdvisorManagement';
 
-const FranchiseesPage = () => {
+const FranchiseesPage: React.FC = () => {
   return (
     <StandardLayout
       title="Gestión de Franquiciados"
-      description="Centro de gestión para todos los franquiciados y asignación de restaurantes"
+      description="Administración y supervisión de franquiciados"
     >
-      <FranchiseesManagement />
+      <AdvisorManagement />
     </StandardLayout>
   );
 };
