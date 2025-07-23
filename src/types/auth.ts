@@ -21,6 +21,7 @@ export interface Franchisee {
   postal_code?: string;
   country?: string;
   email?: string;
+  biloop_company_id?: string;
   created_at: string;
   updated_at: string;
   total_restaurants?: number;

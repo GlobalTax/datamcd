@@ -1,197 +1,229 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Users, 
-  RefreshCw, 
-  Receipt, 
-  FileText,
-  Building2,
-  AlertTriangle,
-  BarChart3,
-  Briefcase,
-  Plus
-} from 'lucide-react';
-import { useBiloop } from '@/hooks/useBiloop';
+import { RefreshCw } from 'lucide-react';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useBiloop, type BiloopCompany } from '@/hooks/useBiloop';
 import { BiloopWorkersTable } from './BiloopWorkersTable';
 import { BiloopPayrollManager } from './BiloopPayrollManager';
 import { BiloopContractManager } from './BiloopContractManager';
 import { BiloopIncidenceManager } from './BiloopIncidenceManager';
 import { BiloopAnalyticsDashboard } from './BiloopAnalyticsDashboard';
 
-export const BiloopWorkersPanel: React.FC = () => {
+interface BiloopWorkersPanelProps {
+  onRefresh?: () => void;
+}
+
+export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefresh }) => {
   const { effectiveFranchisee } = useUnifiedAuth();
+  const [refreshKey, setRefreshKey] = useState(0);
   const [selectedCompany, setSelectedCompany] = useState<string>('');
-  
-  const {
-    loading,
-    getEmployees,
-    getPayslips,
-    getContractTypes,
-    getIncidences,
-    getCategories,
+  const [availableCompanies, setAvailableCompanies] = useState<BiloopCompany[]>([]);
+
+  const { 
+    getCompanies,
+    getEmployees, 
+    getPayslips, 
+    getContractTypes, 
+    getIncidences, 
+    getOccupationalCategories,
     getWorkCentersET,
     getWorkCentersSS,
-    getCostCenters
+    loading 
   } = useBiloop();
 
-  const [refreshKey, setRefreshKey] = useState(0);
+  // Cargar empresas disponibles al iniciar
+  useEffect(() => {
+    const loadCompanies = async () => {
+      if (effectiveFranchisee) {
+        try {
+          const companies = await getCompanies();
+          setAvailableCompanies(companies || []);
+          
+          // Si el franquiciado tiene un company_id configurado, usarlo
+          if ((effectiveFranchisee as any).biloop_company_id) {
+            setSelectedCompany((effectiveFranchisee as any).biloop_company_id);
+          } else if (companies && companies.length > 0) {
+            // Si no, usar la primera empresa disponible
+            setSelectedCompany(companies[0].id);
+          }
+        } catch (error) {
+          console.error('Error cargando empresas BILOOP:', error);
+        }
+      }
+    };
 
-  const handleRefreshAll = () => {
-    setRefreshKey(prev => prev + 1);
-  };
+    loadCompanies();
+  }, [effectiveFranchisee, getCompanies]);
 
+  // Early return si no hay franquiciado efectivo
   if (!effectiveFranchisee) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertTriangle className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-          <p className="text-muted-foreground">
-            Selecciona un franquiciado para ver los datos de trabajadores
-          </p>
-        </div>
+      <div className="p-6">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Sin franquiciado seleccionado</AlertTitle>
+          <AlertDescription>
+            Selecciona un franquiciado para acceder a los datos de trabajadores de BILOOP.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  // Si no hay company_id seleccionado
+  if (!selectedCompany) {
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Empresa BILOOP no configurada</AlertTitle>
+          <AlertDescription>
+            No se ha configurado un código de empresa BILOOP válido para este franquiciado.
+            {availableCompanies.length > 0 && (
+              <div className="mt-2">
+                <p className="text-sm text-muted-foreground">Empresas disponibles:</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {availableCompanies.map((company) => (
+                    <Button
+                      key={company.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedCompany(company.id)}
+                    >
+                      {company.name} ({company.id})
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Panel de Trabajadores Biloop</h1>
-          <p className="text-muted-foreground">
-            Gestión completa de empleados, nóminas y datos laborales desde Biloop
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
+        <h1 className="text-3xl font-bold tracking-tight">Panel de Trabajadores BILOOP</h1>
+        <div className="flex items-center gap-2">
+          {availableCompanies.length > 1 && (
+            <select
+              value={selectedCompany}
+              onChange={(e) => setSelectedCompany(e.target.value)}
+              className="px-3 py-1 border rounded-md text-sm"
+            >
+              {availableCompanies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name} ({company.id})
+                </option>
+              ))}
+            </select>
+          )}
+          <Button 
+            onClick={() => setRefreshKey(prev => prev + 1)}
             variant="outline"
-            onClick={handleRefreshAll}
-            disabled={loading}
+            size="sm"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar Todo
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Actualizar
           </Button>
         </div>
       </div>
 
-      {/* Company Selector */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Empresa Activa
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            {effectiveFranchisee.franchisee_name}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="text-sm text-muted-foreground">
+        Franquiciado: <span className="font-semibold">{effectiveFranchisee.franchisee_name}</span>
+        {selectedCompany && (
+          <>
+            {" • "}
+            Empresa BILOOP: <span className="font-semibold">{selectedCompany}</span>
+          </>
+        )}
+      </div>
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="workers" className="space-y-4" key={refreshKey}>
+      <Tabs defaultValue="workers" className="w-full">
         <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="workers">
-            <Users className="h-4 w-4 mr-2" />
-            Trabajadores
-          </TabsTrigger>
-          <TabsTrigger value="payroll">
-            <Receipt className="h-4 w-4 mr-2" />
-            Nóminas
-          </TabsTrigger>
-          <TabsTrigger value="contracts">
-            <Briefcase className="h-4 w-4 mr-2" />
-            Contratos
-          </TabsTrigger>
-          <TabsTrigger value="incidents">
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            Incidencias
-          </TabsTrigger>
-          <TabsTrigger value="analytics">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Análisis
-          </TabsTrigger>
-          <TabsTrigger value="centers">
-            <Building2 className="h-4 w-4 mr-2" />
-            Centros
-          </TabsTrigger>
+          <TabsTrigger value="workers">Trabajadores</TabsTrigger>
+          <TabsTrigger value="payroll">Nóminas</TabsTrigger>
+          <TabsTrigger value="contracts">Contratos</TabsTrigger>
+          <TabsTrigger value="incidents">Incidencias</TabsTrigger>
+          <TabsTrigger value="analytics">Análisis</TabsTrigger>
+          <TabsTrigger value="centers">Centros ET/SS</TabsTrigger>
         </TabsList>
 
-        {/* Workers Tab */}
         <TabsContent value="workers" className="space-y-4">
-          <BiloopWorkersTable selectedCompany={selectedCompany} />
+          <BiloopWorkersTable 
+            selectedCompany={selectedCompany}
+            key={`workers-${refreshKey}`}
+          />
         </TabsContent>
 
-        {/* Payroll Tab */}
         <TabsContent value="payroll" className="space-y-4">
-          <BiloopPayrollManager selectedCompany={selectedCompany} />
+          <BiloopPayrollManager 
+            selectedCompany={selectedCompany}
+            key={`payroll-${refreshKey}`}
+          />
         </TabsContent>
 
-        {/* Contracts Tab */}
         <TabsContent value="contracts" className="space-y-4">
-          <BiloopContractManager selectedCompany={selectedCompany} />
+          <BiloopContractManager 
+            selectedCompany={selectedCompany}
+            key={`contracts-${refreshKey}`}
+          />
         </TabsContent>
 
-        {/* Incidents Tab */}
         <TabsContent value="incidents" className="space-y-4">
-          <BiloopIncidenceManager selectedCompany={selectedCompany} />
+          <BiloopIncidenceManager 
+            selectedCompany={selectedCompany}
+            key={`incidents-${refreshKey}`}
+          />
         </TabsContent>
 
-        {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-4">
-          <BiloopAnalyticsDashboard selectedCompany={selectedCompany} />
+          <BiloopAnalyticsDashboard 
+            selectedCompany={selectedCompany}
+            key={`analytics-${refreshKey}`}
+          />
         </TabsContent>
 
-        {/* Work Centers Tab */}
         <TabsContent value="centers" className="space-y-4">
-          <div className="grid gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Centros de Trabajo</CardTitle>
-                <CardDescription>
-                  Gestión de centros de trabajo ET y SS
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Centros ET</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Button 
-                        onClick={() => getWorkCentersET(selectedCompany)}
-                        disabled={loading}
-                        className="w-full"
-                      >
-                        <Building2 className="h-4 w-4 mr-2" />
-                        Cargar Centros ET
-                      </Button>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Centros SS</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Button 
-                        onClick={() => getWorkCentersSS(selectedCompany)}
-                        disabled={loading}
-                        className="w-full"
-                      >
-                        <Building2 className="h-4 w-4 mr-2" />
-                        Cargar Centros SS
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Centros ET</h3>
+              <Button
+                onClick={async () => {
+                  try {
+                    const centers = await getWorkCentersET(selectedCompany);
+                    console.log('Centros ET:', centers);
+                  } catch (error) {
+                    console.error('Error cargando centros ET:', error);
+                  }
+                }}
+                className="w-full"
+              >
+                Cargar Centros ET
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Centros SS</h3>
+              <Button
+                onClick={async () => {
+                  try {
+                    const centers = await getWorkCentersSS(selectedCompany);
+                    console.log('Centros SS:', centers);
+                  } catch (error) {
+                    console.error('Error cargando centros SS:', error);
+                  }
+                }}
+                className="w-full"
+              >
+                Cargar Centros SS
+              </Button>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

@@ -204,11 +204,11 @@ export const useBiloop = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const callBiloopAPI = async (endpoint: string, method = 'GET', body?: any, params?: Record<string, string>) => {
+  const callBiloopAPI = async (endpoint: string, method = 'GET', body?: any, params?: Record<string, string>, companyId?: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('biloop-integration', {
-        body: { endpoint, method, body, params }
+        body: { endpoint, method, body, params, company_id: companyId }
       });
 
       if (error) {
@@ -276,12 +276,9 @@ export const useBiloop = () => {
   };
 
   // Métodos específicos para empleados
-  const getEmployees = async (companyId?: string): Promise<BiloopEmployee[]> => {
-    const params: Record<string, string> = {};
-    if (companyId) params.companyId = companyId;
-
-    const data = await callBiloopAPI('/api-global/v1/employees', 'GET', undefined, params);
-    return data.employees || data || [];
+  const getEmployees = async (companyId: string): Promise<BiloopEmployee[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/empleados', 'GET', undefined, {}, companyId);
+    return data.empleados || data || [];
   };
 
   const createEmployee = async (employee: Omit<BiloopEmployee, 'id'>): Promise<BiloopEmployee> => {
@@ -355,43 +352,56 @@ export const useBiloop = () => {
   };
 
   // Métodos específicos para trabajadores (labor)
-  const getWorkers = async (companyId?: string): Promise<BiloopWorker[]> => {
-    const params: Record<string, string> = {};
-    if (companyId) params.companyId = companyId;
-
-    const data = await callBiloopAPI('/api-global/v1/labor/getWorkers', 'GET', undefined, params);
-    return data.workers || data || [];
+  const getWorkers = async (companyId: string): Promise<BiloopWorker[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/trabajadores', 'GET', undefined, {}, companyId);
+    return data.trabajadores || data || [];
   };
 
-  const getWorkersConcepts = async (companyId?: string): Promise<BiloopWorkerConcept[]> => {
-    const params: Record<string, string> = {};
-    if (companyId) params.companyId = companyId;
-
-    const data = await callBiloopAPI('/api-global/v1/labor/getWorkersConcepts', 'GET', undefined, params);
-    return data.concepts || data || [];
+  const getWorkersConcepts = async (companyId: string): Promise<BiloopWorkerConcept[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/trabajadores/conceptos', 'GET', undefined, {}, companyId);
+    return data.conceptos || data || [];
   };
 
-  // Centros de trabajo
-  const getWorkCentersET = async (companyId?: string): Promise<BiloopWorkCenter[]> => {
-    const params: Record<string, string> = {};
-    if (companyId) params.companyId = companyId;
-    const data = await callBiloopAPI('/api-global/v1/labor/getWorkCentersET', 'GET', undefined, params);
-    return data.workCenters || data || [];
+  // Centros de trabajo  
+  const getWorkCentersET = async (companyId: string): Promise<BiloopWorkCenter[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/centros-et', 'GET', undefined, {}, companyId);
+    return data.centros || data || [];
   };
 
-  const getWorkCentersSS = async (companyId?: string): Promise<BiloopWorkCenter[]> => {
-    const params: Record<string, string> = {};
-    if (companyId) params.companyId = companyId;
-    const data = await callBiloopAPI('/api-global/v1/labor/getWorkCentersSS', 'GET', undefined, params);
-    return data.workCenters || data || [];
+  const getWorkCentersSS = async (companyId: string): Promise<BiloopWorkCenter[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/centros-ss', 'GET', undefined, {}, companyId);
+    return data.centros || data || [];
+  };
+
+  const getOccupationalCategories = async (companyId: string): Promise<BiloopCategory[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/categorias-laborales', 'GET', undefined, {}, companyId);
+    return data.categorias || data || [];
+  };
+
+  const getProfessionalOccupations = async (companyId: string): Promise<any[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/ocupaciones-profesionales', 'GET', undefined, {}, companyId);
+    return data.ocupaciones || data || [];
+  };
+
+  const getRemunerations = async (companyId: string): Promise<BiloopRemuneration[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/remuneraciones', 'GET', undefined, {}, companyId);
+    return data.remuneraciones || data || [];
+  };
+
+  const getCosts = async (companyId: string): Promise<any[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/costes', 'GET', undefined, {}, companyId);
+    return data.costes || data || [];
   };
 
   // Incidencias y categorías
-  const getIncidences = async (companyId?: string): Promise<BiloopIncidence[]> => {
-    const params: Record<string, string> = {};
-    if (companyId) params.companyId = companyId;
-    const data = await callBiloopAPI('/api-global/v1/labor/getIncidences', 'GET', undefined, params);
-    return data.incidences || data || [];
+  const getIncidences = async (companyId: string): Promise<BiloopIncidence[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/incidencias', 'GET', undefined, {}, companyId);
+    return data.incidencias || data || [];
+  };
+
+  const getIncidenceCauses = async (companyId: string): Promise<any[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/causas-incidencias', 'GET', undefined, {}, companyId);
+    return data.causas || data || [];
   };
 
   const getCategories = async (companyId?: string): Promise<BiloopCategory[]> => {
@@ -417,11 +427,9 @@ export const useBiloop = () => {
     return data.payrolls || data || [];
   };
 
-  const getPayslips = async (companyId?: string): Promise<BiloopPayslip[]> => {
-    const params: Record<string, string> = {};
-    if (companyId) params.companyId = companyId;
-    const data = await callBiloopAPI('/api-global/v1/labor/getPayslips', 'GET', undefined, params);
-    return data.payslips || data || [];
+  const getPayslips = async (companyId: string): Promise<BiloopPayslip[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/nominas', 'GET', undefined, {}, companyId);
+    return data.nominas || data || [];
   };
 
   const getAnonymousPayslips = async (companyId?: string): Promise<BiloopPayslip[]> => {
@@ -454,11 +462,14 @@ export const useBiloop = () => {
   };
 
   // Contratos y clasificaciones
-  const getContractTypes = async (companyId?: string): Promise<BiloopContractType[]> => {
-    const params: Record<string, string> = {};
-    if (companyId) params.companyId = companyId;
-    const data = await callBiloopAPI('/api-global/v1/labor/getContractTypes', 'GET', undefined, params);
-    return data.contractTypes || data || [];
+  const getContractTypes = async (companyId: string): Promise<BiloopContractType[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/tipos-contrato', 'GET', undefined, {}, companyId);
+    return data.tipos || data || [];
+  };
+
+  const getContractExpirations = async (companyId: string): Promise<any[]> => {
+    const data = await callBiloopAPI('/api-nominas/v1/vencimientos-contratos', 'GET', undefined, {}, companyId);
+    return data.vencimientos || data || [];
   };
 
   const getWorkersBreakdown = async (companyId?: string): Promise<BiloopWorkersBreakdown[]> => {
@@ -782,6 +793,12 @@ export const useBiloop = () => {
     getWorkCentersET,
     getWorkCentersSS,
     getIncidences,
+    getIncidenceCauses,
+    getOccupationalCategories,
+    getProfessionalOccupations,
+    getRemunerations,
+    getCosts,
+    getContractExpirations,
     getCategories,
     getConcepts,
     getPayrollConceptsMonthBi,

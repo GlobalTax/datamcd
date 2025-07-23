@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_integration_configs: {
+        Row: {
+          accounting_system: string
+          api_key_encrypted: string | null
+          company_id_encrypted: string | null
+          created_at: string
+          created_by: string | null
+          credential_version: number | null
+          database_encrypted: string | null
+          franchisee_id: string | null
+          id: string
+          is_enabled: boolean | null
+          last_key_rotation: string | null
+          password_encrypted: string | null
+          server_encrypted: string | null
+          sync_options: Json | null
+          system_name: string
+          updated_at: string
+          username_encrypted: string | null
+        }
+        Insert: {
+          accounting_system: string
+          api_key_encrypted?: string | null
+          company_id_encrypted?: string | null
+          created_at?: string
+          created_by?: string | null
+          credential_version?: number | null
+          database_encrypted?: string | null
+          franchisee_id?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_key_rotation?: string | null
+          password_encrypted?: string | null
+          server_encrypted?: string | null
+          sync_options?: Json | null
+          system_name: string
+          updated_at?: string
+          username_encrypted?: string | null
+        }
+        Update: {
+          accounting_system?: string
+          api_key_encrypted?: string | null
+          company_id_encrypted?: string | null
+          created_at?: string
+          created_by?: string | null
+          credential_version?: number | null
+          database_encrypted?: string | null
+          franchisee_id?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_key_rotation?: string | null
+          password_encrypted?: string | null
+          server_encrypted?: string | null
+          sync_options?: Json | null
+          system_name?: string
+          updated_at?: string
+          username_encrypted?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_integration_configs_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_alert_instances: {
         Row: {
           acknowledged_at: string | null
@@ -454,6 +522,62 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      delivery_integration_configs: {
+        Row: {
+          api_key_encrypted: string | null
+          created_at: string
+          created_by: string | null
+          credential_version: number | null
+          franchisee_id: string | null
+          id: string
+          is_enabled: boolean | null
+          last_key_rotation: string | null
+          merchant_id_encrypted: string | null
+          provider_id: string
+          provider_name: string
+          updated_at: string
+          webhook_url_encrypted: string | null
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          created_at?: string
+          created_by?: string | null
+          credential_version?: number | null
+          franchisee_id?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_key_rotation?: string | null
+          merchant_id_encrypted?: string | null
+          provider_id: string
+          provider_name: string
+          updated_at?: string
+          webhook_url_encrypted?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          created_at?: string
+          created_by?: string | null
+          credential_version?: number | null
+          franchisee_id?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_key_rotation?: string | null
+          merchant_id_encrypted?: string | null
+          provider_id?: string
+          provider_name?: string
+          updated_at?: string
+          webhook_url_encrypted?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_integration_configs_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employee_payroll: {
         Row: {
@@ -1027,6 +1151,7 @@ export type Database = {
       franchisees: {
         Row: {
           address: string | null
+          biloop_company_id: string | null
           city: string | null
           company_name: string | null
           country: string | null
@@ -1042,6 +1167,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          biloop_company_id?: string | null
           city?: string | null
           company_name?: string | null
           country?: string | null
@@ -1057,6 +1183,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          biloop_company_id?: string | null
           city?: string | null
           company_name?: string | null
           country?: string | null
@@ -1117,44 +1244,56 @@ export type Database = {
       }
       integration_configs: {
         Row: {
+          access_log: Json | null
           advisor_id: string
           api_endpoint: string | null
           api_key_encrypted: string | null
           config_name: string
           configuration: Json
           created_at: string
+          credential_version: number | null
+          encrypted_credentials: string | null
           franchisee_id: string | null
           id: string
           integration_type: string
           is_active: boolean | null
+          last_key_rotation: string | null
           last_sync: string | null
           updated_at: string
         }
         Insert: {
+          access_log?: Json | null
           advisor_id: string
           api_endpoint?: string | null
           api_key_encrypted?: string | null
           config_name: string
           configuration: Json
           created_at?: string
+          credential_version?: number | null
+          encrypted_credentials?: string | null
           franchisee_id?: string | null
           id?: string
           integration_type: string
           is_active?: boolean | null
+          last_key_rotation?: string | null
           last_sync?: string | null
           updated_at?: string
         }
         Update: {
+          access_log?: Json | null
           advisor_id?: string
           api_endpoint?: string | null
           api_key_encrypted?: string | null
           config_name?: string
           configuration?: Json
           created_at?: string
+          credential_version?: number | null
+          encrypted_credentials?: string | null
           franchisee_id?: string | null
           id?: string
           integration_type?: string
           is_active?: boolean | null
+          last_key_rotation?: string | null
           last_sync?: string | null
           updated_at?: string
         }
@@ -1532,6 +1671,68 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_integration_configs: {
+        Row: {
+          api_key_encrypted: string | null
+          created_at: string
+          created_by: string | null
+          credential_version: number | null
+          endpoint_encrypted: string | null
+          franchisee_id: string | null
+          id: string
+          is_enabled: boolean | null
+          last_key_rotation: string | null
+          password_encrypted: string | null
+          pos_name: string
+          pos_system: string
+          store_id_encrypted: string | null
+          updated_at: string
+          username_encrypted: string | null
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          created_at?: string
+          created_by?: string | null
+          credential_version?: number | null
+          endpoint_encrypted?: string | null
+          franchisee_id?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_key_rotation?: string | null
+          password_encrypted?: string | null
+          pos_name: string
+          pos_system: string
+          store_id_encrypted?: string | null
+          updated_at?: string
+          username_encrypted?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          created_at?: string
+          created_by?: string | null
+          credential_version?: number | null
+          endpoint_encrypted?: string | null
+          franchisee_id?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_key_rotation?: string | null
+          password_encrypted?: string | null
+          pos_name?: string
+          pos_system?: string
+          store_id_encrypted?: string | null
+          updated_at?: string
+          username_encrypted?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_integration_configs_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -1847,6 +2048,90 @@ export type Database = {
           sync_completed_at?: string | null
           sync_started_at?: string
           sync_type?: string
+        }
+        Relationships: []
+      }
+      rate_limit_blocks: {
+        Row: {
+          blocked_until: string
+          created_at: string
+          endpoint: string
+          id: string
+          ip: string
+          reason: string
+        }
+        Insert: {
+          blocked_until: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip: string
+          reason?: string
+        }
+        Update: {
+          blocked_until?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip?: string
+          reason?: string
+        }
+        Relationships: []
+      }
+      rate_limit_entries: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          ip: string
+          last_request_at: string
+          requests: number
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip: string
+          last_request_at?: string
+          requests?: number
+          window_start: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip?: string
+          last_request_at?: string
+          requests?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
+      rate_limit_violations: {
+        Row: {
+          block_duration: number
+          created_at: string
+          endpoint: string
+          id: string
+          ip: string
+          requests_count: number
+        }
+        Insert: {
+          block_duration: number
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip: string
+          requests_count: number
+        }
+        Update: {
+          block_duration?: number
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip?: string
+          requests_count?: number
         }
         Relationships: []
       }
@@ -2548,6 +2833,14 @@ export type Database = {
       casts_are: {
         Args: { "": string[] }
         Returns: string
+      }
+      cleanup_local_storage_data: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      cleanup_rate_limit_records: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       cleanup_test_users: {
         Args: Record<PropertyKey, never>

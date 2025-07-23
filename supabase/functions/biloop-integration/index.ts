@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, method = 'GET', body, params } = await req.json();
+    const { endpoint, method = 'GET', body, params, company_id } = await req.json();
 
     // Get Biloop credentials from environment with better error handling
     const baseUrl = Deno.env.get('BILOOP_BASEURL');
@@ -34,6 +34,7 @@ serve(async (req) => {
     }
 
     console.log('Biloop integration called for endpoint:', endpoint);
+    console.log('Company ID provided:', company_id);
     console.log('Using base URL:', baseUrl);
 
     // Function to get a fresh token with better error handling
@@ -82,11 +83,25 @@ serve(async (req) => {
       token = await getToken();
     }
 
-    // Build URL with params if provided
+    // Build URL with params including company_id
     let url = `${baseUrl}${endpoint}`;
+    const urlParams = new URLSearchParams();
+    
+    // Add company_id if provided (required for most endpoints)
+    if (company_id) {
+      urlParams.append('company_id', company_id);
+    }
+    
+    // Add other params
     if (params) {
-      const urlParams = new URLSearchParams(params);
-      url += `?${urlParams.toString()}`;
+      Object.keys(params).forEach(key => {
+        urlParams.append(key, params[key]);
+      });
+    }
+    
+    const paramsString = urlParams.toString();
+    if (paramsString) {
+      url += `?${paramsString}`;
     }
     
     console.log('Making request to:', url);

@@ -73,7 +73,7 @@ export const useWorkersPanel = (franchiseeId?: string) => {
   const loadBiloopEmployees = async () => {
     try {
       console.log('Loading Biloop employees...');
-      const employees = await getEmployees();
+      const employees = await getEmployees("demo_company");
       console.log('Biloop employees loaded:', employees.length);
       setBiloopEmployees(employees);
     } catch (error) {
