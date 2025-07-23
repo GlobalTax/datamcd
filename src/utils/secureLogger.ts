@@ -69,19 +69,32 @@ class SecureLogger {
    */
   private sanitizeText(text: string): string {
     if (!text || typeof text !== 'string') return text;
+    
+    // Si el texto es muy largo, truncarlo para evitar problemas de performance
+    if (text.length > 10000) {
+      text = text.substring(0, 10000) + '[TRUNCATED]';
+    }
 
     let sanitized = text;
 
-    // Aplicar patrones de sanitización
-    SENSITIVE_PATTERNS.forEach(pattern => {
-      sanitized = sanitized.replace(pattern, (match, key, value) => {
-        if (key && value) {
-          const maskedValue = this.maskSensitiveValue(value);
-          return `${key}: ${maskedValue}`;
-        }
-        return '[REDACTED]';
+    try {
+      // Aplicar patrones de sanitización con protección contra loops infinitos
+      SENSITIVE_PATTERNS.forEach(pattern => {
+        // Reset del pattern para evitar problemas con lastIndex
+        pattern.lastIndex = 0;
+        
+        sanitized = sanitized.replace(pattern, (match, key, value) => {
+          if (key && value) {
+            const maskedValue = this.maskSensitiveValue(value);
+            return `${key}: ${maskedValue}`;
+          }
+          return '[REDACTED]';
+        });
       });
-    });
+    } catch (error) {
+      // Si hay error en sanitización, devolver texto seguro
+      return '[SANITIZATION_ERROR]';
+    }
 
     return sanitized;
   }
