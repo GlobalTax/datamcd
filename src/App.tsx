@@ -168,14 +168,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/biloop"
-                element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin']}>
-                    <BiloopPage />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/biloop" element={<BiloopPage />} />
               <Route
                 path="/workers"
                 element={

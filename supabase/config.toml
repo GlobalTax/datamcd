@@ -1,1 +1,4 @@
 project_id = "ckvqfrppnfhoadcpqhld"
+
+[functions.biloop-integration]
+verify_jwt = false
