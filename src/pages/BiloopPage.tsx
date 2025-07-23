@@ -17,7 +17,6 @@ const BiloopPage = () => {
   
   const { 
     loading, 
-    getCompanies, 
     getInvoices, 
     getCustomers, 
     getInventory, 
@@ -26,25 +25,12 @@ const BiloopPage = () => {
   
   const { toast } = useToast();
 
+  // Ya no cargamos empresas desde la API, sino que usamos el company_id del franquiciado
   useEffect(() => {
-    loadCompanies();
+    // Aquí podrías obtener el company_id del franquiciado autenticado
+    // Por simplicidad, pondremos un placeholder
+    console.log('BiloopPage loaded - usar company_id del franquiciado');
   }, []);
-
-  const loadCompanies = async () => {
-    try {
-      const data = await getCompanies();
-      console.log('Companies data received:', data);
-      // Asegurar que data es un array
-      const companiesArray = Array.isArray(data) ? data : [];
-      setCompanies(companiesArray);
-      if (companiesArray.length > 0) {
-        setSelectedCompany(companiesArray[0].id);
-      }
-    } catch (error) {
-      console.error('Error loading companies:', error);
-      setCompanies([]); // Asegurar que companies sea un array vacío en caso de error
-    }
-  };
 
   const loadInvoices = async () => {
     try {

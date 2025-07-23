@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RefreshCw } from 'lucide-react';
-import { useBiloop, type BiloopCompany } from '@/hooks/useBiloop';
+import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useBiloop } from '@/hooks/useBiloop';
 import { BiloopWorkersTable } from './BiloopWorkersTable';
 import { BiloopPayrollManager } from './BiloopPayrollManager';
 import { BiloopContractManager } from './BiloopContractManager';
@@ -16,12 +17,10 @@ interface BiloopWorkersPanelProps {
 }
 
 export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefresh }) => {
+  const { effectiveFranchisee } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
-  const [selectedCompany, setSelectedCompany] = useState<string>('');
-  const [availableCompanies, setAvailableCompanies] = useState<BiloopCompany[]>([]);
 
   const { 
-    getCompanies,
     getEmployees, 
     getPayslips, 
     getContractTypes, 
@@ -32,66 +31,36 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
     loading 
   } = useBiloop();
 
-  // Cargar empresas disponibles al iniciar
-  useEffect(() => {
-    const loadCompanies = async () => {
-      try {
-        const companies = await getCompanies();
-        setAvailableCompanies(companies || []);
-        
-        // Seleccionar la primera empresa por defecto
-        if (companies && companies.length > 0) {
-          setSelectedCompany(companies[0].id);
-        }
-      } catch (error) {
-        console.error('Error cargando empresas BILOOP:', error);
-      }
-    };
+  // Obtener el company_id del franquiciado
+  const companyId = effectiveFranchisee?.biloop_company_id;
 
-    loadCompanies();
-  }, [getCompanies]);
-
-  // Si no hay company_id seleccionado
-  if (!selectedCompany && availableCompanies.length === 0) {
+  // Si no hay franquiciado autenticado
+  if (!effectiveFranchisee) {
     return (
       <div className="p-6">
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Cargando empresas BILOOP</AlertTitle>
+          <AlertTitle>Sin acceso de franquiciado</AlertTitle>
           <AlertDescription>
-            Cargando lista de empresas disponibles...
+            No se pudo obtener información del franquiciado autenticado.
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  // Si no hay company_id seleccionado
-  if (!selectedCompany) {
+  // Si no hay company_id configurado para el franquiciado
+  if (!companyId) {
     return (
       <div className="p-6">
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Empresa BILOOP no configurada</AlertTitle>
           <AlertDescription>
-            No se ha configurado un código de empresa BILOOP válido para este franquiciado.
-            {availableCompanies.length > 0 && (
-              <div className="mt-2">
-                <p className="text-sm text-muted-foreground">Empresas disponibles:</p>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {availableCompanies.map((company) => (
-                    <Button
-                      key={company.id}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedCompany(company.id)}
-                    >
-                      {company.name} ({company.id})
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
+            No se ha configurado un código de empresa BILOOP válido para el franquiciado <strong>{effectiveFranchisee.franchisee_name}</strong>.
+            <br />
+            <br />
+            Por favor, contacte con su asesor para configurar el campo <code>biloop_company_id</code> en su perfil de franquiciado.
           </AlertDescription>
         </Alert>
       </div>
@@ -103,19 +72,6 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Panel de Trabajadores BILOOP</h1>
         <div className="flex items-center gap-2">
-          {availableCompanies.length > 1 && (
-            <select
-              value={selectedCompany}
-              onChange={(e) => setSelectedCompany(e.target.value)}
-              className="px-3 py-1 border rounded-md text-sm"
-            >
-              {availableCompanies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name} ({company.id})
-                </option>
-              ))}
-            </select>
-          )}
           <Button 
             onClick={() => setRefreshKey(prev => prev + 1)}
             variant="outline"
@@ -128,9 +84,9 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
       </div>
 
       <div className="text-sm text-muted-foreground">
-        {selectedCompany && (
-          <>Empresa BILOOP: <span className="font-semibold">{selectedCompany}</span></>
-        )}
+        Franquiciado: <span className="font-semibold">{effectiveFranchisee.franchisee_name}</span>
+        {' • '}
+        Empresa BILOOP: <span className="font-semibold">{companyId}</span>
       </div>
 
       <Tabs defaultValue="workers" className="w-full">
@@ -145,35 +101,35 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
 
         <TabsContent value="workers" className="space-y-4">
           <BiloopWorkersTable 
-            selectedCompany={selectedCompany}
+            selectedCompany={companyId}
             key={`workers-${refreshKey}`}
           />
         </TabsContent>
 
         <TabsContent value="payroll" className="space-y-4">
           <BiloopPayrollManager 
-            selectedCompany={selectedCompany}
+            selectedCompany={companyId}
             key={`payroll-${refreshKey}`}
           />
         </TabsContent>
 
         <TabsContent value="contracts" className="space-y-4">
           <BiloopContractManager 
-            selectedCompany={selectedCompany}
+            selectedCompany={companyId}
             key={`contracts-${refreshKey}`}
           />
         </TabsContent>
 
         <TabsContent value="incidents" className="space-y-4">
           <BiloopIncidenceManager 
-            selectedCompany={selectedCompany}
+            selectedCompany={companyId}
             key={`incidents-${refreshKey}`}
           />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
           <BiloopAnalyticsDashboard 
-            selectedCompany={selectedCompany}
+            selectedCompany={companyId}
             key={`analytics-${refreshKey}`}
           />
         </TabsContent>
@@ -185,7 +141,7 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
               <Button
                 onClick={async () => {
                   try {
-                    const centers = await getWorkCentersET(selectedCompany);
+                    const centers = await getWorkCentersET(companyId);
                     console.log('Centros ET:', centers);
                   } catch (error) {
                     console.error('Error cargando centros ET:', error);
@@ -202,7 +158,7 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
               <Button
                 onClick={async () => {
                   try {
-                    const centers = await getWorkCentersSS(selectedCompany);
+                    const centers = await getWorkCentersSS(companyId);
                     console.log('Centros SS:', centers);
                   } catch (error) {
                     console.error('Error cargando centros SS:', error);

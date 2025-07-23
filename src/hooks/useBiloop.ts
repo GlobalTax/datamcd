@@ -234,10 +234,11 @@ export const useBiloop = () => {
     }
   };
 
-  const getCompanies = async (): Promise<BiloopCompany[]> => {
-    const data = await callBiloopAPI('/api-global/v1/companies');
-    return data.companies || data || [];
-  };
+  // Método eliminado - ya no se necesita obtener lista de empresas
+  // const getCompanies = async (): Promise<BiloopCompany[]> => {
+  //   const data = await callBiloopAPI('/api-global/v1/companies');
+  //   return data.companies || data || [];
+  // };
 
   const getInvoices = async (companyId?: string, dateFrom?: string, dateTo?: string): Promise<BiloopInvoice[]> => {
     const params: Record<string, string> = {};
@@ -768,8 +769,7 @@ export const useBiloop = () => {
 
   return {
     loading,
-    // Métodos generales
-    getCompanies,
+    // Métodos generales (getCompanies eliminado)
     getInvoices,
     getCustomers,
     createCustomer,

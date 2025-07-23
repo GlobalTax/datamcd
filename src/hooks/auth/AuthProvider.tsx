@@ -20,6 +20,7 @@ interface Franchisee {
   total_restaurants?: number;
   created_at: string;
   updated_at: string;
+  biloop_company_id?: string;
 }
 
 interface Restaurant {
