@@ -20,6 +20,7 @@ export interface Franchisee {
   state?: string;
   postal_code?: string;
   country?: string;
+  email?: string;
   created_at: string;
   updated_at: string;
   total_restaurants?: number;

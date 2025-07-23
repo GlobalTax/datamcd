@@ -36,8 +36,13 @@ export interface BiloopEmployee {
   id: string;
   name: string;
   surname: string;
+  nombre?: string;
+  apellidos?: string;
   email?: string;
   phone?: string;
+  telefono?: string;
+  estado?: string;
+  fechaAlta?: string;
   dni?: string;
   position?: string;
   department?: string;

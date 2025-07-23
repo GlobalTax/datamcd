@@ -3,9 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Building2, FileText, Users, Package, TestTube } from 'lucide-react';
+import { Loader2, Building2, FileText, Users, Package, TestTube, UserCheck } from 'lucide-react';
 import { useBiloop, BiloopCompany, BiloopInvoice, BiloopCustomer } from '@/hooks/useBiloop';
 import { useToast } from '@/hooks/use-toast';
+import { BiloopWorkersPanel } from '@/components/workers/BiloopWorkersPanel';
 
 const BiloopPage = () => {
   const [companies, setCompanies] = useState<BiloopCompany[]>([]);
@@ -123,13 +124,18 @@ const BiloopPage = () => {
         </Card>
       )}
 
-      <Tabs defaultValue="companies" className="space-y-4">
+      <Tabs defaultValue="workers" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="workers">Trabajadores</TabsTrigger>
           <TabsTrigger value="companies">Empresas</TabsTrigger>
           <TabsTrigger value="invoices">Facturas</TabsTrigger>
           <TabsTrigger value="customers">Clientes</TabsTrigger>
           <TabsTrigger value="inventory">Inventario</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="workers" className="space-y-4">
+          <BiloopWorkersPanel />
+        </TabsContent>
 
         <TabsContent value="companies" className="space-y-4">
           <Card>
