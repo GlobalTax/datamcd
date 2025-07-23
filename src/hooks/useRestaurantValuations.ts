@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
 import { RestaurantValuation, ValuationScenario } from '@/types/restaurantValuation';
 import { toast } from 'sonner';
 import {

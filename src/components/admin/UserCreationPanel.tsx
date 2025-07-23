@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { useUserCreation } from '@/hooks/useUserCreation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ interface UserCreationPanelProps {
 }
 
 export const UserCreationPanel: React.FC<UserCreationPanelProps> = ({ onUserCreated }) => {
-  const { user } = useUnifiedAuth();
+  const { user } = useAuth();
   const { createUser, creating } = useUserCreation();
   const [formData, setFormData] = useState({
     fullName: '',

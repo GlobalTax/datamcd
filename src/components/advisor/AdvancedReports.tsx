@@ -16,7 +16,7 @@ import {
   Target,
   Trash2
 } from 'lucide-react';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -40,7 +40,7 @@ interface GeneratedReport {
 }
 
 export const AdvancedReports: React.FC = () => {
-  const { user } = useUnifiedAuth();
+  const { user } = useAuth();
   const [templates, setTemplates] = useState<ReportTemplate[]>([]);
   const [reports, setReports] = useState<GeneratedReport[]>([]);
   const [loading, setLoading] = useState(true);

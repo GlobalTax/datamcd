@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
 import { useAllRestaurants } from '@/hooks/useAllRestaurants';
 import { useOptimizedFranchiseeRestaurants } from '@/hooks/useOptimizedFranchiseeRestaurants';
 import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';

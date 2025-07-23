@@ -1,11 +1,11 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 export const useDeleteUser = () => {
-  const { user } = useUnifiedAuth();
+  const { user } = useAuth();
   const [deleting, setDeleting] = useState(false);
 
   const deleteUser = async (franchiseeId: string, userId: string, userName: string) => {

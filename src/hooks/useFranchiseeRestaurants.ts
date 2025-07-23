@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
 import { useFranchiseeContext } from '@/contexts/FranchiseeContext';
 import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
 import { toast } from 'sonner';

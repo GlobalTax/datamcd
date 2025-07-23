@@ -2,7 +2,7 @@
 import { useCallback, useEffect } from 'react';
 import { secureLogger, LogContext } from '@/utils/secureLogger';
 import { setupGlobalErrorHandling, consoleInterceptor } from '@/utils/logSanitizer';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
 
 /**
  * Hook para logging seguro en componentes React

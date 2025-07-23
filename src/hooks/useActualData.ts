@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { ActualData, ActualDataUpdateParams } from '@/types/actualDataTypes';
 import { 
@@ -12,7 +12,7 @@ import {
 } from '@/utils/actualDataMappers';
 
 export const useActualData = () => {
-  const { user } = useUnifiedAuth();
+  const { user } = useAuth();
   const [actualData, setActualData] = useState<ActualData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

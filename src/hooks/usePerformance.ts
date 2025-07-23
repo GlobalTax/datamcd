@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRoutePreloader } from '@/utils/routePreloader';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
 
 interface PerformanceData {
   routeLoadTime: number;

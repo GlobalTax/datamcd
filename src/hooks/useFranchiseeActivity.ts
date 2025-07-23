@@ -1,12 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { FranchiseeAccessLog, FranchiseeActivityLog } from '@/types/franchiseeInvitation';
 import { toast } from 'sonner';
 
 export const useFranchiseeActivity = (franchiseeId?: string) => {
-  const { user } = useUnifiedAuth();
+  const { user } = useAuth();
   const [accessLogs, setAccessLogs] = useState<FranchiseeAccessLog[]>([]);
   const [activityLogs, setActivityLogs] = useState<FranchiseeActivityLog[]>([]);
   const [loading, setLoading] = useState(false);

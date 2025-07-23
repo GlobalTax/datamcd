@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
 import { StandardLayout } from '@/components/layout/StandardLayout';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EmployeeManagement } from '@/components/employees/EmployeeManagement';

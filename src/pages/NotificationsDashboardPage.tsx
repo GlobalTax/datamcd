@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NotificationDashboard } from '@/components/dashboard/widgets/NotificationDashboard';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
 
 export default function NotificationsDashboardPage() {
   const { effectiveFranchisee } = useUnifiedAuth();
