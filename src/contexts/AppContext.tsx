@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext } from 'react';
-import { useAuth, AuthHook } from '@/hooks/useAuth';
+import { useAuthState, AuthHook } from '@/hooks/auth/useAuthState';
 
 interface AppContextType {
   auth: AuthHook;
@@ -17,7 +17,7 @@ export const useAppContext = () => {
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const auth = useAuth();
+  const auth = useAuthState();
 
   const value = {
     auth

@@ -16,7 +16,7 @@ export const DashboardPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
-          Bienvenido, {user?.user_metadata?.full_name || user?.email}
+          Bienvenido, {user?.full_name || user?.email}
         </h1>
         <p className="text-gray-600 mt-2">
           Panel de control de franquiciado McDonald's

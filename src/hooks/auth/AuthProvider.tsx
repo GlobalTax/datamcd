@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { AuthContextType } from '@/types/auth';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthState } from './useAuthState';
 
 // Crear un contexto compatible con el sistema anterior
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
@@ -15,7 +15,7 @@ export const useAuthLegacy = () => {
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const auth = useAuth();
+  const auth = useAuthState();
 
   // Adaptar el nuevo hook al tipo legacy
   const value: AuthContextType = {

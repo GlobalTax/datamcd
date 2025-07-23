@@ -1,26 +1,23 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserCheck, UserX, Users, Eye } from 'lucide-react';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { Franchisee } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export const ImpersonationControls: React.FC = () => {
-  const { 
-    user, 
-    isImpersonating, 
-    impersonatedFranchisee,
-    startImpersonation,
-    stopImpersonation 
-  } = useUnifiedAuth();
+  const { user } = useAuth();
   
   const [availableFranchisees, setAvailableFranchisees] = useState<Franchisee[]>([]);
   const [selectedFranchiseeId, setSelectedFranchiseeId] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const [impersonatedFranchisee, setImpersonatedFranchisee] = useState<Franchisee | null>(null);
 
   // Solo mostrar para asesores y admins
   if (!user || !['asesor', 'admin', 'superadmin'].includes(user.role)) {
@@ -50,9 +47,15 @@ export const ImpersonationControls: React.FC = () => {
   const handleStartImpersonation = () => {
     const selectedFranchisee = availableFranchisees.find(f => f.id === selectedFranchiseeId);
     if (selectedFranchisee) {
-      startImpersonation(selectedFranchisee.id);
+      setImpersonatedFranchisee(selectedFranchisee);
+      setIsImpersonating(true);
       setSelectedFranchiseeId('');
     }
+  };
+
+  const handleStopImpersonation = () => {
+    setImpersonatedFranchisee(null);
+    setIsImpersonating(false);
   };
 
   return (
@@ -78,7 +81,7 @@ export const ImpersonationControls: React.FC = () => {
               </span>
             </div>
             <Button 
-              onClick={stopImpersonation}
+              onClick={handleStopImpersonation}
               variant="outline"
               size="sm"
               className="w-full"
