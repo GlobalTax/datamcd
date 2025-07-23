@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { toast } from 'sonner';
 
 interface RestaurantData {
@@ -24,7 +24,7 @@ interface RestaurantData {
 export const useDataImport = () => {
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
 
   const importRestaurantsData = async (data: RestaurantData[]) => {
     if (!user?.id) {

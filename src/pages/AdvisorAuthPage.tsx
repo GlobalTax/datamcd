@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
-import { Loader2, Shield, AlertTriangle } from 'lucide-react';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { Loader2, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -19,33 +18,16 @@ const AdvisorAuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
-  const [debugMode, setDebugMode] = useState(false);
   
-  const { signIn, user, loading, getDebugInfo } = useUnifiedAuth();
+  const { signIn, user, loading } = useUnifiedAuth();
   const navigate = useNavigate();
 
-  // Mostrar información de debug en desarrollo
   useEffect(() => {
-    const isDev = window.location.hostname === 'localhost' || window.location.hostname.includes('lovable');
-    setDebugMode(isDev);
-  }, []);
-
-  useEffect(() => {
-    console.log('AdvisorAuthPage - Effect triggered');
-    console.log('AdvisorAuthPage - User:', user);
-    console.log('AdvisorAuthPage - Loading:', loading);
-    
     if (user && !loading) {
-      console.log('AdvisorAuthPage - User loaded, checking role:', user.role);
-      
-      // Permitir acceso directo para superadmin y otros roles de asesor
-      const allowedRoles = ['asesor', 'admin', 'superadmin'];
-      
-      if (allowedRoles.includes(user.role)) {
-        console.log('AdvisorAuthPage - User has advisor permissions, redirecting to /advisor');
+      // Verificar si el usuario tiene permisos de asesor (asesor, admin o superadmin)
+      if (['asesor', 'admin', 'superadmin'].includes(user.role)) {
         navigate('/advisor');
       } else {
-        console.log('AdvisorAuthPage - User does not have advisor permissions');
         toast.error('No tienes permisos de asesor');
         navigate('/auth');
       }
@@ -56,14 +38,10 @@ const AdvisorAuthPage = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    console.log('AdvisorAuthPage - Starting sign in process');
-    
     const { error } = await signIn(email, password);
     
-    if (error) {
-      console.error('AdvisorAuthPage - Sign in error:', error);
-    } else {
-      console.log('AdvisorAuthPage - Sign in successful, waiting for user data...');
+    if (!error && user && !['asesor', 'admin', 'superadmin'].includes(user.role)) {
+      toast.error('Esta cuenta no tiene permisos de asesor');
     }
     
     setIsLoading(false);
@@ -114,30 +92,13 @@ const AdvisorAuthPage = () => {
     setIsResettingPassword(false);
   };
 
-  // Bypass temporal para desarrollo/debug
-  const handleDebugBypass = () => {
-    console.log('AdvisorAuthPage - Debug bypass activated');
-    navigate('/advisor');
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-          <p className="mt-2 text-gray-600">Verificando autenticación...</p>
-          {debugMode && (
-            <div className="mt-4 p-4 bg-gray-100 rounded-lg text-left text-sm">
-              <strong>Debug Info:</strong>
-              <pre>{JSON.stringify(getDebugInfo?.(), null, 2)}</pre>
-            </div>
-          )}
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
-
-  console.log('AdvisorAuthPage - Rendering auth form');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
@@ -149,35 +110,6 @@ const AdvisorAuthPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Portal de Asesores</h1>
           <p className="text-gray-600 mt-2">Acceso exclusivo para asesores McDonald's</p>
         </div>
-
-        {debugMode && (
-          <Card className="mb-4 border-amber-200 bg-amber-50">
-            <CardContent className="pt-4">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="text-amber-600 w-5 h-5 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-amber-800 mb-2">
-                    <strong>Modo Debug Activo</strong>
-                  </p>
-                  <Button 
-                    onClick={handleDebugBypass}
-                    size="sm"
-                    variant="outline"
-                    className="border-amber-300 text-amber-700 hover:bg-amber-100"
-                  >
-                    Bypass de Desarrollo
-                  </Button>
-                  <details className="mt-2">
-                    <summary className="text-xs cursor-pointer">Info de Debug</summary>
-                    <pre className="text-xs mt-1 bg-white p-2 rounded border">
-                      {JSON.stringify(getDebugInfo?.(), null, 2)}
-                    </pre>
-                  </details>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <Card>
           <CardHeader>

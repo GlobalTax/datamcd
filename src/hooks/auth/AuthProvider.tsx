@@ -1,52 +1,503 @@
 
-import React from 'react';
-import { AuthContextType } from '@/types/auth';
-import { useAuthState } from './useAuthState';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
+import { toast } from 'sonner';
 
-// Crear un contexto compatible con el sistema anterior
-const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
+// Tipos consolidados
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+}
 
-export const useAuthLegacy = () => {
-  const context = React.useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuthLegacy must be used within an AuthProvider');
+interface Franchisee {
+  id: string;
+  user_id: string;
+  franchisee_name: string;
+  company_name?: string;
+  total_restaurants?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Restaurant {
+  id: string;
+  franchisee_id: string;
+  base_restaurant_id: string;
+  status: string;
+  franchise_start_date?: string;
+  franchise_end_date?: string;
+  last_year_revenue?: number;
+  monthly_rent?: number;
+  base_restaurant?: {
+    id: string;
+    restaurant_name: string;
+    site_number: string;
+    address: string;
+    city: string;
+    [key: string]: any;
+  };
+  restaurant_name?: string;
+  site_number?: string;
+}
+
+// Contexto principal consolidado
+interface AuthContextType {
+  // Estados de autenticación
+  user: UserProfile | null;
+  session: Session | null;
+  franchisee: Franchisee | null;
+  restaurants: Restaurant[];
+  loading: boolean;
+  connectionStatus?: 'online' | 'offline' | 'reconnecting';
+  
+  // Estados de impersonación (solo para asesores)
+  isImpersonating: boolean;
+  impersonatedFranchisee: Franchisee | null;
+  effectiveFranchisee: Franchisee | null;
+  
+  // Acciones de autenticación
+  signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
+  signOut: () => Promise<void>;
+  
+  // Acciones de impersonación
+  startImpersonation: (franchisee: Franchisee) => void;
+  stopImpersonation: () => void;
+  
+  // Utilidades
+  refetchUserData: () => Promise<void>;
+  getDebugInfo?: () => any;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Hook principal
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const auth = useAuthState();
+// Debounce utility para evitar llamadas rápidas consecutivas
+const useDebounce = (callback: (...args: any[]) => Promise<void>, delay: number) => {
+  const timeoutRef = useRef<NodeJS.Timeout>();
+  
+  return useCallback((...args: any[]) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      callback(...args);
+    }, delay);
+  }, [callback, delay]);
+};
 
-  // Adaptar el nuevo hook al tipo legacy
+// Provider consolidado  
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Estados principales
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [franchisee, setFranchisee] = useState<Franchisee | null>(null);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Estados de impersonación
+  const [impersonatedFranchisee, setImpersonatedFranchisee] = useState<Franchisee | null>(null);
+  
+  // Referencias para control de estado
+  const authInitialized = useRef(false);
+  const currentUserId = useRef<string | null>(null);
+  const isInitializing = useRef(false);
+
+  // Franquiciado efectivo (impersonado o real)
+  const effectiveFranchisee = impersonatedFranchisee || franchisee;
+  const isImpersonating = Boolean(impersonatedFranchisee);
+
+  // Cargar estado de impersonación persistente
+  useEffect(() => {
+    const savedImpersonation = sessionStorage.getItem('impersonatedFranchisee');
+    if (savedImpersonation) {
+      try {
+        const savedFranchisee = JSON.parse(savedImpersonation);
+        setImpersonatedFranchisee(savedFranchisee);
+      } catch (error) {
+        console.error('Error restoring impersonation:', error);
+        sessionStorage.removeItem('impersonatedFranchisee');
+      }
+    }
+  }, []);
+
+  // Función para cargar datos del usuario con manejo de errores mejorado
+  const fetchUserData = useCallback(async (userId: string, retryCount = 0) => {
+    // Evitar múltiples llamadas simultáneas
+    if (isInitializing.current) {
+      return;
+    }
+    
+    isInitializing.current = true;
+    
+    try {
+      // Cargar perfil del usuario con timeout
+      const profilePromise = supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
+      );
+
+      let profile;
+      try {
+        const { data: profileData, error: profileError } = await Promise.race([
+          profilePromise,
+          timeoutPromise
+        ]) as any;
+
+        if (profileError) {
+          // Fallback con datos de sesión
+          const sessionUser = session?.user;
+          profile = {
+            id: userId,
+            email: sessionUser?.email || 'usuario@ejemplo.com',
+            full_name: sessionUser?.user_metadata?.full_name || 'Usuario',
+            role: 'franchisee'
+          };
+        } else {
+          profile = profileData;
+        }
+      } catch (error) {
+        const sessionUser = session?.user;
+        profile = {
+          id: userId,
+          email: sessionUser?.email || 'usuario@ejemplo.com',
+          full_name: sessionUser?.user_metadata?.full_name || 'Usuario',
+          role: 'franchisee'
+        };
+      }
+
+      setUser(profile);
+
+      // Cargar franquiciado solo para usuarios franchisee
+      if (!profile || profile.role === 'franchisee') {
+        try {
+          const { data: franchiseeData, error: franchiseeError } = await supabase
+            .from('franchisees')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+
+          if (franchiseeError) {
+            await createFranchisee(userId);
+          } else {
+            setFranchisee(franchiseeData);
+            
+            // Cargar restaurantes del franquiciado
+            await fetchRestaurants(franchiseeData.id);
+          }
+        } catch (franchiseeError) {
+          await createFranchisee(userId);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      
+      // Retry logic para errores temporales
+      if (retryCount < 2) {
+        setTimeout(() => {
+          fetchUserData(userId, retryCount + 1);
+        }, 1000 * (retryCount + 1));
+        return;
+      }
+      
+      // Fallback con datos mínimos funcionales después de todos los reintentos
+      const fallbackProfile: UserProfile = {
+        id: userId,
+        email: session?.user?.email || 'usuario@ejemplo.com',
+        full_name: session?.user?.user_metadata?.full_name || 'Usuario',
+        role: 'franchisee'
+      };
+      setUser(fallbackProfile);
+      
+      // Intentar crear franquiciado
+      await createFranchisee(userId);
+    } finally {
+      isInitializing.current = false;
+    }
+  }, [session]);
+
+  // Versión con debounce para evitar llamadas rápidas
+  const debouncedFetchUserData = useDebounce(fetchUserData, 300);
+
+  // Crear franquiciado si no existe
+  const createFranchisee = useCallback(async (userId: string) => {
+    try {
+      const { data: newFranchisee, error } = await supabase
+        .from('franchisees')
+        .insert({
+          user_id: userId,
+          franchisee_name: session?.user?.user_metadata?.full_name || 'Nuevo Franquiciado',
+          company_name: 'Mi Empresa',
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating franchisee:', error);
+        // Crear franquiciado fallback local
+        const fallbackFranchisee: Franchisee = {
+          id: `temp-${userId}`,
+          user_id: userId,
+          franchisee_name: 'Nuevo Franquiciado',
+          company_name: 'Mi Empresa',
+          total_restaurants: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setFranchisee(fallbackFranchisee);
+      } else {
+        setFranchisee(newFranchisee);
+      }
+    } catch (error) {
+      console.error('Unexpected error creating franchisee:', error);
+    }
+  }, [session]);
+
+  // Cargar restaurantes del franquiciado
+  const fetchRestaurants = useCallback(async (franchiseeId: string) => {
+    try {
+      // Skip para IDs temporales
+      if (franchiseeId.startsWith('temp-')) {
+        setRestaurants([]);
+        return;
+      }
+
+      const { data: restaurantData, error } = await supabase
+        .from('franchisee_restaurants')
+        .select(`
+          *,
+          base_restaurant:base_restaurants(*)
+        `)
+        .eq('franchisee_id', franchiseeId)
+        .eq('status', 'active');
+
+      if (error) {
+        console.error('Error fetching restaurants:', error);
+        setRestaurants([]);
+      } else {
+        setRestaurants(restaurantData || []);
+      }
+    } catch (error) {
+      console.error('Error fetching restaurants:', error);
+      setRestaurants([]);
+    }
+  }, []);
+
+  // Inicialización del sistema de autenticación
+  useEffect(() => {
+    if (authInitialized.current) return;
+    
+    authInitialized.current = true;
+    
+    let authSubscription: any = null;
+    
+    // Función para manejar cambios de estado de autenticación
+    const handleAuthStateChange = async (event: string, newSession: Session | null) => {
+      // Sincronizar el estado de sesión primero
+      setSession(newSession);
+      
+      if (newSession?.user && currentUserId.current !== newSession.user.id) {
+        currentUserId.current = newSession.user.id;
+        // Usar la versión con debounce para evitar llamadas rápidas
+        debouncedFetchUserData(newSession.user.id);
+      } else if (!newSession?.user) {
+        currentUserId.current = null;
+        setUser(null);
+        setFranchisee(null);
+        setRestaurants([]);
+        // Limpiar impersonación al cerrar sesión
+        setImpersonatedFranchisee(null);
+        sessionStorage.removeItem('impersonatedFranchisee');
+        setLoading(false);
+      }
+    };
+
+    // Configurar listener de cambios de estado
+    const setupAuthListener = () => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+      authSubscription = subscription;
+      return subscription;
+    };
+
+    // Verificar sesión inicial
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        
+        if (initialSession) {
+          await handleAuthStateChange('INITIAL_SESSION', initialSession);
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error in initialization:', error);
+        setLoading(false);
+      }
+    };
+
+    // Configurar listener primero, luego verificar sesión inicial
+    setupAuthListener();
+    initializeAuth();
+
+    // Cleanup
+    return () => {
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+    };
+  }, [debouncedFetchUserData]);
+
+  // Efecto separado para manejar el loading después de fetch de datos
+  useEffect(() => {
+    if (user !== null || (!session && !loading)) {
+      setLoading(false);
+    }
+  }, [user, session, loading]);
+
+  // Acciones de autenticación
+  const signIn = useCallback(async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        console.error('Sign in error:', error);
+        toast.error(error.message);
+        return { error: error.message };
+      }
+      
+      toast.success('Sesión iniciada correctamente');
+      return {};
+    } catch (error: any) {
+      console.error('Unexpected sign in error:', error);
+      toast.error('Error inesperado al iniciar sesión');
+      return { error: 'Error inesperado al iniciar sesión' };
+    }
+  }, []);
+
+  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+      
+      if (error) {
+        console.error('Sign up error:', error);
+        toast.error(error.message);
+        return { error: error.message };
+      }
+      
+      toast.success('Cuenta creada. Revisa tu email para confirmar.');
+      return {};
+    } catch (error: any) {
+      console.error('Unexpected sign up error:', error);
+      toast.error('Error inesperado al registrarse');
+      return { error: 'Error inesperado al registrarse' };
+    }
+  }, []);
+
+  const signOut = useCallback(async () => {
+    try {
+      // Limpiar impersonación
+      if (isImpersonating) {
+        setImpersonatedFranchisee(null);
+        sessionStorage.removeItem('impersonatedFranchisee');
+      }
+      
+      const { error } = await supabase.auth.signOut();
+      if (error && !error.message.includes('Session not found')) {
+        console.error('Sign out error:', error);
+        toast.error(error.message);
+      } else {
+        toast.success('Sesión cerrada correctamente');
+      }
+    } catch (error: any) {
+      console.error('Unexpected sign out error:', error);
+      toast.error('Error al cerrar sesión');
+    }
+  }, [isImpersonating]);
+
+  // Acciones de impersonación
+  const startImpersonation = useCallback((franchisee: Franchisee) => {
+    setImpersonatedFranchisee(franchisee);
+    sessionStorage.setItem('impersonatedFranchisee', JSON.stringify(franchisee));
+    toast.success(`Impersonando a ${franchisee.franchisee_name}`);
+  }, []);
+
+  const stopImpersonation = useCallback(() => {
+    setImpersonatedFranchisee(null);
+    sessionStorage.removeItem('impersonatedFranchisee');
+    toast.success('Impersonación terminada');
+  }, []);
+
+  // Refetch manual de datos
+  const refetchUserData = useCallback(async () => {
+    if (currentUserId.current) {
+      await fetchUserData(currentUserId.current);
+    }
+  }, [fetchUserData]);
+
+  const getDebugInfo = useCallback(() => ({
+    user: user ? { id: user.id, email: user.email, role: user.role } : null,
+    session: session ? { access_token: session.access_token ? 'present' : 'missing' } : null,
+    franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
+    loading,
+    authInitialized: !!session,
+    sessionExists: !!session?.access_token
+  }), [user, session, franchisee, loading]);
+
   const value: AuthContextType = {
-    user: auth.user,
-    loading: auth.loading,
-    signIn: async (email: string, password: string) => {
-      const result = await auth.signIn(email, password);
-      return { data: result.error ? null : auth.user, error: result.error };
-    },
-    signOut: async () => {
-      await auth.signOut();
-      return { error: null };
-    },
-    signUp: async (email: string, password: string, fullName: string) => {
-      const result = await auth.signUp(email, password, fullName);
-      return { data: result.error ? null : auth.user, error: result.error };
-    },
-    getDebugInfo: () => ({
-      user: auth.user ? { id: auth.user.id, email: auth.user.email } : null,
-      loading: auth.loading,
-      timestamp: new Date().toISOString()
-    }),
-    // Campos adicionales para compatibilidad
-    franchisee: null,
-    restaurants: [],
+    // Estados principales
+    user,
+    session,
+    franchisee,
+    restaurants,
+    loading,
     connectionStatus: 'online',
-    effectiveFranchisee: null,
-    isImpersonating: false,
-    impersonatedFranchisee: null,
-    startImpersonation: async () => {},
-    stopImpersonation: () => {},
+    
+    // Impersonación
+    isImpersonating,
+    impersonatedFranchisee,
+    effectiveFranchisee,
+    
+    // Acciones
+    signIn,
+    signUp,
+    signOut,
+    startImpersonation,
+    stopImpersonation,
+    
+    // Utilidades
+    refetchUserData,
+    getDebugInfo
   };
 
   return (
@@ -56,5 +507,5 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Export para mantener compatibilidad
-export { useAuthLegacy as useAuth };
+// Export legacy hooks para mantener compatibilidad
+export const useUnifiedAuth = useAuth;

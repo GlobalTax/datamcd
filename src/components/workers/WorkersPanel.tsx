@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { useWorkersPanel } from '@/hooks/useWorkersPanel';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
-import { useFranchiseeContext } from '@/contexts/FranchiseeContext';
 import { WorkersTable } from './WorkersTable';
 import { WorkersStats } from './WorkersStats';
 import { BiloopEmployeeForm } from './BiloopEmployeeForm';
@@ -23,10 +22,7 @@ import { A3TransformDialog } from './A3TransformDialog';
 
 export const WorkersPanel: React.FC = () => {
   const { effectiveFranchisee } = useUnifiedAuth();
-  const { selectedFranchisee } = useFranchiseeContext();
-  
-  // Usar el franquiciado seleccionado del contexto, o el efectivo del usuario
-  const franchiseeId = selectedFranchisee?.id || effectiveFranchisee?.id;
+  const franchiseeId = effectiveFranchisee?.id;
   
   const {
     workers,
@@ -92,10 +88,7 @@ export const WorkersPanel: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Panel de Trabajadores</h1>
           <p className="text-muted-foreground">
-            {selectedFranchisee 
-              ? `Trabajadores de ${selectedFranchisee.franchisee_name}` 
-              : 'Gestión unificada de empleados desde Orquest y Biloop'
-            }
+            Gestión unificada de empleados desde Orquest y Biloop
           </p>
         </div>
         <div className="flex gap-2">

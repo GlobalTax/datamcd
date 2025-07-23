@@ -1,151 +1,30 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { handleCorsPreflightRequest, createCorsResponse } from '../_shared/cors.ts';
-import { edgeLogger } from '../_shared/edgeLogger.ts';
 
-// Rate Limiting para Edge Functions
-interface RateLimitConfig {
-  windowMs: number;
-  maxRequests: number;
-  blockDuration: number;
-}
-
-const RATE_LIMIT_CONFIG: RateLimitConfig = {
-  windowMs: 1 * 60 * 1000, // 1 minuto
-  maxRequests: 30, // 30 requests por minuto
-  blockDuration: 5 * 60 * 1000 // 5 minutos de bloqueo
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Store en memoria para rate limiting
-const rateLimitStore = new Map<string, { count: number; resetTime: number; blocked?: number }>();
-
-function getClientIP(request: Request): string {
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  const realIP = request.headers.get('x-real-ip');
-  const cfConnectingIP = request.headers.get('cf-connecting-ip');
-  
-  if (cfConnectingIP) return cfConnectingIP;
-  if (realIP) return realIP;
-  if (forwardedFor) return forwardedFor.split(',')[0].trim();
-  
-  return 'unknown';
-}
-
-function checkRateLimit(ip: string): { allowed: boolean; response?: Response } {
-  const now = Date.now();
-  const key = `biloop:${ip}`;
-  const record = rateLimitStore.get(key);
-  
-  // Verificar si está bloqueado
-  if (record?.blocked && record.blocked > now) {
-    return {
-      allowed: false,
-      response: new Response(
-        JSON.stringify({
-          error: 'IP temporarily blocked',
-          message: 'Too many requests. Please wait before trying again.',
-          retryAfter: Math.ceil((record.blocked - now) / 1000)
-        }),
-        {
-          status: 429,
-          headers: {
-            'Content-Type': 'application/json',
-            'Retry-After': Math.ceil((record.blocked - now) / 1000).toString(),
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-          }
-        }
-      )
-    };
-  }
-  
-  // Crear nueva ventana o verificar límite actual
-  if (!record || record.resetTime < now) {
-    rateLimitStore.set(key, { count: 1, resetTime: now + RATE_LIMIT_CONFIG.windowMs });
-    return { allowed: true };
-  }
-  
-  if (record.count >= RATE_LIMIT_CONFIG.maxRequests) {
-    // Bloquear IP
-    record.blocked = now + RATE_LIMIT_CONFIG.blockDuration;
-    rateLimitStore.set(key, record);
-    
-    console.warn(`🚨 RATE LIMIT: IP ${ip} blocked for ${RATE_LIMIT_CONFIG.blockDuration}ms`);
-    
-    return {
-      allowed: false,
-      response: new Response(
-        JSON.stringify({
-          error: 'Rate limit exceeded',
-          message: 'Too many requests. IP temporarily blocked.',
-          retryAfter: Math.ceil(RATE_LIMIT_CONFIG.blockDuration / 1000)
-        }),
-        {
-          status: 429,
-          headers: {
-            'Content-Type': 'application/json',
-            'Retry-After': Math.ceil(RATE_LIMIT_CONFIG.blockDuration / 1000).toString(),
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-          }
-        }
-      )
-    };
-  }
-  
-  // Incrementar contador
-  record.count++;
-  rateLimitStore.set(key, record);
-  
-  return { allowed: true };
-}
-
 serve(async (req) => {
-  const origin = req.headers.get('origin');
-  const requestId = `biloop_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const startTime = Date.now();
-  const clientIP = getClientIP(req);
-  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return handleCorsPreflightRequest(origin);
+    return new Response(null, { headers: corsHeaders });
   }
-
-  // Aplicar rate limiting
-  const rateLimitResult = checkRateLimit(clientIP);
-  if (!rateLimitResult.allowed) {
-    edgeLogger.warn('Rate limit exceeded', {
-      functionName: 'biloop-integration',
-      requestId,
-      ip: clientIP,
-      method: req.method
-    });
-    return rateLimitResult.response!;
-  }
-
-  const context = {
-    functionName: 'biloop-integration',
-    requestId,
-    method: req.method,
-    path: new URL(req.url).pathname
-  };
 
   try {
-    edgeLogger.info('Biloop integration request started', context);
-
     const { endpoint, method = 'GET', body, params } = await req.json();
 
-    // Get Biloop credentials from environment
+    // Get Biloop credentials from environment with better error handling
     const baseUrl = Deno.env.get('BILOOP_BASEURL');
     const subscriptionKey = Deno.env.get('BILOOP_SUBSCRIPTION_KEY');
     const user = Deno.env.get('BILOOP_USER');
     const password = Deno.env.get('BILOOP_PASSWORD');
     let token = Deno.env.get('BILOOP_TOKEN');
 
-    // Validate required credentials (sin logear los valores)
+    // Validate required credentials
     if (!baseUrl || !subscriptionKey || !user || !password) {
-      edgeLogger.error('Missing Biloop credentials', { ...context, status: 401 }, {
+      console.error('Missing Biloop credentials:', { 
         hasBaseUrl: !!baseUrl, 
         hasSubscriptionKey: !!subscriptionKey, 
         hasUser: !!user, 
@@ -154,16 +33,13 @@ serve(async (req) => {
       throw new Error('Missing required Biloop credentials');
     }
 
-    edgeLogger.info('Biloop integration processing', context, { 
-      endpoint,
-      method,
-      hasParams: !!params 
-    });
+    console.log('Biloop integration called for endpoint:', endpoint);
+    console.log('Using base URL:', baseUrl);
 
-    // Function to get a fresh token
+    // Function to get a fresh token with better error handling
     async function getToken() {
       try {
-        edgeLogger.debug('Requesting fresh token', context);
+        console.log('Attempting to get token from:', `${baseUrl}/api-global/v1/token`);
         
         const tokenResponse = await fetch(`${baseUrl}/api-global/v1/token`, {
           method: 'POST',
@@ -176,26 +52,23 @@ serve(async (req) => {
           body: JSON.stringify({})
         });
 
-        edgeLogger.info('Token request completed', context, { 
-          status: tokenResponse.status,
-          ok: tokenResponse.ok 
-        });
+        console.log('Token request status:', tokenResponse.status);
         
         if (!tokenResponse.ok) {
           const errorText = await tokenResponse.text();
-          edgeLogger.error('Token request failed', context, {
+          console.error('Token request failed:', {
             status: tokenResponse.status,
             statusText: tokenResponse.statusText,
-            hasErrorResponse: !!errorText
+            response: errorText
           });
-          throw new Error(`Token request failed: ${tokenResponse.status}`);
+          throw new Error(`Token request failed: ${tokenResponse.status} - ${errorText}`);
         }
 
         const tokenData = await tokenResponse.json();
-        edgeLogger.info('Token received successfully', context);
+        console.log('Token received successfully');
         return tokenData.token || tokenData;
       } catch (error) {
-        edgeLogger.error('Error getting token', context, error);
+        console.error('Error getting token:', error);
         if (error instanceof TypeError && error.message.includes('fetch')) {
           throw new Error('Network error: Cannot connect to Biloop API. Check connectivity and URL.');
         }
@@ -203,9 +76,9 @@ serve(async (req) => {
       }
     }
 
-    // Get fresh token if not provided
+    // Get fresh token if not provided or if request fails with current token
     if (!token) {
-      edgeLogger.debug('No token found, getting fresh token', context);
+      console.log('No token found, getting fresh token...');
       token = await getToken();
     }
 
@@ -216,14 +89,11 @@ serve(async (req) => {
       url += `?${urlParams.toString()}`;
     }
     
-    edgeLogger.info('Making request to Biloop API', context, { 
-      hasBody: !!body,
-      hasParams: !!params 
-    });
+    console.log('Making request to:', url);
 
     // Make request to Biloop API with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     try {
       const biloopResponse = await fetch(url, {
@@ -240,18 +110,11 @@ serve(async (req) => {
       });
 
       clearTimeout(timeoutId);
-      
-      context.status = biloopResponse.status;
-      context.duration = Date.now() - startTime;
-      
-      edgeLogger.info('Biloop API response received', context, { 
-        status: biloopResponse.status,
-        ok: biloopResponse.ok 
-      });
+      console.log('Response status:', biloopResponse.status);
 
       // If unauthorized, try with a fresh token
       if (biloopResponse.status === 401 || biloopResponse.status === 403) {
-        edgeLogger.warn('Token expired, getting fresh token', context);
+        console.log('Token expired, getting fresh token...');
         token = await getToken();
         
         const retryResponse = await fetch(url, {
@@ -266,42 +129,41 @@ serve(async (req) => {
           body: body ? JSON.stringify(body) : undefined,
         });
 
-        context.status = retryResponse.status;
-        context.duration = Date.now() - startTime;
-
         if (!retryResponse.ok) {
-          edgeLogger.error('Retry request failed', context);
-          throw new Error(`Biloop API error: ${retryResponse.status} ${retryResponse.statusText}`);
+          const errorText = await retryResponse.text();
+          console.error('Retry request failed:', errorText);
+          throw new Error(`Biloop API error: ${retryResponse.status} ${retryResponse.statusText} - ${errorText}`);
         }
 
         const data = await retryResponse.json();
-        edgeLogger.info('Retry request successful', context);
-        return createCorsResponse(data, origin);
+        console.log('Retry request successful');
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       if (!biloopResponse.ok) {
-        edgeLogger.error('API request failed', context);
-        throw new Error(`Biloop API error: ${biloopResponse.status} ${biloopResponse.statusText}`);
+        const errorText = await biloopResponse.text();
+        console.error('API request failed:', errorText);
+        throw new Error(`Biloop API error: ${biloopResponse.status} ${biloopResponse.statusText} - ${errorText}`);
       }
 
       const data = await biloopResponse.json();
-      edgeLogger.info('Biloop API response processed successfully', context);
+      console.log('Biloop API response received successfully');
 
-      return createCorsResponse(data, origin);
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     } catch (fetchError) {
       clearTimeout(timeoutId);
       if (fetchError.name === 'AbortError') {
-        context.status = 504;
         throw new Error('Request timeout: Biloop API did not respond within 30 seconds');
       }
       throw fetchError;
     }
 
   } catch (error) {
-    context.status = context.status || 500;
-    context.duration = Date.now() - startTime;
-    
-    edgeLogger.error('Error in biloop-integration function', context, error);
+    console.error('Error in biloop-integration function:', error);
     
     // Provide more specific error information
     let errorMessage = error.message || 'Unknown error';
@@ -318,10 +180,16 @@ serve(async (req) => {
       errorMessage = 'Authentication error: Invalid Biloop credentials';
     }
     
-    return createCorsResponse({
-      error: errorMessage,
-      details: 'Biloop integration error',
-      timestamp: new Date().toISOString()
-    }, origin, {}, statusCode);
+    return new Response(
+      JSON.stringify({ 
+        error: errorMessage,
+        details: 'Biloop integration error',
+        timestamp: new Date().toISOString()
+      }), 
+      {
+        status: statusCode,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });

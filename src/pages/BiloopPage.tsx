@@ -1,86 +1,199 @@
-
-import React from 'react';
-import { StandardLayout } from '@/components/layout/StandardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, TrendingUp, Clock, Download } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Building2, FileText, Users, Package, TestTube } from 'lucide-react';
+import { useBiloop, BiloopCompany, BiloopInvoice, BiloopCustomer } from '@/hooks/useBiloop';
+import { useToast } from '@/hooks/use-toast';
 
-const BiloopPage: React.FC = () => {
+const BiloopPage = () => {
+  const [companies, setCompanies] = useState<BiloopCompany[]>([]);
+  const [invoices, setInvoices] = useState<BiloopInvoice[]>([]);
+  const [customers, setCustomers] = useState<BiloopCustomer[]>([]);
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<string>('');
+  
+  const { 
+    loading, 
+    getCompanies, 
+    getInvoices, 
+    getCustomers, 
+    getInventory, 
+    testConnection 
+  } = useBiloop();
+  
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadCompanies();
+  }, []);
+
+  const loadCompanies = async () => {
+    try {
+      const data = await getCompanies();
+      setCompanies(data);
+      if (data.length > 0) {
+        setSelectedCompany(data[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading companies:', error);
+    }
+  };
+
+  const loadInvoices = async () => {
+    try {
+      const data = await getInvoices(selectedCompany);
+      setInvoices(data);
+    } catch (error) {
+      console.error('Error loading invoices:', error);
+    }
+  };
+
+  const loadCustomers = async () => {
+    try {
+      const data = await getCustomers(selectedCompany);
+      setCustomers(data);
+    } catch (error) {
+      console.error('Error loading customers:', error);
+    }
+  };
+
+  const loadInventory = async () => {
+    try {
+      const data = await getInventory(selectedCompany);
+      setInventory(data);
+    } catch (error) {
+      console.error('Error loading inventory:', error);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    await testConnection();
+  };
+
   return (
-    <StandardLayout
-      title="Biloop Integration"
-      description="Datos de POS y análisis de ventas desde Biloop"
-    >
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ventas Hoy</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">€24,580</div>
-              <p className="text-xs text-muted-foreground">Todas las ubicaciones</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Transacciones</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">1,247</div>
-              <p className="text-xs text-muted-foreground">+8.3% vs ayer</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ticket Promedio</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">€19.70</div>
-              <p className="text-xs text-muted-foreground">+€1.20 vs ayer</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Última Sync</CardTitle>
-              <Clock className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">14:32</div>
-              <p className="text-xs text-muted-foreground">Hace 3 minutos</p>
-            </CardContent>
-          </Card>
+    <div className="container mx-auto py-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Integración Biloop</h1>
+          <p className="text-muted-foreground">
+            Gestiona tu contabilidad y facturación desde Biloop
+          </p>
         </div>
+        <Button onClick={handleTestConnection} disabled={loading}>
+          <TestTube className="mr-2 h-4 w-4" />
+          Probar conexión
+        </Button>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Company Selector */}
+      {companies.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Empresas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {companies.map((company) => (
+                <Badge
+                  key={company.id}
+                  variant={selectedCompany === company.id ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => setSelectedCompany(company.id)}
+                >
+                  {company.name} ({company.taxId})
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Tabs defaultValue="companies" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="companies">Empresas</TabsTrigger>
+          <TabsTrigger value="invoices">Facturas</TabsTrigger>
+          <TabsTrigger value="customers">Clientes</TabsTrigger>
+          <TabsTrigger value="inventory">Inventario</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="companies" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Ventas por Restaurante</span>
-                <Badge variant="outline">Hoy</Badge>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Empresas ({companies.length})
               </CardTitle>
+              <CardDescription>
+                Lista de empresas disponibles en Biloop
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map((restaurant) => (
-                  <div key={restaurant} className="flex items-center justify-between p-3 border rounded-lg">
+              {loading && (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              )}
+              <div className="grid gap-4">
+                {companies.map((company) => (
+                  <div
+                    key={company.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div>
-                      <p className="font-medium">Restaurante Madrid Centro #{restaurant}</p>
+                      <h3 className="font-semibold">{company.name}</h3>
+                      <p className="text-sm text-muted-foreground">CIF: {company.taxId}</p>
+                      {company.email && (
+                        <p className="text-sm text-muted-foreground">{company.email}</p>
+                      )}
+                    </div>
+                    <Badge variant="secondary">{company.id}</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="invoices" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Facturas ({invoices.length})
+              </CardTitle>
+              <CardDescription>
+                Facturas de la empresa seleccionada
+              </CardDescription>
+              <Button onClick={loadInvoices} disabled={loading || !selectedCompany}>
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Cargar facturas
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                {invoices.map((invoice) => (
+                  <div
+                    key={invoice.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div>
+                      <h3 className="font-semibold">Factura {invoice.number}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {180 + restaurant * 25} transacciones
+                        Fecha: {new Date(invoice.date).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Cliente: {invoice.companyName}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">€{(4500 + restaurant * 800).toLocaleString()}</p>
-                      <Badge variant="outline" className="text-green-600">
-                        +{restaurant + 5}%
+                      <p className="font-semibold">{invoice.total}€</p>
+                      <Badge variant={invoice.status === 'paid' ? 'default' : 'secondary'}>
+                        {invoice.status}
                       </Badge>
                     </div>
                   </div>
@@ -88,42 +201,95 @@ const BiloopPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          
+        </TabsContent>
+
+        <TabsContent value="customers" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Productos Más Vendidos</span>
-                <Button variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  Reporte
-                </Button>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Clientes ({customers.length})
               </CardTitle>
+              <CardDescription>
+                Clientes de la empresa seleccionada
+              </CardDescription>
+              <Button onClick={loadCustomers} disabled={loading || !selectedCompany}>
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Cargar clientes
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {[
-                  { name: 'Big Mac', sales: '€12,450', units: '1,247' },
-                  { name: 'Papas Grandes', sales: '€8,920', units: '892' },
-                  { name: 'Coca-Cola', sales: '€6,780', units: '1,356' },
-                  { name: 'McNuggets', sales: '€5,340', units: '534' },
-                  { name: 'Quarter Pounder', sales: '€4,890', units: '326' },
-                ].map((product) => (
-                  <div key={product.name} className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="grid gap-4">
+                {customers.map((customer) => (
+                  <div
+                    key={customer.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div>
-                      <p className="font-medium">{product.name}</p>
-                      <p className="text-sm text-muted-foreground">{product.units} unidades</p>
+                      <h3 className="font-semibold">{customer.name}</h3>
+                      <p className="text-sm text-muted-foreground">CIF: {customer.taxId}</p>
+                      {customer.email && (
+                        <p className="text-sm text-muted-foreground">{customer.email}</p>
+                      )}
+                      {customer.phone && (
+                        <p className="text-sm text-muted-foreground">{customer.phone}</p>
+                      )}
+                    </div>
+                    <Badge variant="outline">{customer.id}</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="inventory" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Inventario ({inventory.length})
+              </CardTitle>
+              <CardDescription>
+                Productos e inventario de la empresa seleccionada
+              </CardDescription>
+              <Button onClick={loadInventory} disabled={loading || !selectedCompany}>
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Cargar inventario
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                {inventory.map((item, index) => (
+                  <div
+                    key={item.id || index}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div>
+                      <h3 className="font-semibold">{item.name || item.description || `Artículo ${index + 1}`}</h3>
+                      {item.code && (
+                        <p className="text-sm text-muted-foreground">Código: {item.code}</p>
+                      )}
+                      {item.category && (
+                        <p className="text-sm text-muted-foreground">Categoría: {item.category}</p>
+                      )}
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">{product.sales}</p>
+                      {item.quantity !== undefined && (
+                        <p className="font-semibold">Stock: {item.quantity}</p>
+                      )}
+                      {item.price && (
+                        <p className="text-sm text-muted-foreground">{item.price}€</p>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
-        </div>
-      </div>
-    </StandardLayout>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 

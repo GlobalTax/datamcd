@@ -64,19 +64,14 @@ export interface FranchiseeStaff {
 
 export interface AuthContextType {
   user: User | null;
+  session?: any;
   franchisee?: Franchisee | null;
   restaurants?: Restaurant[];
   loading: boolean;
   connectionStatus?: 'online' | 'offline' | 'reconnecting';
   effectiveFranchisee?: Franchisee | null;
-  isImpersonating?: boolean;
-  impersonatedFranchisee?: Franchisee | null;
-  startImpersonation?: (franchiseeId: string) => Promise<void>;
-  stopImpersonation?: () => void;
-  signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
-  signOut: () => Promise<{ error: any }>;
-  signUp?: (email: string, password: string, fullName: string) => Promise<{ data: any; error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signOut: () => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   getDebugInfo?: () => any;
 }
-
-export type AuthUser = User;

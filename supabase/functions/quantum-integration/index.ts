@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
-import { handleCorsPreflightRequest, createCorsResponse } from '../_shared/cors.ts';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 interface QuantumAccount {
   codigo: string;
@@ -26,10 +30,8 @@ interface SyncRequest {
 }
 
 serve(async (req) => {
-  const origin = req.headers.get('origin');
-  
   if (req.method === 'OPTIONS') {
-    return handleCorsPreflightRequest(origin);
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -251,21 +253,26 @@ serve(async (req) => {
 
     console.log(`Sync completed successfully. Processed: ${processedCount}, Imported: ${importedCount}, Skipped: ${skippedCount}`);
 
-    return createCorsResponse({
+    return new Response(JSON.stringify({
       success: true,
       sync_id: syncLog.id,
       records_processed: processedCount,
       records_imported: importedCount,
       records_skipped: skippedCount,
       message: 'Synchronization completed successfully'
-    }, origin);
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
 
   } catch (error) {
     console.error('Error in quantum-integration function:', error);
     
-    return createCorsResponse({
+    return new Response(JSON.stringify({
       success: false,
       error: error.message
-    }, origin, {}, 500);
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 });

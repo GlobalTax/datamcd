@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
 import { toast } from 'sonner';
 
@@ -25,20 +25,16 @@ export const useOptimizedFranchiseeRestaurants = () => {
         return;
       }
 
-      // Solo ejecutar para usuarios franchisee
       if (user.role !== 'franchisee') {
-        console.log('useOptimizedFranchiseeRestaurants - User is not franchisee, skipping fetch', {
-          userRole: user.role,
-          userId: user.id
-        });
+        console.log('useOptimizedFranchiseeRestaurants - User is not franchisee, role:', user.role);
         setRestaurants([]);
-        setError(null);
+        setError('Usuario no es franquiciado');
         setLoading(false);
         return;
       }
 
       if (!franchisee) {
-        console.log('useOptimizedFranchiseeRestaurants - No franchisee data found for franchisee user');
+        console.log('useOptimizedFranchiseeRestaurants - No franchisee data found for user');
         setRestaurants([]);
         setError('No se encontró información del franquiciado');
         setLoading(false);
@@ -138,13 +134,9 @@ export const useOptimizedFranchiseeRestaurants = () => {
   };
 
   useEffect(() => {
-    console.log('useOptimizedFranchiseeRestaurants - useEffect triggered', {
-      userId: user?.id,
-      userRole: user?.role,
-      franchiseeId: franchisee?.id
-    });
+    console.log('useOptimizedFranchiseeRestaurants - useEffect triggered');
     fetchOptimizedRestaurants();
-  }, [user?.id, user?.role, franchisee?.id]);
+  }, [user?.id, franchisee?.id]);
 
   return {
     restaurants,

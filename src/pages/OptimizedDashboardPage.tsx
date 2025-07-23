@@ -61,20 +61,22 @@ const OptimizedDashboardPage = () => {
   // Transformar datos para el componente
   const displayRestaurants: DisplayRestaurant[] = restaurants.map(r => ({
     id: r.id || `restaurant-${Math.random()}`,
-    name: r.restaurant_name || 'Restaurante',
-    restaurant_name: r.restaurant_name || 'Restaurante',
-    location: `${r.city || 'Ciudad'}, ${r.address || 'Dirección'}`,
-    city: r.city || 'Ciudad',
-    address: r.address || 'Dirección',
-    siteNumber: r.site_number || 'N/A',
-    site_number: r.site_number || 'N/A',
+    name: r.base_restaurant?.restaurant_name || 'Restaurante',
+    restaurant_name: r.base_restaurant?.restaurant_name || 'Restaurante',
+    location: r.base_restaurant ? 
+      `${r.base_restaurant.city || 'Ciudad'}, ${r.base_restaurant.address || 'Dirección'}` : 
+      'Ubicación',
+    city: r.base_restaurant?.city || 'Ciudad',
+    address: r.base_restaurant?.address || 'Dirección',
+    siteNumber: r.base_restaurant?.site_number || 'N/A',
+    site_number: r.base_restaurant?.site_number || 'N/A',
     franchiseeName: effectiveFranchisee?.franchisee_name || 'Franquiciado',
-    franchise_start_date: r.opening_date,
-    franchise_end_date: undefined,
-    restaurant_type: r.restaurant_type || 'traditional',
+    franchise_start_date: r.franchise_start_date,
+    franchise_end_date: r.franchise_end_date,
+    restaurant_type: r.base_restaurant?.restaurant_type || 'traditional',
     status: r.status || 'active',
-    lastYearRevenue: 0,
-    baseRent: 0,
+    lastYearRevenue: typeof r.last_year_revenue === 'number' ? r.last_year_revenue : 0,
+    baseRent: typeof r.monthly_rent === 'number' ? r.monthly_rent : 0,
     isOwnedByMcD: false,
   }));
 

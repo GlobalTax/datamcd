@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -7,10 +6,9 @@ import { useImpersonation } from '@/hooks/useImpersonation';
 import { useNavigate } from 'react-router-dom';
 
 export const ImpersonationBanner: React.FC = () => {
-  const navigate = useNavigate();
-
   try {
     const { isImpersonating, impersonatedFranchisee, stopImpersonation } = useImpersonation();
+    const navigate = useNavigate();
 
     if (!isImpersonating || !impersonatedFranchisee) {
       return null;
@@ -18,7 +16,7 @@ export const ImpersonationBanner: React.FC = () => {
 
     const handleStopImpersonation = () => {
       stopImpersonation();
-      navigate('/dashboard');
+      navigate('/advisor');
     };
 
     return (
@@ -46,8 +44,7 @@ export const ImpersonationBanner: React.FC = () => {
       </Alert>
     );
   } catch (error) {
-    // Si el hook no está disponible, no mostrar el banner
-    console.warn('ImpersonationBanner: Provider not available');
+    console.error('ImpersonationBanner error:', error);
     return null;
   }
 };

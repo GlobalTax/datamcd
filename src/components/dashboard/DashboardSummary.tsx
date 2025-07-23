@@ -1,9 +1,8 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, TrendingUp, DollarSign, Calendar, AlertTriangle, RefreshCw, Users } from 'lucide-react';
+import { Building2, TrendingUp, DollarSign, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 
 interface DashboardSummaryProps {
   totalRestaurants: number;
@@ -16,45 +15,47 @@ export const DashboardSummary = ({
   displayRestaurants, 
   isTemporaryData = false 
 }: DashboardSummaryProps) => {
-  const { user, effectiveFranchisee } = useUnifiedAuth();
+  console.log('DashboardSummary - Props:', {
+    totalRestaurants,
+    restaurantsCount: displayRestaurants?.length || 0,
+    isTemporaryData
+  });
 
-  // Validar y filtrar restaurantes seguros
-  const safeRestaurants = Array.isArray(displayRestaurants) ? 
-    displayRestaurants.filter(r => r && typeof r === 'object') : [];
-  const safeTotalRestaurants = typeof totalRestaurants === 'number' && totalRestaurants >= 0 ? 
-    totalRestaurants : 0;
+  // Verificación exhaustiva de datos
+  const safeRestaurants = Array.isArray(displayRestaurants) ? displayRestaurants.filter(r => r && typeof r === 'object') : [];
+  const safeTotalRestaurants = typeof totalRestaurants === 'number' ? totalRestaurants : 0;
   
-  const isAdvisor = user?.role === 'asesor' || user?.role === 'admin' || user?.role === 'superadmin';
-  
-  // Calcular métricas de forma segura
+  // Calcular métricas con verificaciones adicionales
   const activeRestaurants = safeRestaurants.filter(r => {
     try {
       return r?.status === 'active' || !r?.status;
-    } catch {
+    } catch (error) {
+      console.warn('DashboardSummary - Error filtering restaurant:', error);
       return false;
     }
   }).length;
   
   const totalRevenue = safeRestaurants.reduce((sum, r) => {
     try {
-      const revenue = Number(r?.lastYearRevenue) || 0;
-      return sum + (isNaN(revenue) ? 0 : revenue);
-    } catch {
+      const revenue = r?.lastYearRevenue;
+      if (typeof revenue === 'number' && !isNaN(revenue)) {
+        return sum + revenue;
+      }
+      return sum;
+    } catch (error) {
+      console.warn('DashboardSummary - Error calculating revenue:', error);
       return sum;
     }
   }, 0);
   
   const avgRevenue = safeTotalRestaurants > 0 ? totalRevenue / safeTotalRestaurants : 0;
 
-  // Contar franquiciados únicos (solo para asesores)
-  const uniqueFranchisees = isAdvisor ? 
-    new Set(safeRestaurants.filter(r => r?.franchiseeName).map(r => r.franchiseeName)).size : 0;
-
   const handleRefresh = () => {
+    console.log('DashboardSummary - Refreshing page');
     try {
       window.location.reload();
     } catch (error) {
-      console.error('Error refreshing page:', error);
+      console.error('DashboardSummary - Error refreshing page:', error);
     }
   };
 
@@ -90,9 +91,7 @@ export const DashboardSummary = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {isAdvisor ? 'Total Restaurantes' : 'Mis Restaurantes'}
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Restaurantes Totales</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -135,91 +134,57 @@ export const DashboardSummary = ({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {isAdvisor ? 'Franquiciados' : 'Estado'}
-            </CardTitle>
-            {isAdvisor ? <Users className="h-4 w-4 text-muted-foreground" /> : <Calendar className="h-4 w-4 text-muted-foreground" />}
+            <CardTitle className="text-sm font-medium">Estado</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${isAdvisor ? 'text-blue-600' : (isTemporaryData ? 'text-orange-600' : 'text-green-600')}`}>
-              {isAdvisor ? uniqueFranchisees : (isTemporaryData ? 'Temporal' : 'Activo')}
+            <div className={`text-2xl font-bold ${isTemporaryData ? 'text-orange-600' : 'text-green-600'}`}>
+              {isTemporaryData ? 'Temporal' : 'Activo'}
             </div>
             <p className="text-xs text-muted-foreground">
-              {isAdvisor ? 'Activos en sistema' : (isTemporaryData ? 'Datos sin conexión' : 'Sistema operativo')}
+              {isTemporaryData ? 'Datos sin conexión' : 'Todos los sistemas operativos'}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Información del franquiciado actual */}
-      {!isAdvisor && effectiveFranchisee && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Mi Información</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div>
-                <p className="text-sm font-medium text-gray-900">{effectiveFranchisee.franchisee_name}</p>
-                {effectiveFranchisee.company_name && (
-                  <p className="text-sm text-gray-600">{effectiveFranchisee.company_name}</p>
-                )}
-              </div>
-              <div className="flex items-center gap-4 text-sm text-gray-600">
-                <span>Restaurantes asignados: {safeTotalRestaurants}</span>
-                <span>•</span>
-                <span>Activos: {activeRestaurants}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Lista de restaurantes */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            {isAdvisor ? 'Todos los Restaurantes' : 'Mis Restaurantes'}
-          </CardTitle>
+          <CardTitle>Mis Restaurantes</CardTitle>
         </CardHeader>
         <CardContent>
           {safeTotalRestaurants === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No hay restaurantes {isAdvisor ? 'en el sistema' : 'asignados'}</p>
+              <p>No hay restaurantes asignados</p>
               <p className="text-sm">
                 {isTemporaryData 
-                  ? 'Reconecta para ver los restaurantes reales' 
-                  : (isAdvisor ? 'Los restaurantes aparecerán aquí cuando se agreguen al sistema' : 'Contacta con tu asesor para más información')
+                  ? 'Reconecta para ver tus restaurantes reales' 
+                  : 'Contacta con tu asesor para más información'
                 }
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {safeRestaurants.slice(0, 5).map((restaurant, index) => {
+              {safeRestaurants.map((restaurant, index) => {
+                // Verificación exhaustiva de cada restaurant
                 if (!restaurant || typeof restaurant !== 'object') {
+                  console.warn('DashboardSummary - Invalid restaurant at index:', index);
                   return null;
                 }
 
-                const restaurantId = restaurant.id || `restaurant-${index}`;
-                const restaurantName = restaurant.name || restaurant.restaurant_name || `Restaurante ${restaurant.site_number || index + 1}`;
-                const location = restaurant.location || `${restaurant.city || 'Ciudad'}`;
-                const siteNumber = restaurant.site_number || restaurant.siteNumber || 'N/A';
-                const revenue = Number(restaurant.lastYearRevenue) || 0;
+                const restaurantId = restaurant.id || `restaurant-${index}-${Date.now()}`;
+                const restaurantName = restaurant.name || restaurant.restaurant_name || `Restaurante ${restaurant.siteNumber || restaurant.site_number || index + 1}`;
+                const location = restaurant.location || `${restaurant.city || 'Ciudad'}, ${restaurant.address || 'Dirección'}`;
+                const siteNumber = restaurant.siteNumber || restaurant.site_number || 'N/A';
+                const revenue = typeof restaurant.lastYearRevenue === 'number' ? restaurant.lastYearRevenue : 0;
                 const status = restaurant.status || 'active';
-                const franchiseeName = restaurant.franchiseeName;
 
                 return (
                   <div key={restaurantId} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{restaurantName}</h3>
-                        {isAdvisor && franchiseeName && (
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                            {franchiseeName}
-                          </span>
-                        )}
-                      </div>
+                      <h3 className="font-semibold">{restaurantName}</h3>
                       <p className="text-sm text-muted-foreground">{location}</p>
                       <p className="text-xs text-muted-foreground">Site: {siteNumber}</p>
                     </div>
@@ -239,14 +204,6 @@ export const DashboardSummary = ({
                   </div>
                 );
               })}
-              
-              {safeRestaurants.length > 5 && (
-                <div className="text-center pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">
-                    +{safeRestaurants.length - 5} restaurantes más
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </CardContent>

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { ValuationBudget, ValuationBudgetFormData, ValuationBudgetUpdateData, ProjectedYear } from '@/types/budget';
 import { toast } from 'sonner';
 

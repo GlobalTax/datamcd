@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 
 export interface OrquestMeasureReceived {
   id: string;

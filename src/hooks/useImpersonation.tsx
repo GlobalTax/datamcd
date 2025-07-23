@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Franchisee } from '@/types/auth';
 
@@ -8,7 +7,6 @@ interface ImpersonationContextType {
   startImpersonation: (franchisee: Franchisee) => void;
   stopImpersonation: () => void;
   getEffectiveFranchisee: (userFranchisee?: Franchisee | null) => Franchisee | null;
-  effectiveFranchisee: Franchisee | null;
 }
 
 const ImpersonationContext = createContext<ImpersonationContextType | undefined>(undefined);
@@ -96,7 +94,6 @@ export const ImpersonationProvider: React.FC<ImpersonationProviderProps> = ({ ch
   };
 
   const isImpersonating = Boolean(impersonatedFranchisee);
-  const effectiveFranchisee = impersonatedFranchisee;
 
   const value = {
     impersonatedFranchisee,
@@ -104,7 +101,6 @@ export const ImpersonationProvider: React.FC<ImpersonationProviderProps> = ({ ch
     startImpersonation,
     stopImpersonation,
     getEffectiveFranchisee,
-    effectiveFranchisee,
   };
 
   return (

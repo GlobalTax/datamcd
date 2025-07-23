@@ -1,152 +1,178 @@
-
-import React from 'react';
-import { StandardLayout } from '@/components/layout/StandardLayout';
+import React, { useState } from 'react';
+import { AnnualBudgetGrid } from '@/components/budget/AnnualBudgetGrid';
+import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Building, Calendar, Plus, Download, FileText } from 'lucide-react';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/navigation/AppSidebar';
+import { BalanceSheetStatement } from '@/components/profitloss/BalanceSheetStatement';
+import { CashFlowStatement } from '@/components/profitloss/CashFlowStatement';
 
-const AnnualBudgetPage: React.FC = () => {
-  return (
-    <StandardLayout
-      title="Presupuestos Anuales"
-      description="Gestión y seguimiento de presupuestos anuales"
-    >
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Presupuesto 2024</CardTitle>
-              <Calendar className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">€12,450,000</div>
-              <p className="text-xs text-muted-foreground">Presupuesto aprobado</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ejecutado</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">€8,320,000</div>
-              <p className="text-xs text-muted-foreground">66.8% del presupuesto</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Desviación</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">+2.3%</div>
-              <p className="text-xs text-muted-foreground">vs presupuesto</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Estado</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">En Línea</div>
-              <p className="text-xs text-muted-foreground">Objetivos cumplidos</p>
-            </CardContent>
-          </Card>
+export default function AnnualBudgetPage() {
+  const { restaurants, loading: restaurantsLoading } = useFranchiseeRestaurants();
+  const [selectedRestaurant, setSelectedRestaurant] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [activeTab, setActiveTab] = useState('budget');
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+
+  if (restaurantsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando restaurantes...</p>
         </div>
+      </div>
+    );
+  }
 
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Resumen</TabsTrigger>
-            <TabsTrigger value="monthly">Mensual</TabsTrigger>
-            <TabsTrigger value="categories">Categorías</TabsTrigger>
-            <TabsTrigger value="restaurants">Por Restaurante</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="overview" className="space-y-4">
+  const selectedRestaurantData = restaurants.find(r => r.id === selectedRestaurant);
+
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gray-50">
+        <AppSidebar />
+        <SidebarInset className="flex-1">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-white px-6">
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex-1">
+              <h1 className="text-lg font-semibold text-gray-900">Estados Financieros</h1>
+              <p className="text-sm text-gray-500">
+                {selectedRestaurantData 
+                  ? `${selectedRestaurantData.base_restaurant?.restaurant_name} - #${selectedRestaurantData.base_restaurant?.site_number}`
+                  : 'Análisis completo de rentabilidad'
+                }
+              </p>
+            </div>
+          </header>
+
+          <main className="flex-1 p-6 space-y-6">
+            {/* Header Controls */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Estados Financieros</h1>
+                <p className="text-gray-600">Presupuestos y análisis completo</p>
+              </div>
+              <div className="flex gap-3">
+                <Select 
+                  value={selectedYear.toString()} 
+                  onValueChange={(value) => setSelectedYear(parseInt(value))}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Button variant="outline" className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Summary Report
+                </Button>
+                
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Download className="w-4 h-4" />
+                  Export
+                </Button>
+              </div>
+            </div>
+
+            {/* Restaurant Selector */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Resumen Anual 2024</span>
-                  <Badge variant="outline">Julio 2024</Badge>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="w-5 h-5" />
+                  Seleccionar Restaurante
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 flex items-center justify-center bg-muted rounded-lg">
-                  <p className="text-muted-foreground">Gráfico de resumen anual</p>
-                </div>
+                <Select value={selectedRestaurant} onValueChange={setSelectedRestaurant}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar restaurante" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {restaurants.map((restaurant) => (
+                      <SelectItem key={restaurant.id} value={restaurant.id}>
+                        {restaurant.base_restaurant?.restaurant_name || 'Sin nombre'} - 
+                        {restaurant.base_restaurant?.site_number || 'Sin número'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </CardContent>
             </Card>
-          </TabsContent>
-          
-          <TabsContent value="monthly" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Evolución Mensual</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center bg-muted rounded-lg">
-                  <p className="text-muted-foreground">Gráfico de evolución mensual</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="categories" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Análisis por Categorías</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {['Personal', 'Alquiler', 'Materias Primas', 'Marketing', 'Otros'].map((category) => (
-                    <div key={category} className="flex items-center justify-between p-3 border rounded-lg">
-                      <span className="font-medium">{category}</span>
-                      <div className="flex items-center gap-3">
-                        <div className="w-32 bg-muted rounded-full h-2">
-                          <div className="bg-blue-600 h-2 rounded-full" style={{ width: '65%' }}></div>
-                        </div>
-                        <span className="text-sm text-muted-foreground">65%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="restaurants" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Presupuesto por Restaurante</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[1, 2, 3, 4, 5].map((restaurant) => (
-                    <div key={restaurant} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">Restaurante Madrid Centro #{restaurant}</p>
-                        <p className="text-sm text-muted-foreground">Calle Gran Vía, 123</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold">€{(1000 + restaurant * 50).toLocaleString()},000</p>
-                        <p className="text-sm text-green-600">+{restaurant}.2% vs objetivo</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </StandardLayout>
-  );
-};
 
-export default AnnualBudgetPage;
+            {/* Financial Statement Tabs */}
+            {selectedRestaurant ? (
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <div className="border-b border-gray-200 px-6 pt-6">
+                    <TabsList className="inline-flex h-auto p-0 space-x-8 bg-transparent">
+                      <TabsTrigger 
+                        value="budget" 
+                        className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-gray-900 data-[state=active]:shadow-none rounded-none px-0 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                      >
+                        Profit & Loss
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="balance-sheet" 
+                        className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-gray-900 data-[state=active]:shadow-none rounded-none px-0 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                      >
+                        Balance Sheet
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="cash-flow" 
+                        className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-gray-900 data-[state=active]:shadow-none rounded-none px-0 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                      >
+                        Cash Flow Statement
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  <div className="p-6">
+                    <TabsContent value="budget" className="space-y-6 m-0">
+                      <AnnualBudgetGrid
+                        restaurantId={selectedRestaurant}
+                        year={selectedYear}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="balance-sheet" className="space-y-6 m-0">
+                      <BalanceSheetStatement restaurantId={selectedRestaurant} year={selectedYear} />
+                    </TabsContent>
+
+                    <TabsContent value="cash-flow" className="space-y-6 m-0">
+                      <CashFlowStatement restaurantId={selectedRestaurant} year={selectedYear} />
+                    </TabsContent>
+                  </div>
+                </Tabs>
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Building className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Selecciona un Restaurante
+                  </h3>
+                  <p className="text-gray-500">
+                    Elige un restaurante de la lista para comenzar a trabajar con sus estados financieros.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
+  );
+}

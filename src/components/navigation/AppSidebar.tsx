@@ -13,7 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, AlertTriangle, Receipt, Shield, UserCheck, Plug, Activity } from 'lucide-react';
+import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, HardHat, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 
@@ -22,6 +22,11 @@ const menuItems = [
     title: "Dashboard",
     url: "/dashboard",
     icon: Home,
+  },
+  {
+    title: "Panel Laboral",
+    url: "/labor-dashboard",
+    icon: HardHat,
   },
   {
     title: "Restaurantes",
@@ -54,32 +59,14 @@ const menuItems = [
     icon: Database,
   },
   {
+    title: "Orquest",
+    url: "/orquest",
+    icon: Cog,
+  },
+  {
     title: "Incidencias",
     url: "/incidents",
     icon: AlertTriangle,
-  },
-  {
-    title: "Estado Integraciones",
-    url: "/integration-status",
-    icon: Activity,
-  },
-];
-
-const adminMenuItems = [
-  {
-    title: "Franquiciados",
-    url: "/franchisees",
-    icon: UserCheck,
-  },
-  {
-    title: "Integraciones Externas",
-    url: "/integrations",
-    icon: Plug,
-  },
-  {
-    title: "Orquest",
-    url: "/orquest",
-    icon: Database,
   },
   {
     title: "Biloop",
@@ -87,9 +74,9 @@ const adminMenuItems = [
     icon: Receipt,
   },
   {
-    title: "Configuración Sistema",
-    url: "/system-config",
-    icon: Shield,
+    title: "Panel Trabajadores",
+    url: "/workers",
+    icon: UserCheck,
   },
 ];
 
@@ -102,27 +89,18 @@ export function AppSidebar() {
     franchisee,
     isImpersonating, 
     impersonatedFranchisee,
-    effectiveFranchisee
+    effectiveFranchisee,
+    getDebugInfo
   } = useUnifiedAuth();
 
-  // Log de debugging simplificado y seguro
-  console.log('SIDEBAR DEBUG:', {
-    userEmail: user?.email,
-    userRole: user?.role,
-    isImpersonating,
-    effectiveFranchisee: effectiveFranchisee?.franchisee_name
-  });
+  // Log de debugging detallado
+  const debugInfo = getDebugInfo?.() || {};
+  console.log('SIDEBAR DEBUG:', debugInfo);
 
   const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/auth');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+    await signOut();
+    navigate('/auth');
   };
-
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'asesor';
 
   return (
     <Sidebar className="w-64">
@@ -162,32 +140,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {isAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-              Administración
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {adminMenuItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild
-                      isActive={location.pathname === item.url}
-                      className="w-full justify-start px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <button onClick={() => navigate(item.url)}>
-                        <item.icon className="w-4 h-4" />
-                        <span className="font-medium">{item.title}</span>
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t">
@@ -197,7 +149,7 @@ export function AppSidebar() {
               {isImpersonating ? effectiveFranchisee?.franchisee_name : (user?.full_name || user?.email)}
             </p>
             <p className={`text-xs ${isImpersonating ? 'text-blue-600' : 'text-gray-500'}`}>
-              {isImpersonating ? 'Franquiciado (Vista Asesor)' : user?.role || 'Usuario'}
+              {isImpersonating ? 'Franquiciado (Vista Asesor)' : 'Franquiciado'}
             </p>
           </div>
           

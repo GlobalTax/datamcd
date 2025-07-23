@@ -1,229 +1,137 @@
-
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
-import { useOptimizedQueries } from './useOptimizedQueries';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { BaseRestaurant, FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
+import { toast } from 'sonner';
 
-export interface UnifiedRestaurant {
-  id: string;
-  restaurant_name: string;
-  site_number: string;
-  address: string;
-  city: string;
-  state?: string;
-  autonomous_community?: string;
-  country?: string;
-  postal_code?: string;
-  restaurant_type?: string;
-  opening_date?: string;
-  created_at?: string;
+export interface UnifiedRestaurant extends BaseRestaurant {
+  assignment?: {
+    id: string;
+    franchisee_id: string;
+    franchise_start_date?: string;
+    franchise_end_date?: string;
+    monthly_rent?: number;
+    last_year_revenue?: number;
+    average_monthly_sales?: number;
+    status?: string;
+    assigned_at: string;
+  };
   franchisee_info?: {
     id: string;
     franchisee_name: string;
     company_name?: string;
     city?: string;
     state?: string;
-    user_id?: string;
-  };
-  assignment?: {
-    id: string;
-    status: string;
-    franchise_start_date?: string;
-    franchise_end_date?: string;
-    last_year_revenue?: number;
-    monthly_rent?: number;
-    average_monthly_sales?: number;
-    assigned_at?: string;
   };
   isAssigned: boolean;
 }
 
-export interface RestaurantStats {
-  total: number;
-  assigned: number;
-  available: number;
-  byFranchisee: Record<string, number>;
-}
-
-export const useUnifiedRestaurants = (specificFranchiseeId?: string) => {
-  const { user, effectiveFranchisee } = useUnifiedAuth();
+export const useUnifiedRestaurants = () => {
+  const { user } = useUnifiedAuth();
   const [restaurants, setRestaurants] = useState<UnifiedRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRestaurants = useCallback(async () => {
-    if (!user) {
-      console.log('useUnifiedRestaurants: No user, skipping fetch');
+  const fetchUnifiedRestaurants = async () => {
+    if (!user || !['asesor', 'admin', 'superadmin'].includes(user.role)) {
+      console.log('User role not authorized for unified restaurants:', user?.role);
+      setLoading(false);
       return;
     }
 
-    console.log('Fetching unified restaurants for user:', user.id, 'with role:', user.role, 'specific franchisee:', specificFranchiseeId);
-    
     try {
+      setLoading(true);
       setError(null);
+      console.log('Fetching unified restaurants for user:', user.id, 'with role:', user.role);
 
-      let baseQuery = supabase
+      // Obtener todos los restaurantes base
+      const { data: baseRestaurants, error: baseError } = await supabase
         .from('base_restaurants')
-        .select(`
-          id,
-          restaurant_name,
-          site_number,
-          address,
-          city,
-          state,
-          country,
-          postal_code,
-          restaurant_type,
-          franchisee_name
-        `)
-        .order('restaurant_name');
-
-      const { data: baseRestaurants, error: baseError } = await baseQuery;
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (baseError) {
         console.error('Error fetching base restaurants:', baseError);
-        throw baseError;
+        setError(baseError.message);
+        return;
       }
 
-      let assignmentsQuery = supabase
+      // Obtener todas las asignaciones con información del franquiciado
+      const { data: assignments, error: assignmentError } = await supabase
         .from('franchisee_restaurants')
         .select(`
-          id,
-          base_restaurant_id,
-          franchisee_id,
-          status,
-          franchise_start_date,
-          franchise_end_date,
-          last_year_revenue,
-          monthly_rent,
-          franchisees (
+          *,
+          franchisee:franchisee_id (
             id,
             franchisee_name,
-            user_id
+            company_name,
+            city,
+            state
           )
         `)
         .eq('status', 'active');
 
-      // Si se especifica un franquiciado, filtrar las asignaciones
-      if (specificFranchiseeId) {
-        assignmentsQuery = assignmentsQuery.eq('franchisee_id', specificFranchiseeId);
+      if (assignmentError) {
+        console.error('Error fetching restaurant assignments:', assignmentError);
+        // Continuar sin asignaciones si hay error
       }
 
-      const { data: assignments, error: assignmentsError } = await assignmentsQuery;
-
-      if (assignmentsError) {
-        console.error('Error fetching assignments:', assignmentsError);
-      }
-
-      // Unificar datos
+      // Combinar los datos
       const unifiedRestaurants: UnifiedRestaurant[] = (baseRestaurants || []).map(restaurant => {
-        const assignment = (assignments || []).find(a => a.base_restaurant_id === restaurant.id);
+        const assignment = assignments?.find(a => a.base_restaurant_id === restaurant.id);
         
         return {
           ...restaurant,
-          franchisee_info: assignment?.franchisees ? {
-            id: assignment.franchisees.id,
-            franchisee_name: assignment.franchisees.franchisee_name,
-            user_id: assignment.franchisees.user_id
-          } : undefined,
           assignment: assignment ? {
             id: assignment.id,
-            status: assignment.status,
+            franchisee_id: assignment.franchisee_id,
             franchise_start_date: assignment.franchise_start_date,
             franchise_end_date: assignment.franchise_end_date,
+            monthly_rent: assignment.monthly_rent,
             last_year_revenue: assignment.last_year_revenue,
-            monthly_rent: assignment.monthly_rent
+            average_monthly_sales: assignment.average_monthly_sales,
+            status: assignment.status,
+            assigned_at: assignment.assigned_at
+          } : undefined,
+          franchisee_info: assignment?.franchisee ? {
+            id: assignment.franchisee.id,
+            franchisee_name: assignment.franchisee.franchisee_name,
+            company_name: assignment.franchisee.company_name,
+            city: assignment.franchisee.city,
+            state: assignment.franchisee.state
           } : undefined,
           isAssigned: !!assignment
         };
       });
 
-      // Si se especifica un franquiciado, filtrar solo los restaurantes asignados a él
-      const filteredRestaurants = specificFranchiseeId 
-        ? unifiedRestaurants.filter(r => r.franchisee_info?.id === specificFranchiseeId)
-        : unifiedRestaurants;
-
-      setRestaurants(filteredRestaurants);
+      console.log('Successfully unified restaurants:', unifiedRestaurants.length, 'total');
+      console.log('Assigned restaurants:', unifiedRestaurants.filter(r => r.isAssigned).length);
+      console.log('Available restaurants:', unifiedRestaurants.filter(r => !r.isAssigned).length);
       
-      const assignedCount = filteredRestaurants.filter(r => r.isAssigned).length;
-      const totalCount = filteredRestaurants.length;
-      
-      console.log('Successfully unified restaurants:', totalCount, 'total');
-      console.log('Assigned restaurants:', assignedCount);
-      console.log('Available restaurants:', totalCount - assignedCount);
-      
-      if (specificFranchiseeId) {
-        console.log('Restaurants for specific franchisee:', specificFranchiseeId, 'count:', totalCount);
-      }
-
+      setRestaurants(unifiedRestaurants);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      console.error('Error in fetchRestaurants:', err);
-      setError(errorMessage);
+      console.error('Error in fetchUnifiedRestaurants:', err);
+      setError('Error al cargar los restaurantes');
+      toast.error('Error al cargar los restaurantes');
     } finally {
       setLoading(false);
     }
-  }, [user, specificFranchiseeId]);
+  };
 
-  // Usar queries optimizadas para evitar bucles infinitos
-  const { loading: queryLoading } = useOptimizedQueries(
-    fetchRestaurants,
-    [user?.id, user?.role, specificFranchiseeId],
-    {
-      debounceMs: 500,
-      maxRetries: 1,
-      enabled: !!user
-    }
-  );
-
-  // Estadísticas calculadas
-  const stats = useMemo((): RestaurantStats => {
-    const total = restaurants.length;
-    const assigned = restaurants.filter(r => r.isAssigned).length;
-    const available = total - assigned;
-    
-    const byFranchisee: Record<string, number> = {};
-    restaurants.forEach(restaurant => {
-      if (restaurant.franchisee_info) {
-        const name = restaurant.franchisee_info.franchisee_name;
-        byFranchisee[name] = (byFranchisee[name] || 0) + 1;
-      }
-    });
-
-    return {
-      total,
-      assigned,
-      available,
-      byFranchisee
-    };
-  }, [restaurants]);
-
-  // Filtrar restaurantes según el rol del usuario
-  const filteredRestaurants = useMemo(() => {
-    if (!user) return [];
-    
-    // Superadmin y admin ven todos los restaurantes
-    if (['superadmin', 'admin'].includes(user.role)) {
-      return restaurants;
-    }
-    
-    // Franquiciados solo ven sus restaurantes asignados
-    if (user.role === 'franchisee' && effectiveFranchisee) {
-      return restaurants.filter(r => 
-        r.franchisee_info?.user_id === effectiveFranchisee.user_id ||
-        r.franchisee_info?.id === effectiveFranchisee.id
-      );
-    }
-    
-    return [];
-  }, [restaurants, user, effectiveFranchisee]);
+  useEffect(() => {
+    console.log('useUnifiedRestaurants useEffect triggered, user:', user?.id, 'role:', user?.role);
+    fetchUnifiedRestaurants();
+  }, [user?.id, user?.role]);
 
   return {
-    restaurants: filteredRestaurants,
-    allRestaurants: restaurants,
-    loading: loading || queryLoading,
+    restaurants,
+    loading,
     error,
-    stats,
-    refetch: fetchRestaurants
+    refetch: fetchUnifiedRestaurants,
+    stats: {
+      total: restaurants.length,
+      assigned: restaurants.filter(r => r.isAssigned).length,
+      available: restaurants.filter(r => !r.isAssigned).length
+    }
   };
 };

@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuthCompat';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { toast } from 'sonner';
 
 export type UserRole = 'admin' | 'franchisee' | 'staff' | 'superadmin';

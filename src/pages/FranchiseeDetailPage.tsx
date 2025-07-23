@@ -15,9 +15,6 @@ import { UserCreationPanel } from '@/components/admin/UserCreationPanel';
 import { FranchiseeAccessHistory } from '@/components/franchisee/FranchiseeAccessHistory';
 import { FranchiseeActivityHistory } from '@/components/franchisee/FranchiseeActivityHistory';
 import { FranchiseeUsers, FranchiseeUsersRef } from '@/components/franchisee/FranchiseeUsers';
-import { FranchiseeFinancialMetrics } from '@/components/franchisee/FranchiseeFinancialMetrics';
-import { FranchiseePerformanceChart } from '@/components/franchisee/FranchiseePerformanceChart';
-import { FranchiseeAlerts } from '@/components/franchisee/FranchiseeAlerts';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -37,7 +34,7 @@ export default function FranchiseeDetailPage() {
     return (
       <div className="p-6">
         <div className="flex items-center space-x-2 text-gray-600 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/advisor')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Volver
           </Button>
@@ -55,7 +52,7 @@ export default function FranchiseeDetailPage() {
     return (
       <div className="p-6">
         <div className="flex items-center space-x-2 text-gray-600 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/advisor')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Volver
           </Button>
@@ -113,7 +110,7 @@ export default function FranchiseeDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/advisor')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Volver
           </Button>
@@ -135,24 +132,6 @@ export default function FranchiseeDetailPage() {
           {getStatusBadge()}
         </div>
       </div>
-
-      {/* Métricas Financieras */}
-      <FranchiseeFinancialMetrics 
-        restaurants={restaurants} 
-        franchiseeName={franchisee.franchisee_name} 
-      />
-
-      {/* Alertas y Notificaciones */}
-      <FranchiseeAlerts 
-        restaurants={restaurants} 
-        franchiseeName={franchisee.franchisee_name} 
-      />
-
-      {/* Gráficos de Performance */}
-      <FranchiseePerformanceChart 
-        restaurants={restaurants} 
-        franchiseeName={franchisee.franchisee_name} 
-      />
 
       {/* Información básica del franquiciado */}
       <Card>

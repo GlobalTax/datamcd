@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { toast } from 'sonner';
 
 export interface AnnualBudgetData {
@@ -28,7 +28,7 @@ export interface AnnualBudgetData {
 }
 
 export const useAnnualBudgets = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [budgets, setBudgets] = useState<AnnualBudgetData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
