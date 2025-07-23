@@ -7,8 +7,9 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, Grid, Download, Settings } from 'lucide-react';
+import { Table, Grid, Download, Settings, AlertCircle } from 'lucide-react';
 import RestaurantTable from '@/components/restaurant/RestaurantTable';
 import RestaurantMetrics from '@/components/restaurant/RestaurantMetrics';
 import RestaurantFilters from '@/components/restaurant/RestaurantFilters';
@@ -21,8 +22,10 @@ const RestaurantManagementPage = () => {
   const { 
     restaurants, 
     loading, 
+    error,
     refetch, 
-    canViewAllRestaurants, 
+    canViewAllRestaurants,
+    hasValidAccess,
     user, 
     franchisee 
   } = useRestaurantManagement();
@@ -38,17 +41,12 @@ const RestaurantManagementPage = () => {
   const displayRestaurants = filteredRestaurants.length > 0 ? 
     filteredRestaurants : restaurants;
 
-  console.log('RestaurantManagementPage - User:', user ? { id: user.id, role: user.role } : null);
-  console.log('RestaurantManagementPage - Can view all restaurants:', canViewAllRestaurants);
-  console.log('RestaurantManagementPage - Restaurants:', restaurants.length);
-
   const handleEdit = (restaurant: FranchiseeRestaurant) => {
     setSelectedRestaurant(restaurant);
     setIsEditModalOpen(true);
   };
 
   const handleView = (restaurant: FranchiseeRestaurant) => {
-    // Por ahora, usar la misma función que editar
     handleEdit(restaurant);
   };
 
@@ -68,7 +66,6 @@ const RestaurantManagementPage = () => {
   };
 
   const handleExport = () => {
-    // Implementar exportación a CSV
     const csvContent = displayRestaurants.map(restaurant => ({
       'Sitio': restaurant.base_restaurant?.site_number || '',
       'Nombre': restaurant.base_restaurant?.restaurant_name || '',
@@ -103,6 +100,7 @@ const RestaurantManagementPage = () => {
     return value.toLocaleString('es-ES');
   };
 
+  // Estado de carga inicial
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -114,24 +112,22 @@ const RestaurantManagementPage = () => {
     );
   }
 
-  // Permitir acceso a admin, superadmin y franchisee
-  if (!['franchisee', 'admin', 'superadmin'].includes(user.role)) {
+  // Verificar acceso autorizado
+  if (!hasValidAccess) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Acceso no autorizado.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Para franchisees, verificar que tengan datos de franquiciado
-  if (user.role === 'franchisee' && !franchisee) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando datos del franquiciado...</p>
+        <div className="text-center max-w-md mx-auto p-6">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">Acceso no autorizado</h2>
+          <p className="text-gray-600 mb-4">
+            {user.role === 'franchisee' 
+              ? 'No se encontraron datos de franquiciado para tu cuenta. Contacta al administrador.'
+              : 'No tienes permisos para acceder a esta sección.'
+            }
+          </p>
+          <Button onClick={() => window.location.href = '/dashboard'} variant="outline">
+            Volver al Dashboard
+          </Button>
         </div>
       </div>
     );
@@ -170,6 +166,15 @@ const RestaurantManagementPage = () => {
           </header>
 
           <main className="flex-1 p-6">
+            {error && (
+              <Alert className="mb-6 border-red-200 bg-red-50">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">
+                  {error}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>

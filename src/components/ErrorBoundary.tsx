@@ -1,52 +1,95 @@
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { secureLogger } from '@/utils/secureLogger';
 
-interface Props {
+interface ErrorBoundaryProps {
   children: ReactNode;
+  fallback?: ReactNode;
 }
 
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean;
-  error?: Error;
+  error: Error | null;
+  errorInfo: React.ErrorInfo | null;
 }
 
-class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false
-  };
-
-  public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Error boundary caught an error:', error, errorInfo);
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error, errorInfo: null };
   }
 
-  private handleRefresh = () => {
-    window.location.reload();
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    secureLogger.error('ErrorBoundary caught an error', error, {
+      componentStack: errorInfo.componentStack,
+      errorBoundary: true
+    });
+    
+    this.setState({ errorInfo });
+  }
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null });
   };
 
-  public render() {
+  render() {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="max-w-md w-full mx-auto p-6">
-            <div className="text-center">
-              <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <h1 className="text-xl font-semibold text-gray-900 mb-2">
-                Algo salió mal
-              </h1>
-              <p className="text-gray-600 mb-6">
-                Se produjo un error inesperado. Intenta recargar la página.
-              </p>
-              <Button onClick={this.handleRefresh} className="w-full">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Recargar página
-              </Button>
-            </div>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full">
+            <Alert className="border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-semibold">Se ha producido un error</h3>
+                    <p className="text-sm mt-1">
+                      {this.state.error?.message || 'Error desconocido'}
+                    </p>
+                  </div>
+                  
+                  {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
+                    <details className="text-xs">
+                      <summary className="cursor-pointer">Detalles técnicos</summary>
+                      <pre className="mt-2 bg-red-100 p-2 rounded text-red-900 overflow-auto">
+                        {this.state.error?.stack}
+                      </pre>
+                    </details>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={this.handleReset}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      Reintentar
+                    </Button>
+                    
+                    <Button
+                      onClick={() => window.location.href = '/dashboard'}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Ir al Dashboard
+                    </Button>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
           </div>
         </div>
       );

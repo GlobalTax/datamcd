@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/auth/AuthProvider';
 import { useImpersonation } from '@/hooks/useImpersonation';
 import { Franchisee } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
+import { secureLogger } from '@/utils/secureLogger';
 
 interface FranchiseeContextType {
   selectedFranchisee: Franchisee | null;
@@ -39,83 +40,146 @@ export const FranchiseeProvider: React.FC<FranchiseeProviderProps> = ({ children
   const { user, loading: authLoading } = useAuth();
   const { getEffectiveFranchisee, isImpersonating } = useImpersonation();
 
-  const effectiveFranchisee = getEffectiveFranchisee(null); // TODO: Get user franchisee from proper source
-  const canSelectFranchisee = ['admin', 'superadmin', 'asesor'].includes(user?.role || '');
-
-  // Cargar todos los franquiciados si el usuario es admin
-  const loadAllFranchisees = async () => {
-    if (!user || authLoading) return;
+  const effectiveFranchisee = getEffectiveFranchisee(null);
+  
+  // Mejorar la verificación de roles con logging detallado
+  const canSelectFranchisee = React.useMemo(() => {
+    const userRole = user?.role;
+    const canSelect = ['admin', 'superadmin', 'asesor'].includes(userRole || '');
     
-    if (canSelectFranchisee) {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        console.log('FranchiseeContext - Loading all franchisees for admin user');
-        const { data, error: supabaseError } = await supabase
-          .from('franchisees')
-          .select('*')
-          .order('franchisee_name');
+    secureLogger.debug('FranchiseeContext - Role verification', {
+      userRole,
+      canSelect,
+      userId: user?.id,
+      authLoading
+    });
+    
+    return canSelect;
+  }, [user?.role, user?.id, authLoading]);
 
-        if (supabaseError) {
-          console.error('FranchiseeContext - Error loading franchisees:', supabaseError);
-          setError('Error al cargar franquiciados');
-          setAvailableFranchisees([]);
-        } else {
-          console.log(`FranchiseeContext - Loaded ${data?.length || 0} franchisees`);
-          setAvailableFranchisees(data || []);
-        }
-      } catch (error) {
-        console.error('FranchiseeContext - Unexpected error loading franchisees:', error);
-        setError('Error inesperado al cargar franquiciados');
-        setAvailableFranchisees([]);
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      console.log('FranchiseeContext - User is not admin, clearing all franchisees');
+  // Cargar franquiciados disponibles para usuarios admin
+  const loadAvailableFranchisees = React.useCallback(async () => {
+    if (!user || authLoading) {
+      secureLogger.debug('FranchiseeContext - Skipping load, no user or auth loading', {
+        hasUser: !!user,
+        authLoading
+      });
+      return;
+    }
+    
+    if (!canSelectFranchisee) {
+      secureLogger.debug('FranchiseeContext - User cannot select franchisees, clearing list', {
+        userRole: user.role,
+        canSelectFranchisee
+      });
       setAvailableFranchisees([]);
+      return;
     }
-  };
 
-  // Efecto para cargar franquiciados cuando cambia el usuario
-  useEffect(() => {
-    if (!authLoading && user) {
-      loadAllFranchisees();
-    }
-  }, [user, authLoading]);
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      secureLogger.info('FranchiseeContext - Loading franchisees for admin user', {
+        userId: user.id,
+        userRole: user.role
+      });
+      
+      const { data, error: supabaseError } = await supabase
+        .from('franchisees')
+        .select('*')
+        .order('franchisee_name');
 
-  // Efecto para sincronizar el franquiciado seleccionado
-  useEffect(() => {
-    if (!authLoading && user) {
-      if (isImpersonating && effectiveFranchisee) {
-        console.log('FranchiseeContext - Using impersonated franchisee:', effectiveFranchisee.franchisee_name);
-        setSelectedFranchisee(effectiveFranchisee);
-      } else if (user.role === 'franchisee' && effectiveFranchisee) {
-        console.log('FranchiseeContext - Using user franchisee:', effectiveFranchisee.franchisee_name);
-        setSelectedFranchisee(effectiveFranchisee);
-      } else if (canSelectFranchisee) {
-        // Para admins, mantener el franquiciado seleccionado si hay uno
-        console.log('FranchiseeContext - Admin user, maintaining selected franchisee');
-        if (!selectedFranchisee && availableFranchisees.length > 0) {
-          setSelectedFranchisee(availableFranchisees[0]);
-        }
-      } else {
-        console.log('FranchiseeContext - No valid franchisee found');
-        setSelectedFranchisee(null);
+      if (supabaseError) {
+        throw supabaseError;
       }
+
+      const franchisees = data || [];
+      setAvailableFranchisees(franchisees);
+      
+      secureLogger.info('FranchiseeContext - Successfully loaded franchisees', {
+        count: franchisees.length,
+        franchiseeNames: franchisees.map(f => f.franchisee_name)
+      });
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      secureLogger.error('FranchiseeContext - Error loading franchisees', err);
+      setError(`Error al cargar franquiciados: ${errorMessage}`);
+      setAvailableFranchisees([]);
+    } finally {
+      setIsLoading(false);
     }
-  }, [user, authLoading, effectiveFranchisee, isImpersonating, availableFranchisees]);
+  }, [user, authLoading, canSelectFranchisee]);
 
-  const selectFranchisee = (franchisee: Franchisee | null) => {
-    console.log('FranchiseeContext - Selecting franchisee:', franchisee?.franchisee_name || 'null');
+  // Sincronizar franquiciado seleccionado
+  const syncSelectedFranchisee = React.useCallback(() => {
+    if (!user || authLoading) {
+      secureLogger.debug('FranchiseeContext - Skipping sync, no user or auth loading');
+      return;
+    }
+
+    if (isImpersonating && effectiveFranchisee) {
+      secureLogger.info('FranchiseeContext - Using impersonated franchisee', {
+        franchiseeName: effectiveFranchisee.franchisee_name,
+        franchiseeId: effectiveFranchisee.id
+      });
+      setSelectedFranchisee(effectiveFranchisee);
+      return;
+    }
+
+    if (user.role === 'franchisee' && effectiveFranchisee) {
+      secureLogger.info('FranchiseeContext - Using franchisee user data', {
+        franchiseeName: effectiveFranchisee.franchisee_name,
+        franchiseeId: effectiveFranchisee.id
+      });
+      setSelectedFranchisee(effectiveFranchisee);
+      return;
+    }
+
+    if (canSelectFranchisee) {
+      // Para admins, auto-seleccionar el primer franquiciado disponible si no hay uno seleccionado
+      if (!selectedFranchisee && availableFranchisees.length > 0) {
+        const firstFranchisee = availableFranchisees[0];
+        secureLogger.info('FranchiseeContext - Auto-selecting first franchisee for admin', {
+          franchiseeName: firstFranchisee.franchisee_name,
+          franchiseeId: firstFranchisee.id
+        });
+        setSelectedFranchisee(firstFranchisee);
+      }
+      return;
+    }
+
+    // No hay franquiciado válido
+    secureLogger.warn('FranchiseeContext - No valid franchisee found', {
+      userRole: user.role,
+      hasEffectiveFranchisee: !!effectiveFranchisee,
+      isImpersonating
+    });
+    setSelectedFranchisee(null);
+  }, [user, authLoading, effectiveFranchisee, isImpersonating, availableFranchisees, canSelectFranchisee, selectedFranchisee]);
+
+  // Efectos para cargar y sincronizar datos
+  useEffect(() => {
+    loadAvailableFranchisees();
+  }, [loadAvailableFranchisees]);
+
+  useEffect(() => {
+    syncSelectedFranchisee();
+  }, [syncSelectedFranchisee]);
+
+  const selectFranchisee = React.useCallback((franchisee: Franchisee | null) => {
+    secureLogger.info('FranchiseeContext - Manually selecting franchisee', {
+      franchiseeName: franchisee?.franchisee_name || 'null',
+      franchiseeId: franchisee?.id || 'null'
+    });
     setSelectedFranchisee(franchisee);
-  };
+  }, []);
 
-  const refreshFranchisees = async () => {
-    console.log('FranchiseeContext - Manual refresh requested');
-    await loadAllFranchisees();
-  };
+  const refreshFranchisees = React.useCallback(async () => {
+    secureLogger.info('FranchiseeContext - Manual refresh requested');
+    await loadAvailableFranchisees();
+  }, [loadAvailableFranchisees]);
 
   const value: FranchiseeContextType = {
     selectedFranchisee,
