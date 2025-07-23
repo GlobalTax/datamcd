@@ -21,6 +21,12 @@ import { es } from 'date-fns/locale';
 export default function FranchiseeDetailPage() {
   const { franchiseeId } = useParams<{ franchiseeId: string }>();
   const navigate = useNavigate();
+  
+  // Debug: verificar el parámetro extraído
+  console.log('FranchiseeDetailPage - franchiseeId from useParams:', franchiseeId);
+  console.log('FranchiseeDetailPage - franchiseeId type:', typeof franchiseeId);
+  console.log('FranchiseeDetailPage - window.location.pathname:', window.location.pathname);
+  
   const { franchisee, restaurants, loading, error, refetch } = useFranchiseeDetail(franchiseeId);
   const franchiseeUsersRef = useRef<FranchiseeUsersRef>(null);
   const { user } = useUnifiedAuth();

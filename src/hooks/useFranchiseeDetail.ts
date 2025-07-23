@@ -13,9 +13,14 @@ export const useFranchiseeDetail = (franchiseeId?: string) => {
 
   const fetchFranchiseeDetail = async () => {
     if (!franchiseeId) {
+      console.log('useFranchiseeDetail - No franchiseeId provided');
       setLoading(false);
       return;
     }
+
+    // Debug: verificar el franchiseeId recibido
+    console.log('useFranchiseeDetail - franchiseeId received:', franchiseeId);
+    console.log('useFranchiseeDetail - franchiseeId type:', typeof franchiseeId);
 
     try {
       setLoading(true);
