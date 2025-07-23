@@ -32,39 +32,49 @@ const BiloopPage = () => {
   const loadCompanies = async () => {
     try {
       const data = await getCompanies();
-      setCompanies(data);
-      if (data.length > 0) {
-        setSelectedCompany(data[0].id);
+      console.log('Companies data received:', data);
+      // Asegurar que data es un array
+      const companiesArray = Array.isArray(data) ? data : [];
+      setCompanies(companiesArray);
+      if (companiesArray.length > 0) {
+        setSelectedCompany(companiesArray[0].id);
       }
     } catch (error) {
       console.error('Error loading companies:', error);
+      setCompanies([]); // Asegurar que companies sea un array vacío en caso de error
     }
   };
 
   const loadInvoices = async () => {
     try {
       const data = await getInvoices(selectedCompany);
-      setInvoices(data);
+      const invoicesArray = Array.isArray(data) ? data : [];
+      setInvoices(invoicesArray);
     } catch (error) {
       console.error('Error loading invoices:', error);
+      setInvoices([]);
     }
   };
 
   const loadCustomers = async () => {
     try {
       const data = await getCustomers(selectedCompany);
-      setCustomers(data);
+      const customersArray = Array.isArray(data) ? data : [];
+      setCustomers(customersArray);
     } catch (error) {
       console.error('Error loading customers:', error);
+      setCustomers([]);
     }
   };
 
   const loadInventory = async () => {
     try {
       const data = await getInventory(selectedCompany);
-      setInventory(data);
+      const inventoryArray = Array.isArray(data) ? data : [];
+      setInventory(inventoryArray);
     } catch (error) {
       console.error('Error loading inventory:', error);
+      setInventory([]);
     }
   };
 

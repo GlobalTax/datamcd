@@ -80,6 +80,11 @@ export const useBiloop = () => {
         throw new Error(error.message);
       }
 
+      // Verificar si la respuesta indica un error de la API de Biloop
+      if (data && typeof data === 'object' && data.status === 'KO') {
+        throw new Error(data.message || 'Error en la API de Biloop');
+      }
+
       return data;
     } catch (error) {
       console.error('Biloop API error:', error);
@@ -216,16 +221,18 @@ export const useBiloop = () => {
 
   const testConnection = async (): Promise<boolean> => {
     try {
-      await getCompanies();
+      // Probar conexión básica con el endpoint de empresas
+      const data = await callBiloopAPI('/api-global/v1/companies');
       toast({
         title: 'Conexión exitosa',
         description: 'Conectado correctamente a Biloop',
       });
       return true;
     } catch (error) {
+      console.error('Connection test failed:', error);
       toast({
         title: 'Error de conexión',
-        description: 'No se pudo conectar a Biloop',
+        description: 'No se pudo conectar a Biloop. Verifica las credenciales y endpoints.',
         variant: 'destructive',
       });
       return false;
