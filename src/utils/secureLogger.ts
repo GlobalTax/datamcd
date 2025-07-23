@@ -102,13 +102,10 @@ class SecureLogger {
   /**
    * Sanitiza objetos removiendo campos sensibles y sanitizando valores
    */
-  private sanitizeObject(obj: any, depth = 0): any {
-    if (depth > 10) return '[MAX_DEPTH_REACHED]'; // Prevenir recursión infinita
+  private sanitizeObject(obj: any, depth = 0, visited = new WeakSet()): any {
+    if (depth > 10) return '[MAX_DEPTH_REACHED]';
     
     if (obj === null || obj === undefined) return obj;
-    
-    // Evitar objetos circulares
-    if (typeof obj === 'object' && obj.__sanitized) return '[CIRCULAR_REFERENCE]';
     
     if (typeof obj === 'string') {
       return this.sanitizeText(obj);
@@ -130,25 +127,23 @@ class SecureLogger {
       };
     }
     
+    // Para objetos y arrays, verificar si ya fueron visitados
+    if (typeof obj === 'object' && obj !== null) {
+      if (visited.has(obj)) {
+        return '[CIRCULAR_REFERENCE]';
+      }
+      visited.add(obj);
+    }
+    
     if (Array.isArray(obj)) {
-      return obj.slice(0, 100).map(item => this.sanitizeObject(item, depth + 1));
+      return obj.slice(0, 100).map(item => this.sanitizeObject(item, depth + 1, visited));
     }
     
     if (typeof obj === 'object') {
       const sanitized: any = {};
-      
-      // Marcar como sanitizado para evitar ciclos
-      try {
-        Object.defineProperty(obj, '__sanitized', { value: true, enumerable: false });
-      } catch (e) {
-        // Si no se puede marcar, usar limitación simple
-      }
-      
-      const entries = Object.entries(obj).slice(0, 50); // Limitar entradas
+      const entries = Object.entries(obj).slice(0, 50);
       
       for (const [key, value] of entries) {
-        if (key === '__sanitized') continue;
-        
         const lowerKey = key.toLowerCase();
         
         // Remover campos completamente sensibles
@@ -157,8 +152,8 @@ class SecureLogger {
           continue;
         }
         
-        // Sanitizar el valor
-        sanitized[key] = this.sanitizeObject(value, depth + 1);
+        // Sanitizar el valor recursivamente
+        sanitized[key] = this.sanitizeObject(value, depth + 1, visited);
       }
       
       return sanitized;
