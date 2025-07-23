@@ -46,7 +46,7 @@ function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
                     <OptimizedDashboardPage />
                   </ProtectedRoute>
                 }
@@ -54,7 +54,7 @@ function App() {
               <Route
                 path="/dashboard-legacy"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
                     <DashboardPage />
                   </ProtectedRoute>
                 }
@@ -62,7 +62,7 @@ function App() {
               <Route
                 path="/restaurant"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
                     <RestaurantManagementPage />
                   </ProtectedRoute>
                 }
@@ -70,7 +70,7 @@ function App() {
               <Route
                 path="/restaurant/:restaurantId"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
                     <RestaurantDetailPage />
                   </ProtectedRoute>
                 }
@@ -78,7 +78,7 @@ function App() {
               <Route
                 path="/analysis"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
                     <AnalysisPage />
                   </ProtectedRoute>
                 }
@@ -91,7 +91,7 @@ function App() {
               <Route
                 path="/profit-loss/:siteNumber"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
                     <ProfitLossPage />
                   </ProtectedRoute>
                 }
@@ -99,7 +99,7 @@ function App() {
               <Route
                 path="/historical-data"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
                     <HistoricalDataPage />
                   </ProtectedRoute>
                 }
@@ -107,7 +107,7 @@ function App() {
               <Route
                 path="/annual-budget"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
                     <AnnualBudgetPage />
                   </ProtectedRoute>
                 }
@@ -131,7 +131,7 @@ function App() {
               <Route
                 path="/valuation"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
                     <ValuationApp />
                   </ProtectedRoute>
                 }
@@ -139,7 +139,7 @@ function App() {
               <Route
                 path="/employees"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
                     <EmployeePage />
                   </ProtectedRoute>
                 }
@@ -163,7 +163,7 @@ function App() {
               <Route
                 path="/settings"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee']}>
+                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
                     <SettingsPage />
                   </ProtectedRoute>
                 }
