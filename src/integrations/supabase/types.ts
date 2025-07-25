@@ -3223,6 +3223,10 @@ export type Database = {
         Args: { "": unknown }
         Returns: string
       }
+      is_superadmin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_superuser: {
         Args: { "": unknown }
         Returns: string
