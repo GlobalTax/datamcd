@@ -9,6 +9,7 @@ interface RestaurantOption {
   id: string;
   name: string;
   site_number: string;
+  franchisee_name?: string;
 }
 
 interface RestaurantSelectorCardProps {
@@ -38,7 +39,12 @@ const RestaurantSelectorCard = ({
             <SelectItem key={restaurant.id} value={restaurant.id}>
               <div className="flex flex-col">
                 <span className="font-medium">{restaurant.name}</span>
-                <span className="text-sm text-gray-500">#{restaurant.site_number}</span>
+                <div className="flex gap-2 text-sm text-gray-500">
+                  <span>#{restaurant.site_number}</span>
+                  {restaurant.franchisee_name && (
+                    <span>• {restaurant.franchisee_name}</span>
+                  )}
+                </div>
               </div>
             </SelectItem>
           ))}

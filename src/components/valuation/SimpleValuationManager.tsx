@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useFastAuth } from '@/hooks/useFastAuth';
+import { useUnifiedRestaurants } from '@/hooks/useUnifiedRestaurants';
 import { useValuationManager } from '@/hooks/useValuationManager';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { Building2, RefreshCw, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import RestaurantSelectorCard from './RestaurantSelectorCard';
@@ -23,7 +25,14 @@ const SimpleValuationManager = ({
   onValuationLoaded, 
   currentData 
 }: SimpleValuationManagerProps) => {
-  const { user, franchisee, restaurants, loading, isUsingCache } = useFastAuth();
+  const { user: authUser } = useUnifiedAuth();
+  const { user, franchisee, restaurants: franchiseeRestaurants, loading: fastAuthLoading, isUsingCache } = useFastAuth();
+  const { restaurants: allRestaurants, loading: unifiedLoading } = useUnifiedRestaurants();
+  
+  // Use unified restaurants for admin/superadmin, fast auth for franchisees
+  const isAdmin = authUser?.role === 'admin' || authUser?.role === 'superadmin';
+  const restaurants = isAdmin ? allRestaurants : franchiseeRestaurants;
+  const loading = isAdmin ? unifiedLoading : fastAuthLoading;
   const {
     selectedRestaurantId,
     setSelectedRestaurantId,
@@ -40,21 +49,29 @@ const SimpleValuationManager = ({
   const [isNewValuationOpen, setIsNewValuationOpen] = useState(false);
   const [isLoadValuationOpen, setIsLoadValuationOpen] = useState(false);
 
-  console.log('SimpleValuationManager - Fast auth data:', {
-    user: user ? { id: user.id, role: user.role } : null,
-    franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
+  console.log('SimpleValuationManager - Restaurant data:', {
+    authUser: authUser ? { id: authUser.id, role: authUser.role } : null,
+    isAdmin,
     restaurantsCount: restaurants?.length || 0,
     loading,
     isUsingCache
   });
 
-  const restaurantOptions = restaurants
-    .filter(r => r.base_restaurant)
-    .map(r => ({
-      id: r.base_restaurant!.id,
-      name: r.base_restaurant!.restaurant_name,
-      site_number: r.base_restaurant!.site_number
-    }));
+  const restaurantOptions = isAdmin 
+    ? restaurants.map(r => ({
+        id: r.id,
+        name: r.restaurant_name,
+        site_number: r.site_number,
+        franchisee_name: r.franchisee_info?.franchisee_name || 'Sin asignar'
+      }))
+    : restaurants
+        .filter(r => r.base_restaurant)
+        .map(r => ({
+          id: r.base_restaurant!.id,
+          name: r.base_restaurant!.restaurant_name,
+          site_number: r.base_restaurant!.site_number,
+          franchisee_name: franchisee?.franchisee_name || ''
+        }));
 
   const handleRestaurantChange = (restaurantId: string) => {
     const restaurant = restaurantOptions.find(r => r.id === restaurantId);
