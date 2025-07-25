@@ -17,7 +17,7 @@ interface BiloopWorkersPanelProps {
 }
 
 export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefresh }) => {
-  const { effectiveFranchisee } = useAuth();
+  const { franchisee } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
 
   const { 

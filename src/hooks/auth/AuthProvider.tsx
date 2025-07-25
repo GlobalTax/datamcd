@@ -4,12 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
-// Tipos consolidados
+// Tipos consolidados - Simplificado para superadmin
 interface UserProfile {
   id: string;
   email: string;
   full_name: string;
-  role: string;
 }
 
 interface Franchisee {
@@ -54,19 +53,10 @@ interface AuthContextType {
   loading: boolean;
   connectionStatus?: 'online' | 'offline' | 'reconnecting';
   
-  // Estados de impersonación (solo para asesores)
-  isImpersonating: boolean;
-  impersonatedFranchisee: Franchisee | null;
-  effectiveFranchisee: Franchisee | null;
-  
   // Acciones de autenticación
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
-  
-  // Acciones de impersonación
-  startImpersonation: (franchisee: Franchisee) => void;
-  stopImpersonation: () => void;
   
   // Utilidades
   refetchUserData: () => Promise<void>;
@@ -108,31 +98,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Estados de impersonación
-  const [impersonatedFranchisee, setImpersonatedFranchisee] = useState<Franchisee | null>(null);
-  
   // Referencias para control de estado
   const authInitialized = useRef(false);
   const currentUserId = useRef<string | null>(null);
   const isInitializing = useRef(false);
-
-  // Franquiciado efectivo (impersonado o real)
-  const effectiveFranchisee = impersonatedFranchisee || franchisee;
-  const isImpersonating = Boolean(impersonatedFranchisee);
-
-  // Cargar estado de impersonación persistente
-  useEffect(() => {
-    const savedImpersonation = sessionStorage.getItem('impersonatedFranchisee');
-    if (savedImpersonation) {
-      try {
-        const savedFranchisee = JSON.parse(savedImpersonation);
-        setImpersonatedFranchisee(savedFranchisee);
-      } catch (error) {
-        console.error('Error restoring impersonation:', error);
-        sessionStorage.removeItem('impersonatedFranchisee');
-      }
-    }
-  }, []);
 
   // Función para cargar datos del usuario con manejo de errores mejorado
   const fetchUserData = useCallback(async (userId: string, retryCount = 0) => {
@@ -168,8 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           profile = {
             id: userId,
             email: sessionUser?.email || 'usuario@ejemplo.com',
-            full_name: sessionUser?.user_metadata?.full_name || 'Usuario',
-            role: 'franchisee'
+            full_name: sessionUser?.user_metadata?.full_name || 'Usuario'
           };
         } else {
           profile = profileData;
@@ -179,33 +147,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile = {
           id: userId,
           email: sessionUser?.email || 'usuario@ejemplo.com',
-          full_name: sessionUser?.user_metadata?.full_name || 'Usuario',
-          role: 'franchisee'
+          full_name: sessionUser?.user_metadata?.full_name || 'Usuario'
         };
       }
 
       setUser(profile);
 
-      // Cargar franquiciado solo para usuarios franchisee
-      if (!profile || profile.role === 'franchisee') {
-        try {
-          const { data: franchiseeData, error: franchiseeError } = await supabase
-            .from('franchisees')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
+      // Cargar franquiciado para todos los usuarios
+      try {
+        const { data: franchiseeData, error: franchiseeError } = await supabase
+          .from('franchisees')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
 
-          if (franchiseeError) {
-            await createFranchisee(userId);
-          } else {
-            setFranchisee(franchiseeData);
-            
-            // Cargar restaurantes del franquiciado
-            await fetchRestaurants(franchiseeData.id);
-          }
-        } catch (franchiseeError) {
+        if (franchiseeError) {
           await createFranchisee(userId);
+        } else {
+          setFranchisee(franchiseeData);
+          
+          // Cargar restaurantes del franquiciado
+          await fetchRestaurants(franchiseeData.id);
         }
+      } catch (franchiseeError) {
+        await createFranchisee(userId);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -222,8 +187,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const fallbackProfile: UserProfile = {
         id: userId,
         email: session?.user?.email || 'usuario@ejemplo.com',
-        full_name: session?.user?.user_metadata?.full_name || 'Usuario',
-        role: 'franchisee'
+        full_name: session?.user?.user_metadata?.full_name || 'Usuario'
       };
       setUser(fallbackProfile);
       
@@ -323,9 +287,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setFranchisee(null);
         setRestaurants([]);
-        // Limpiar impersonación al cerrar sesión
-        setImpersonatedFranchisee(null);
-        sessionStorage.removeItem('impersonatedFranchisee');
         setLoading(false);
       }
     };
@@ -427,12 +388,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = useCallback(async () => {
     try {
-      // Limpiar impersonación
-      if (isImpersonating) {
-        setImpersonatedFranchisee(null);
-        sessionStorage.removeItem('impersonatedFranchisee');
-      }
-      
       const { error } = await supabase.auth.signOut();
       if (error && !error.message.includes('Session not found')) {
         console.error('Sign out error:', error);
@@ -444,19 +399,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Unexpected sign out error:', error);
       toast.error('Error al cerrar sesión');
     }
-  }, [isImpersonating]);
-
-  // Acciones de impersonación
-  const startImpersonation = useCallback((franchisee: Franchisee) => {
-    setImpersonatedFranchisee(franchisee);
-    sessionStorage.setItem('impersonatedFranchisee', JSON.stringify(franchisee));
-    toast.success(`Impersonando a ${franchisee.franchisee_name}`);
-  }, []);
-
-  const stopImpersonation = useCallback(() => {
-    setImpersonatedFranchisee(null);
-    sessionStorage.removeItem('impersonatedFranchisee');
-    toast.success('Impersonación terminada');
   }, []);
 
   // Refetch manual de datos
@@ -467,7 +409,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [fetchUserData]);
 
   const getDebugInfo = useCallback(() => ({
-    user: user ? { id: user.id, email: user.email, role: user.role } : null,
+    user: user ? { id: user.id, email: user.email } : null,
     session: session ? { access_token: session.access_token ? 'present' : 'missing' } : null,
     franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
     loading,
@@ -484,17 +426,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     connectionStatus: 'online',
     
-    // Impersonación
-    isImpersonating,
-    impersonatedFranchisee,
-    effectiveFranchisee,
-    
     // Acciones
     signIn,
     signUp,
     signOut,
-    startImpersonation,
-    stopImpersonation,
     
     // Utilidades
     refetchUserData,

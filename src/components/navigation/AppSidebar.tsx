@@ -92,9 +92,7 @@ export function AppSidebar() {
     user, 
     signOut, 
     franchisee,
-    isImpersonating, 
-    impersonatedFranchisee,
-    effectiveFranchisee,
+    franchisee,
     getDebugInfo
   } = useUnifiedAuth();
 
