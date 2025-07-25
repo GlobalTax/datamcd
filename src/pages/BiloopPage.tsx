@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -70,19 +72,24 @@ const BiloopPage = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Integración Biloop</h1>
-          <p className="text-muted-foreground">
-            Gestiona tu contabilidad y facturación desde Biloop
-          </p>
-        </div>
-        <Button onClick={handleTestConnection} disabled={loading}>
-          <TestTube className="mr-2 h-4 w-4" />
-          Probar conexión
-        </Button>
-      </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gray-50">
+        <AppSidebar />
+        <SidebarInset className="flex-1">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-white px-6">
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex-1">
+              <h1 className="text-lg font-semibold text-gray-900">Integración Biloop</h1>
+              <p className="text-sm text-gray-500">Gestiona tu contabilidad y facturación desde Biloop</p>
+            </div>
+            <Button onClick={handleTestConnection} disabled={loading}>
+              <TestTube className="mr-2 h-4 w-4" />
+              Probar conexión
+            </Button>
+          </header>
+
+          <main className="flex-1 p-6">
+            <div className="space-y-6">
 
       {/* Company Selector */}
       {companies.length > 0 && (
@@ -291,7 +298,11 @@ const BiloopPage = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+            </div>
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 };
 
