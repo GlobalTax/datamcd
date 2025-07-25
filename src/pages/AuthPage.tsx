@@ -29,17 +29,9 @@ const AuthPage = () => {
     console.log('AuthPage - Loading:', loading);
     
     if (user && !loading) {
-      console.log('AuthPage - User role:', user.role);
-      console.log('AuthPage - Determining redirect...');
-      
-      // Redirigir usuarios con roles de asesor, admin o superadmin al panel de asesor
-      if (['asesor', 'admin', 'superadmin'].includes(user.role)) {
-        console.log('AuthPage - Redirecting asesor/admin/superadmin to /advisor');
-        navigate('/advisor', { replace: true });
-      } else {
-        console.log('AuthPage - Redirecting franchisee to /dashboard');
-        navigate('/dashboard', { replace: true });
-      }
+      console.log('AuthPage - User authenticated, redirecting to dashboard');
+      // Simplified: redirect all authenticated users to dashboard
+      navigate('/dashboard', { replace: true });
     }
   }, [user, loading, navigate]);
 

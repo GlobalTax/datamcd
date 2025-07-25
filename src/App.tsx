@@ -47,7 +47,7 @@ function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
+                  <ProtectedRoute>
                     <OptimizedDashboardPage />
                   </ProtectedRoute>
                 }
@@ -55,7 +55,7 @@ function App() {
               <Route
                 path="/dashboard-legacy"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
+                  <ProtectedRoute>
                     <DashboardPage />
                   </ProtectedRoute>
                 }
@@ -63,7 +63,7 @@ function App() {
               <Route
                 path="/restaurant"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
+                  <ProtectedRoute>
                     <RestaurantManagementPage />
                   </ProtectedRoute>
                 }
@@ -71,7 +71,7 @@ function App() {
               <Route
                 path="/restaurant/:restaurantId"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
+                  <ProtectedRoute>
                     <RestaurantDetailPage />
                   </ProtectedRoute>
                 }
@@ -79,7 +79,7 @@ function App() {
               <Route
                 path="/analysis"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
+                  <ProtectedRoute>
                     <AnalysisPage />
                   </ProtectedRoute>
                 }
@@ -92,7 +92,7 @@ function App() {
               <Route
                 path="/profit-loss/:siteNumber"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
+                  <ProtectedRoute>
                     <ProfitLossPage />
                   </ProtectedRoute>
                 }
@@ -100,7 +100,7 @@ function App() {
               <Route
                 path="/historical-data"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
+                  <ProtectedRoute>
                     <HistoricalDataPage />
                   </ProtectedRoute>
                 }
@@ -108,7 +108,7 @@ function App() {
               <Route
                 path="/annual-budget"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
+                  <ProtectedRoute>
                     <AnnualBudgetPage />
                   </ProtectedRoute>
                 }
@@ -116,7 +116,7 @@ function App() {
               <Route
                 path="/advisor"
                 element={
-                  <ProtectedRoute allowedRoles={['asesor', 'admin', 'superadmin', 'advisor']}>
+                  <ProtectedRoute>
                     <AdvisorPage />
                   </ProtectedRoute>
                 }
@@ -124,7 +124,7 @@ function App() {
               <Route
                 path="/advisor/franchisee/:franchiseeId"
                 element={
-                  <ProtectedRoute allowedRoles={['asesor', 'admin', 'superadmin', 'advisor']}>
+                  <ProtectedRoute>
                     <FranchiseeDetailPage />
                   </ProtectedRoute>
                 }
@@ -132,7 +132,7 @@ function App() {
               <Route
                 path="/valuation"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
+                  <ProtectedRoute>
                     <ValuationApp />
                   </ProtectedRoute>
                 }
@@ -140,7 +140,7 @@ function App() {
               <Route
                 path="/employees"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
+                  <ProtectedRoute>
                     <EmployeePage />
                   </ProtectedRoute>
                 }
@@ -148,7 +148,7 @@ function App() {
               <Route
                 path="/orquest"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin']}>
+                  <ProtectedRoute>
                     <OrquestPage />
                   </ProtectedRoute>
                 }
@@ -156,7 +156,7 @@ function App() {
               <Route
                 path="/incidents"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'staff', 'asesor', 'admin', 'superadmin']}>
+                  <ProtectedRoute>
                     <IncidentManagementPage />
                   </ProtectedRoute>
                 }
@@ -164,7 +164,7 @@ function App() {
               <Route
                 path="/settings"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'superadmin', 'admin', 'asesor']}>
+                  <ProtectedRoute>
                     <SettingsPage />
                   </ProtectedRoute>
                 }
@@ -173,7 +173,7 @@ function App() {
               <Route
                 path="/workers"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin']}>
+                  <ProtectedRoute>
                     <WorkersPage />
                   </ProtectedRoute>
                 }
@@ -181,7 +181,7 @@ function App() {
               <Route
                 path="/labor-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin']}>
+                  <ProtectedRoute>
                     <LaborDashboardPage />
                   </ProtectedRoute>
                 }
@@ -189,7 +189,7 @@ function App() {
               <Route
                 path="/budget-valuation"
                 element={
-                  <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin']}>
+                  <ProtectedRoute>
                     <BudgetValuationPage />
                   </ProtectedRoute>
                 }

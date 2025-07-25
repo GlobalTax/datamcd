@@ -6,11 +6,10 @@ import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: string[];
-  requiredRole?: 'admin' | 'franchisee' | 'staff' | 'superadmin';
+  // Simplified: no role restrictions for superadmin mode
 }
 
-const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const [showTimeout, setShowTimeout] = useState(false);
 
@@ -49,48 +48,8 @@ const ProtectedRoute = ({ children, allowedRoles, requiredRole }: ProtectedRoute
     return <Navigate to="/auth" replace />;
   }
 
-  // Check if user has required role - usando allowedRoles principalmente
-  if (allowedRoles && allowedRoles.length > 0) {
-    if (!allowedRoles.includes(user.role)) {
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-red-600">Acceso Denegado</h1>
-            <p className="text-gray-600 mt-2">No tienes permisos para acceder a esta página.</p>
-            <p className="text-sm text-gray-500 mt-1">Rol actual: {user.role}</p>
-          </div>
-        </div>
-      );
-    }
-  }
-
-  // Check if user has required role - para admin permitir también superadmin
-  if (requiredRole) {
-    if (requiredRole === 'admin') {
-      // Si se requiere admin, permitir admin y superadmin
-      if (!['admin', 'superadmin'].includes(user.role)) {
-        return (
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-red-600">Acceso Denegado</h1>
-              <p className="text-gray-600 mt-2">No tienes permisos para acceder a esta página.</p>
-              <p className="text-sm text-gray-500 mt-1">Se requiere rol de administrador</p>
-            </div>
-          </div>
-        );
-      }
-    } else if (user.role !== requiredRole) {
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-red-600">Acceso Denegado</h1>
-            <p className="text-gray-600 mt-2">No tienes permisos para acceder a esta página.</p>
-            <p className="text-sm text-gray-500 mt-1">Rol requerido: {requiredRole}</p>
-          </div>
-        </div>
-      );
-    }
-  }
+  // Simplified: Only check if user is authenticated
+  // No role-based restrictions for development phase
 
   return <>{children}</>;
 };
