@@ -97,13 +97,12 @@ const AdvisorManagement = () => {
     }
   };
 
+  // Simplificado: todos los usuarios autenticados pueden acceder
   const canDeleteAdvisor = (advisorRole: string) => {
-    if (user?.role === 'superadmin') return true;
-    if (user?.role === 'admin' && advisorRole === 'admin') return true;
-    return false;
+    return true; // Superadmin mode
   };
 
-  if (!user || !['superadmin', 'admin'].includes(user.role)) {
+  if (!user) {
     return (
       <Card>
         <CardContent className="p-6">

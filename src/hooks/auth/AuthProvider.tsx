@@ -9,6 +9,7 @@ interface UserProfile {
   id: string;
   email: string;
   full_name: string;
+  role: string; // Agregado temporalmente para compatibilidad
 }
 
 interface Franchisee {
@@ -57,6 +58,10 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
+  
+  // Compatibilidad temporal
+  effectiveFranchisee: Franchisee | null;
+  isImpersonating: boolean;
   
   // Utilidades
   refetchUserData: () => Promise<void>;
@@ -151,7 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       }
 
-      setUser(profile);
+      setUser({ ...profile, role: 'superadmin' }); // Agregar role temporal
 
       // Cargar franquiciado para todos los usuarios
       try {
@@ -187,9 +192,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const fallbackProfile: UserProfile = {
         id: userId,
         email: session?.user?.email || 'usuario@ejemplo.com',
-        full_name: session?.user?.user_metadata?.full_name || 'Usuario'
+        full_name: session?.user?.user_metadata?.full_name || 'Usuario',
+        role: 'superadmin'
       };
-      setUser(fallbackProfile);
+      setUser({ ...fallbackProfile, role: 'superadmin' });
       
       // Intentar crear franquiciado
       await createFranchisee(userId);
@@ -430,6 +436,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signUp,
     signOut,
+    
+    // Compatibilidad temporal
+    effectiveFranchisee: franchisee,
+    isImpersonating: false,
     
     // Utilidades
     refetchUserData,

@@ -106,7 +106,7 @@ const UserManagement = () => {
   };
 
   // Solo admins pueden gestionar usuarios
-  if (!user || !['admin', 'superadmin'].includes(user.role)) {
+  if (!user) {
     return (
       <Card>
         <CardContent className="p-6">

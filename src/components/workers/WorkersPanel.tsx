@@ -21,8 +21,8 @@ import { BiloopEmployeeForm } from './BiloopEmployeeForm';
 import { A3TransformDialog } from './A3TransformDialog';
 
 export const WorkersPanel: React.FC = () => {
-  const { effectiveFranchisee } = useUnifiedAuth();
-  const franchiseeId = effectiveFranchisee?.id;
+  const { franchisee } = useUnifiedAuth();
+  const franchiseeId = franchisee?.id;
   
   const {
     workers,

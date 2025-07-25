@@ -92,7 +92,6 @@ export function AppSidebar() {
     user, 
     signOut, 
     franchisee,
-    franchisee,
     getDebugInfo
   } = useUnifiedAuth();
 
@@ -147,12 +146,12 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-4 border-t">
         <div className="space-y-3">
-          <div className={`px-3 py-2 rounded-lg ${isImpersonating ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
+          <div className="px-3 py-2 rounded-lg bg-gray-50">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {isImpersonating ? effectiveFranchisee?.franchisee_name : (user?.full_name || user?.email)}
+              {user?.full_name || user?.email}
             </p>
-            <p className={`text-xs ${isImpersonating ? 'text-blue-600' : 'text-gray-500'}`}>
-              {isImpersonating ? 'Franquiciado (Vista Asesor)' : 'Franquiciado'}
+            <p className="text-xs text-gray-500">
+              Administrador
             </p>
           </div>
           

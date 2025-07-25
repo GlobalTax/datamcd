@@ -11,7 +11,7 @@ import { QuantumDataDialog } from '@/components/quantum/QuantumDataDialog';
 import { Button } from '@/components/ui/button';
 
 export const AnalysisDashboard = () => {
-  const { effectiveFranchisee, restaurants } = useUnifiedAuth();
+  const { franchisee, restaurants } = useUnifiedAuth();
   const { exportRestaurantsData } = useDataExport();
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('all');
@@ -29,7 +29,7 @@ export const AnalysisDashboard = () => {
     }
   };
 
-  if (!effectiveFranchisee) {
+  if (!franchisee) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-gray-600">Cargando datos del franquiciado...</p>
@@ -40,7 +40,7 @@ export const AnalysisDashboard = () => {
   return (
     <div className="space-y-6">
       <DashboardHeader
-        franchiseeName={effectiveFranchisee.franchisee_name}
+        franchiseeName={franchisee.franchisee_name}
         selectedYear={selectedYear}
         selectedRestaurant={selectedRestaurant}
         restaurants={restaurants}

@@ -51,7 +51,7 @@ export const UserCreationPanel: React.FC<UserCreationPanelProps> = ({ onUserCrea
     }
   };
 
-  const canCreateUser = user?.role === 'admin' || user?.role === 'superadmin';
+  const canCreateUser = !!user; // Superadmin mode
   
   if (!canCreateUser) {
     return null;
@@ -118,21 +118,10 @@ export const UserCreationPanel: React.FC<UserCreationPanelProps> = ({ onUserCrea
                   <SelectValue placeholder="Seleccionar rol..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {user?.role === 'superadmin' && (
-                    <>
-                      <SelectItem value="superadmin">Super Admin</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="franchisee">Franquiciado</SelectItem>
-                      <SelectItem value="staff">Personal</SelectItem>
-                    </>
-                  )}
-                  {user?.role === 'admin' && (
-                    <>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="franchisee">Franquiciado</SelectItem>
-                      <SelectItem value="staff">Personal</SelectItem>
-                    </>
-                  )}
+                  <SelectItem value="superadmin">Super Admin</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="franchisee">Franquiciado</SelectItem>
+                  <SelectItem value="staff">Personal</SelectItem>
                 </SelectContent>
               </Select>
             </div>

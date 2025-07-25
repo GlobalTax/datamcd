@@ -32,10 +32,10 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
   } = useBiloop();
 
   // Obtener el company_id del franquiciado
-  const companyId = effectiveFranchisee?.biloop_company_id;
+  const companyId = franchisee?.biloop_company_id;
 
   // Si no hay franquiciado autenticado
-  if (!effectiveFranchisee) {
+  if (!franchisee) {
     return (
       <div className="p-6">
         <Alert>
@@ -57,7 +57,7 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Empresa BILOOP no configurada</AlertTitle>
           <AlertDescription>
-            No se ha configurado un código de empresa BILOOP válido para el franquiciado <strong>{effectiveFranchisee.franchisee_name}</strong>.
+            No se ha configurado un código de empresa BILOOP válido para el franquiciado <strong>{franchisee.franchisee_name}</strong>.
             <br />
             <br />
             Por favor, contacte con su asesor para configurar el campo <code>biloop_company_id</code> en su perfil de franquiciado.
@@ -84,7 +84,7 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
       </div>
 
       <div className="text-sm text-muted-foreground">
-        Franquiciado: <span className="font-semibold">{effectiveFranchisee.franchisee_name}</span>
+        Franquiciado: <span className="font-semibold">{franchisee.franchisee_name}</span>
         {' • '}
         Empresa BILOOP: <span className="font-semibold">{companyId}</span>
       </div>
