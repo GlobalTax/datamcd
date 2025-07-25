@@ -25,13 +25,7 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
         return;
       }
 
-      if (user.role !== 'franchisee') {
-        console.log('useFranchiseeRestaurants - User is not franchisee, role:', user.role);
-        setRestaurants([]);
-        setError('Usuario no es franquiciado');
-        setLoading(false);
-        return;
-      }
+      // Acceso simplificado - sin verificaciones de rol
 
       if (!franchisee) {
         console.log('useFranchiseeRestaurants - No franchisee data found for user');

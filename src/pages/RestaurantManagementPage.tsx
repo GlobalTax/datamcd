@@ -66,15 +66,7 @@ const RestaurantManagementPage = () => {
     );
   }
 
-  if (user.role !== 'franchisee') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Acceso no autorizado. Solo para franquiciados.</p>
-        </div>
-      </div>
-    );
-  }
+  // Acceso simplificado - sin verificaciones de rol
 
   if (!franchisee) {
     return (

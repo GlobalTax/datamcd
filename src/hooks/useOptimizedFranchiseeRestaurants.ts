@@ -25,13 +25,7 @@ export const useOptimizedFranchiseeRestaurants = () => {
         return;
       }
 
-      if (user.role !== 'franchisee') {
-        console.log('useOptimizedFranchiseeRestaurants - User is not franchisee, role:', user.role);
-        setRestaurants([]);
-        setError('Usuario no es franquiciado');
-        setLoading(false);
-        return;
-      }
+      // Acceso simplificado - sin verificaciones de rol
 
       if (!franchisee) {
         console.log('useOptimizedFranchiseeRestaurants - No franchisee data found for user');
