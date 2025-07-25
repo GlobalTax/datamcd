@@ -49,9 +49,14 @@ const menuItems = [
     icon: Calculator,
   },
   {
-    title: "Presupuestos",
+    title: "Presupuestos Anuales",
     url: "/annual-budget",
     icon: Calendar,
+  },
+  {
+    title: "Presupuestos de Valoración",
+    url: "/budget-valuation",
+    icon: Calculator,
   },
   {
     title: "Datos Históricos",

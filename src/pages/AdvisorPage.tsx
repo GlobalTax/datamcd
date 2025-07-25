@@ -70,6 +70,8 @@ const AdvisorPage = () => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'blue' },
     { id: 'franchisees', label: 'Franquiciados', icon: Building, color: 'green' },
     { id: 'restaurants', label: 'Restaurantes', icon: Store, color: 'purple' },
+    { id: 'valuation', label: 'Valoración', icon: TrendingUp, color: 'emerald' },
+    { id: 'budgets', label: 'Presupuestos', icon: Activity, color: 'rose' },
     { id: 'orquest', label: 'Orquest', icon: Monitor, color: 'cyan' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'orange' },
     { id: 'reports', label: 'Reportes', icon: FileText, color: 'yellow' },
@@ -341,6 +343,74 @@ const AdvisorPage = () => {
                   {activeTab === 'notifications' && (
                     <ErrorBoundary>
                       <NotificationCenter />
+                    </ErrorBoundary>
+                  )}
+
+                  {activeTab === 'valuation' && (
+                    <ErrorBoundary>
+                      <Card className="border-0 shadow-lg bg-card">
+                        <CardHeader>
+                          <CardTitle className="text-xl text-foreground">Accesos Rápidos - Valoración</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Button 
+                              onClick={() => navigate('/valuation')} 
+                              className="h-20 text-left p-6 bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700"
+                              variant="outline"
+                            >
+                              <div>
+                                <h3 className="font-semibold">Valoración DCF</h3>
+                                <p className="text-sm">Flujos de caja descontados</p>
+                              </div>
+                            </Button>
+                            <Button 
+                              onClick={() => navigate('/budget-valuation')} 
+                              className="h-20 text-left p-6 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
+                              variant="outline"
+                            >
+                              <div>
+                                <h3 className="font-semibold">Presupuestos de Valoración</h3>
+                                <p className="text-sm">Proyecciones financieras</p>
+                              </div>
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </ErrorBoundary>
+                  )}
+
+                  {activeTab === 'budgets' && (
+                    <ErrorBoundary>
+                      <Card className="border-0 shadow-lg bg-card">
+                        <CardHeader>
+                          <CardTitle className="text-xl text-foreground">Accesos Rápidos - Presupuestos</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Button 
+                              onClick={() => navigate('/annual-budget')} 
+                              className="h-20 text-left p-6 bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-700"
+                              variant="outline"
+                            >
+                              <div>
+                                <h3 className="font-semibold">Presupuestos Anuales</h3>
+                                <p className="text-sm">Planificación mensual detallada</p>
+                              </div>
+                            </Button>
+                            <Button 
+                              onClick={() => navigate('/budget-valuation')} 
+                              className="h-20 text-left p-6 bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700"
+                              variant="outline"
+                            >
+                              <div>
+                                <h3 className="font-semibold">Presupuestos de Valoración</h3>
+                                <p className="text-sm">Proyecciones para valoración</p>
+                              </div>
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
                     </ErrorBoundary>
                   )}
 

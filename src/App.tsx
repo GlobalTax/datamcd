@@ -27,6 +27,7 @@ import IncidentManagementPage from "./pages/IncidentManagementPage";
 import BiloopPage from "./pages/BiloopPage";
 import WorkersPage from "./pages/WorkersPage";
 import LaborDashboardPage from "./pages/LaborDashboardPage";
+import BudgetValuationPage from "./pages/BudgetValuationPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -182,6 +183,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin']}>
                     <LaborDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/budget-valuation"
+                element={
+                  <ProtectedRoute allowedRoles={['franchisee', 'asesor', 'admin', 'superadmin']}>
+                    <BudgetValuationPage />
                   </ProtectedRoute>
                 }
               />
