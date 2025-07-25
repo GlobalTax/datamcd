@@ -18,6 +18,7 @@ import HistoricalDataPage from "./pages/HistoricalDataPage";
 import AnalysisPage from "./pages/AnalysisPage";
 import AdvisorPage from "./pages/AdvisorPage";
 import FranchiseeDetailPage from "./pages/FranchiseeDetailPage";
+import FranchiseeManagementPage from "./pages/FranchiseeManagementPage";
 import ValuationApp from "./pages/ValuationApp";
 import SettingsPage from "./pages/SettingsPage";
 import AnnualBudgetPage from "./pages/AnnualBudgetPage";
@@ -121,14 +122,22 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/advisor/franchisee/:franchiseeId"
-                element={
-                  <ProtectedRoute>
-                    <FranchiseeDetailPage />
-                  </ProtectedRoute>
-                }
-              />
+               <Route
+                 path="/franchisees"
+                 element={
+                   <ProtectedRoute>
+                     <FranchiseeManagementPage />
+                   </ProtectedRoute>
+                 }
+               />
+               <Route
+                 path="/advisor/franchisee/:franchiseeId"
+                 element={
+                   <ProtectedRoute>
+                     <FranchiseeDetailPage />
+                   </ProtectedRoute>
+                 }
+               />
               <Route
                 path="/valuation"
                 element={

@@ -13,7 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, HardHat, UserCheck } from 'lucide-react';
+import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, HardHat, UserCheck, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 
@@ -31,6 +31,11 @@ const menuItems = [
   {
     title: "Restaurantes",
     url: "/restaurant",
+    icon: Store,
+  },
+  {
+    title: "Franquiciados",
+    url: "/franchisees",
     icon: Building,
   },
   {
