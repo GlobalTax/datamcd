@@ -4,6 +4,7 @@ import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { logger } from '@/lib/logger';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Shield, RefreshCw } from 'lucide-react';
@@ -30,7 +31,7 @@ const AdvisorManagement = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching advisors:', error);
+        logger.error('Error fetching advisors', { error });
         toast.error('Error al cargar administradores');
         return;
       }
@@ -43,7 +44,7 @@ const AdvisorManagement = () => {
 
       setAdvisors(typedAdvisors);
     } catch (error) {
-      console.error('Error in fetchAdvisors:', error);
+      logger.error('Error in fetchAdvisors', { error });
       toast.error('Error al cargar administradores');
     } finally {
       setLoading(false);
@@ -62,7 +63,7 @@ const AdvisorManagement = () => {
         .eq('id', advisorId);
 
       if (error) {
-        console.error('Error deleting advisor:', error);
+        logger.error('Error deleting advisor', { error, advisorId });
         toast.error('Error al eliminar administrador');
         return;
       }
@@ -70,7 +71,7 @@ const AdvisorManagement = () => {
       toast.success('Administrador eliminado exitosamente');
       fetchAdvisors();
     } catch (error) {
-      console.error('Error in handleDeleteAdvisor:', error);
+      logger.error('Error in handleDeleteAdvisor', { error, advisorId, advisorName });
       toast.error('Error al eliminar administrador');
     }
   };

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { toast } from 'sonner';
 import { ActualData, ActualDataUpdateParams } from '@/types/actualDataTypes';
+import { logger } from '@/lib/logger';
 import { 
   getMonthKey, 
   getMonthNumber, 
@@ -32,7 +33,7 @@ export const useActualData = () => {
         .eq('year', year);
 
       if (queryError) {
-        console.error('Error fetching actual data:', queryError);
+        logger.error('Error fetching actual data', { error: queryError, restaurantId, year });
         setError('Error al cargar los datos reales');
         return;
       }
@@ -54,7 +55,7 @@ export const useActualData = () => {
       setActualData(Object.values(groupedData));
 
     } catch (err) {
-      console.error('Error in fetchActualData:', err);
+      logger.error('Error in fetchActualData', { error: err, restaurantId, year });
       setError('Error al cargar los datos reales');
       toast.error('Error al cargar los datos reales');
     } finally {
@@ -130,7 +131,7 @@ export const useActualData = () => {
       }
 
     } catch (err) {
-      console.error('Error updating actual data:', err);
+      logger.error('Error updating actual data', { error: err, data });
       throw err;
     }
   }, [user]);

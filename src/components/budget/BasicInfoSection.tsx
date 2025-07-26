@@ -18,20 +18,6 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
   restaurants,
   onInputChange
 }) => {
-  console.log('BasicInfoSection - restaurants data:', restaurants);
-  console.log('BasicInfoSection - restaurants length:', restaurants.length);
-  
-  // Log detallado de cada restaurante
-  restaurants.forEach((restaurant, index) => {
-    console.log(`Restaurant ${index}:`, {
-      id: restaurant.id,
-      fullObject: restaurant,
-      baseRestaurant: restaurant.base_restaurant,
-      franchiseeName: restaurant.base_restaurant?.franchisee_name,
-      restaurantName: restaurant.base_restaurant?.restaurant_name,
-      siteNumber: restaurant.base_restaurant?.site_number
-    });
-  });
 
   return (
     <Card>
@@ -84,14 +70,6 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                   const siteNumber = restaurant.base_restaurant?.site_number || 'Sin número';
                   const franchiseeName = restaurant.base_restaurant?.franchisee_name || 'Sin empresa';
                   const displayText = `${restaurantName} - #${siteNumber} (${franchiseeName})`;
-                  
-                  console.log(`Rendering SelectItem for restaurant ${restaurant.id}:`, {
-                    restaurantName,
-                    siteNumber,
-                    franchiseeName,
-                    displayText,
-                    rawData: restaurant
-                  });
                   
                   return (
                     <SelectItem key={restaurant.id} value={restaurant.id}>

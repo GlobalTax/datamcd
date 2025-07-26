@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Building, Users, MapPin, TrendingUp, Calendar, Globe } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 
 interface ReportData {
@@ -41,7 +42,7 @@ export const AdvisorReports: React.FC = () => {
         .select('*');
 
       if (restaurantsError) {
-        console.error('Error fetching restaurants:', restaurantsError);
+        logger.error('Error fetching restaurants', { error: restaurantsError });
         return;
       }
 
@@ -51,7 +52,7 @@ export const AdvisorReports: React.FC = () => {
         .select('*');
 
       if (franchiseesError) {
-        console.error('Error fetching franchisees:', franchiseesError);
+        logger.error('Error fetching franchisees', { error: franchiseesError });
         return;
       }
 
@@ -61,7 +62,7 @@ export const AdvisorReports: React.FC = () => {
         .select('*, base_restaurant:base_restaurants(*)');
 
       if (assignmentsError) {
-        console.error('Error fetching assignments:', assignmentsError);
+        logger.error('Error fetching assignments', { error: assignmentsError });
         return;
       }
 
@@ -130,7 +131,7 @@ export const AdvisorReports: React.FC = () => {
       });
 
     } catch (err) {
-      console.error('Error in fetchReportData:', err);
+      logger.error('Error in fetchReportData', { error: err });
       toast.error('Error al cargar los datos de reporte');
     } finally {
       setLoading(false);

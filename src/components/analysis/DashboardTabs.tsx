@@ -15,12 +15,6 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
   selectedRestaurant,
   restaurants
 }) => {
-  console.log('=== DashboardTabs DEBUG ===');
-  console.log('DashboardTabs - Rendering tabs with restaurants:', restaurants.length);
-  console.log('DashboardTabs - Component loaded successfully');
-  console.log('DashboardTabs - HistoricalDataTab imported:', !!HistoricalDataTab);
-  console.log('DashboardTabs - HistoricalYearsTab imported:', !!HistoricalYearsTab);
-  console.log('DashboardTabs - About to render 2 tabs');
   
   return (
     <div className="w-full">

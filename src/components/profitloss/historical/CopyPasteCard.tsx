@@ -7,6 +7,7 @@ import { FileSpreadsheet, Upload } from 'lucide-react';
 import { parseDataFromText } from './utils';
 import { YearlyData, ImportMethod } from './types';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface CopyPasteCardProps {
   onDataParsed: (data: YearlyData[], method: ImportMethod) => void;
@@ -16,17 +17,12 @@ export const CopyPasteCard: React.FC<CopyPasteCardProps> = ({ onDataParsed }) =>
   const [csvData, setCsvData] = useState('');
 
   const parseCSVData = () => {
-    console.log('=== COPY PASTE DEBUG ===');
-    console.log('CSV data length:', csvData.length);
-    console.log('First 200 chars:', csvData.substring(0, 200));
-    
     try {
       const data = parseDataFromText(csvData);
-      console.log('Parsed CSV data successfully:', data.length, 'years');
-      console.log('Sample data:', data[0]);
+      logger.info('CSV data parsed successfully', { years: data.length });
       onDataParsed(data, 'csv');
     } catch (error) {
-      console.error('Error parsing CSV data:', error);
+      logger.error('Error parsing CSV data', { error, dataLength: csvData.length });
       toast.error('Error al procesar los datos');
     }
   };

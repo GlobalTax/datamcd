@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export interface BiloopCompany {
   id: string;
@@ -222,7 +223,7 @@ export const useBiloop = () => {
 
       return data;
     } catch (error) {
-      console.error('Biloop API error:', error);
+      logger.error('Biloop API error', { error, endpoint, method, body, params, companyId });
       toast({
         title: 'Error de conexión con Biloop',
         description: error instanceof Error ? error.message : 'Error desconocido',
@@ -757,7 +758,7 @@ export const useBiloop = () => {
       });
       return true;
     } catch (error) {
-      console.error('Connection test failed:', error);
+      logger.error('Connection test failed', { error });
       toast({
         title: 'Error de conexión',
         description: 'No se pudo conectar a Biloop. Verifica las credenciales y endpoints.',

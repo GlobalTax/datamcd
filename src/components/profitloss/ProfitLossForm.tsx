@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useProfitLossData } from '@/hooks/useProfitLossData';
+import { logger } from '@/lib/logger';
 import { ProfitLossFormData } from '@/types/profitLoss';
 import { Save } from 'lucide-react';
 import { ProfitLossFormHeader } from './form/ProfitLossFormHeader';
@@ -68,7 +69,7 @@ export const ProfitLossForm = ({ restaurantId, onClose, editData }: ProfitLossFo
       }
       onClose();
     } catch (error) {
-      console.error('Error saving P&L data:', error);
+      logger.error('Error saving P&L data', { error, formData: { ...formData, id: editData?.id } });
     } finally {
       setIsSubmitting(false);
     }

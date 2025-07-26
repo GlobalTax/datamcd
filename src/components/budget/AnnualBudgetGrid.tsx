@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useBudgets } from '@/hooks/data/useBudgets';
 import { useActualData } from '@/hooks/useActualData';
 import { useRestaurants } from '@/hooks/data/useRestaurants';
+import { logger } from '@/lib/logger';
 import { BudgetTable } from './BudgetTable';
 import { BudgetGridHeader } from './BudgetGridHeader';
 import { BudgetGridStatus } from './BudgetGridStatus';

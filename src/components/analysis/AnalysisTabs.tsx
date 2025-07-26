@@ -17,10 +17,6 @@ export const AnalysisTabs: React.FC<AnalysisTabsProps> = ({
   selectedRestaurant,
   restaurants
 }) => {
-  console.log('=== AnalysisTabs DEBUG ===');
-  console.log('AnalysisTabs - Rendering tabs with restaurants:', restaurants.length);
-  console.log('AnalysisTabs - Component loaded successfully');
-  console.log('AnalysisTabs - About to render 4 tabs');
   
   return (
     <div className="w-full">
