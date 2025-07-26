@@ -11,6 +11,7 @@ import { X } from "lucide-react";
 import { IncidentType, IncidentPriority, IncidentStatus } from "@/types/incident";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { SearchableRestaurantSelect } from "@/components/ui/searchable-restaurant-select";
 
 interface IncidentFiltersProps {
   filters: {
@@ -66,23 +67,19 @@ export const IncidentFilters = ({ filters, onFiltersChange }: IncidentFiltersPro
       <CardContent className="pt-6">
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex-1 min-w-[200px]">
-            <Select
+            <SearchableRestaurantSelect
+              restaurants={restaurants?.map(r => ({
+                id: r.id,
+                name: r.base_restaurant?.restaurant_name || 'Sin nombre',
+                site_number: r.base_restaurant?.site_number || 'N/A'
+              })) || []}
               value={filters.restaurantId || "all"}
               onValueChange={(value) => updateFilter("restaurantId", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Todos los restaurantes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los restaurantes</SelectItem>
-                {restaurants?.map((restaurant) => (
-                  <SelectItem key={restaurant.id} value={restaurant.id}>
-                    {restaurant.base_restaurant?.restaurant_name} (#
-                    {restaurant.base_restaurant?.site_number})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              includeAllOption
+              allOptionLabel="Todos los restaurantes"
+              placeholder="Buscar restaurante..."
+              compact
+            />
           </div>
 
           <div className="min-w-[150px]">

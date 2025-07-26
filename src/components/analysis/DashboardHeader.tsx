@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { DataImportDialog } from '@/components/DataImportDialog';
+import { SearchableRestaurantSelect } from '@/components/ui/searchable-restaurant-select';
 
 interface DashboardHeaderProps {
   franchiseeName: string;
@@ -55,19 +56,20 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </SelectContent>
         </Select>
 
-        <Select value={selectedRestaurant} onValueChange={onRestaurantChange}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los Restaurantes</SelectItem>
-            {restaurants.map(restaurant => (
-              <SelectItem key={restaurant.id} value={restaurant.id}>
-                {restaurant.base_restaurant?.restaurant_name || `Restaurante ${restaurant.base_restaurant?.site_number}`}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="w-48">
+          <SearchableRestaurantSelect
+            restaurants={restaurants.map(r => ({
+              id: r.id,
+              name: r.base_restaurant?.restaurant_name || `Restaurante ${r.base_restaurant?.site_number}`,
+              site_number: r.base_restaurant?.site_number || 'N/A'
+            }))}
+            value={selectedRestaurant}
+            onValueChange={onRestaurantChange}
+            includeAllOption
+            allOptionLabel="Todos los Restaurantes"
+            compact
+          />
+        </div>
 
         <DataImportDialog onImportComplete={onImportComplete} />
 
