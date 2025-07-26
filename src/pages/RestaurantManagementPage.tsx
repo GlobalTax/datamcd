@@ -1,14 +1,31 @@
 
 import React from 'react';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
-import { useUnifiedRestaurants } from '@/hooks/useUnifiedRestaurants';
+import { useRestaurants } from '@/hooks/data/useRestaurants';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { UnifiedRestaurantsTable } from '@/components/UnifiedRestaurantsTable';
 
 const RestaurantManagementPage = () => {
   const { user } = useUnifiedAuth();
-  const { restaurants, loading, refetch, stats } = useUnifiedRestaurants();
+  const { restaurants: rawRestaurants, isLoading: loading, refetch, stats } = useRestaurants();
+
+  // Adapt Restaurant[] to UnifiedRestaurant[]
+  const restaurants = React.useMemo(() => {
+    return rawRestaurants.map(restaurant => ({
+      ...restaurant,
+      isAssigned: !!restaurant.franchisee_id,
+      assignment: restaurant.franchisee_id ? {
+        id: restaurant.id,
+        franchisee_id: restaurant.franchisee_id,
+        franchise_start_date: (restaurant as any).franchise_start_date,
+        franchise_end_date: (restaurant as any).franchise_end_date,
+        monthly_rent: (restaurant as any).monthly_rent,
+        status: restaurant.status,
+        assigned_at: restaurant.created_at,
+      } : undefined,
+    }));
+  }, [rawRestaurants]);
 
   console.log('RestaurantManagementPage - User:', user ? { id: user.id, role: user.role } : null);
   console.log('RestaurantManagementPage - Restaurants:', restaurants.length, restaurants);
