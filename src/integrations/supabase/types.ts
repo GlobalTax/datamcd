@@ -3283,6 +3283,15 @@ export type Database = {
         Args: { "": string }
         Returns: string
       }
+      log_admin_action: {
+        Args: {
+          action_type: string
+          entity_type: string
+          entity_id: string
+          details?: Json
+        }
+        Returns: undefined
+      }
       manually_assign_restaurants_to_existing_franchisees: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -3433,6 +3442,14 @@ export type Database = {
       users_are: {
         Args: { "": unknown[] }
         Returns: string
+      }
+      validate_role_change: {
+        Args: { new_role: string; user_id: string }
+        Returns: boolean
+      }
+      validate_session_security: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       views_are: {
         Args: { "": unknown[] }

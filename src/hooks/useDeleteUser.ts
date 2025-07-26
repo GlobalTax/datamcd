@@ -15,6 +15,29 @@ export const useDeleteUser = () => {
       return false;
     }
 
+    // Security validation - only superadmin can delete users
+    const currentUserRole = (user as any).role;
+    if (currentUserRole !== 'superadmin') {
+      logger.warn('Unauthorized user deletion attempt', {
+        component: 'useDeleteUser',
+        attemptedBy: user.id,
+        targetUserId: userId,
+        userRole: currentUserRole
+      });
+      toast.error('Solo los superadministradores pueden eliminar usuarios');
+      return false;
+    }
+
+    // Prevent self-deletion
+    if (user.id === userId) {
+      logger.warn('User attempted to delete themselves', {
+        component: 'useDeleteUser',
+        userId: user.id
+      });
+      toast.error('No puedes eliminar tu propia cuenta');
+      return false;
+    }
+
     try {
       setDeleting(true);
       logger.info('Starting user deletion', { 
@@ -22,7 +45,8 @@ export const useDeleteUser = () => {
         action: 'deleteUser',
         franchiseeId,
         userId,
-        userName
+        userName,
+        deletedBy: user.id
       });
 
       // 1. Desvincular el franquiciado del usuario (esto es lo más importante)
