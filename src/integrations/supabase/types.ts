@@ -1420,53 +1420,208 @@ export type Database = {
           },
         ]
       }
+      orquest_employee_metrics: {
+        Row: {
+          año: number
+          created_at: string | null
+          franchisee_id: string | null
+          id: string
+          mes: number
+          promedio_asistencia: number | null
+          service_id: string | null
+          tasa_ausentismo: number | null
+          total_ausencias: number | null
+          total_empleados: number | null
+          total_horas_netas: number | null
+          total_horas_nocturnas: number | null
+          total_turnos_cierre: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          año: number
+          created_at?: string | null
+          franchisee_id?: string | null
+          id?: string
+          mes: number
+          promedio_asistencia?: number | null
+          service_id?: string | null
+          tasa_ausentismo?: number | null
+          total_ausencias?: number | null
+          total_empleados?: number | null
+          total_horas_netas?: number | null
+          total_horas_nocturnas?: number | null
+          total_turnos_cierre?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          año?: number
+          created_at?: string | null
+          franchisee_id?: string | null
+          id?: string
+          mes?: number
+          promedio_asistencia?: number | null
+          service_id?: string | null
+          tasa_ausentismo?: number | null
+          total_ausencias?: number | null
+          total_empleados?: number | null
+          total_horas_netas?: number | null
+          total_horas_nocturnas?: number | null
+          total_turnos_cierre?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orquest_employee_metrics_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orquest_employees: {
         Row: {
+          año_datos: number | null
           apellidos: string | null
+          asistencia_trabajo: number | null
           datos_completos: Json | null
           departamento: string | null
+          dia_trabajado: number | null
+          dias_ausencia_injustificada: number | null
+          dias_ausencia_justificada: number | null
+          dias_ausencia_parcial: number | null
+          dias_baja_accidente: number | null
+          dias_baja_it: number | null
+          dias_cedido: number | null
+          dias_compensacion_festivos: number | null
+          dias_festivo_no_trabajado: number | null
+          dias_formacion_externa: number | null
+          dias_otra_incidencia: number | null
+          dias_sancion: number | null
+          dias_vacaciones: number | null
           email: string | null
           estado: string | null
           fecha_alta: string | null
           fecha_baja: string | null
+          fecha_inicio_contrato: string | null
           franchisee_id: string | null
+          horas_ausencia_injustificada: number | null
+          horas_ausencia_justificada: number | null
+          horas_ausencia_parcial: number | null
+          horas_baja_accidente: number | null
+          horas_baja_it: number | null
+          horas_compensacion_festivos: number | null
+          horas_festivo_no_trabajado: number | null
+          horas_formacion_externa: number | null
+          horas_netas_mensuales: number | null
+          horas_nocturnas_tipo2: number | null
+          horas_nocturnas_tipo3: number | null
+          horas_sancion: number | null
+          horas_vacaciones: number | null
           id: string
+          mes_datos: number | null
+          nif: string | null
           nombre: string | null
           puesto: string | null
           service_id: string | null
           telefono: string | null
+          turnos_cierre: number | null
           updated_at: string | null
         }
         Insert: {
+          año_datos?: number | null
           apellidos?: string | null
+          asistencia_trabajo?: number | null
           datos_completos?: Json | null
           departamento?: string | null
+          dia_trabajado?: number | null
+          dias_ausencia_injustificada?: number | null
+          dias_ausencia_justificada?: number | null
+          dias_ausencia_parcial?: number | null
+          dias_baja_accidente?: number | null
+          dias_baja_it?: number | null
+          dias_cedido?: number | null
+          dias_compensacion_festivos?: number | null
+          dias_festivo_no_trabajado?: number | null
+          dias_formacion_externa?: number | null
+          dias_otra_incidencia?: number | null
+          dias_sancion?: number | null
+          dias_vacaciones?: number | null
           email?: string | null
           estado?: string | null
           fecha_alta?: string | null
           fecha_baja?: string | null
+          fecha_inicio_contrato?: string | null
           franchisee_id?: string | null
+          horas_ausencia_injustificada?: number | null
+          horas_ausencia_justificada?: number | null
+          horas_ausencia_parcial?: number | null
+          horas_baja_accidente?: number | null
+          horas_baja_it?: number | null
+          horas_compensacion_festivos?: number | null
+          horas_festivo_no_trabajado?: number | null
+          horas_formacion_externa?: number | null
+          horas_netas_mensuales?: number | null
+          horas_nocturnas_tipo2?: number | null
+          horas_nocturnas_tipo3?: number | null
+          horas_sancion?: number | null
+          horas_vacaciones?: number | null
           id: string
+          mes_datos?: number | null
+          nif?: string | null
           nombre?: string | null
           puesto?: string | null
           service_id?: string | null
           telefono?: string | null
+          turnos_cierre?: number | null
           updated_at?: string | null
         }
         Update: {
+          año_datos?: number | null
           apellidos?: string | null
+          asistencia_trabajo?: number | null
           datos_completos?: Json | null
           departamento?: string | null
+          dia_trabajado?: number | null
+          dias_ausencia_injustificada?: number | null
+          dias_ausencia_justificada?: number | null
+          dias_ausencia_parcial?: number | null
+          dias_baja_accidente?: number | null
+          dias_baja_it?: number | null
+          dias_cedido?: number | null
+          dias_compensacion_festivos?: number | null
+          dias_festivo_no_trabajado?: number | null
+          dias_formacion_externa?: number | null
+          dias_otra_incidencia?: number | null
+          dias_sancion?: number | null
+          dias_vacaciones?: number | null
           email?: string | null
           estado?: string | null
           fecha_alta?: string | null
           fecha_baja?: string | null
+          fecha_inicio_contrato?: string | null
           franchisee_id?: string | null
+          horas_ausencia_injustificada?: number | null
+          horas_ausencia_justificada?: number | null
+          horas_ausencia_parcial?: number | null
+          horas_baja_accidente?: number | null
+          horas_baja_it?: number | null
+          horas_compensacion_festivos?: number | null
+          horas_festivo_no_trabajado?: number | null
+          horas_formacion_externa?: number | null
+          horas_netas_mensuales?: number | null
+          horas_nocturnas_tipo2?: number | null
+          horas_nocturnas_tipo3?: number | null
+          horas_sancion?: number | null
+          horas_vacaciones?: number | null
           id?: string
+          mes_datos?: number | null
+          nif?: string | null
           nombre?: string | null
           puesto?: string | null
           service_id?: string | null
           telefono?: string | null
+          turnos_cierre?: number | null
           updated_at?: string | null
         }
         Relationships: [
