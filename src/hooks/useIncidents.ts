@@ -18,7 +18,7 @@ export const useIncidents = (restaurantId?: string) => {
         .from("restaurant_incidents")
         .select(`
           *,
-          restaurant:franchisee_restaurants!inner(
+          restaurant:franchisee_restaurants(
             id,
             base_restaurant:base_restaurants(restaurant_name, site_number)
           ),

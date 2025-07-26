@@ -15,7 +15,7 @@ export interface RestaurantIncident {
   reported_by: string;
   assigned_to?: string;
   resolution_notes?: string;
-  estimated_resolution?: string;
+  estimated_resolution?: string; // Fecha como string ISO
   resolved_at?: string;
   created_at: string;
   updated_at: string;
