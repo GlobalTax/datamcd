@@ -27,7 +27,7 @@ import OrquestPage from "./pages/OrquestPage";
 import IncidentManagementPage from "./pages/IncidentManagementPage";
 import BiloopPage from "./pages/BiloopPage";
 import WorkersPage from "./pages/WorkersPage";
-import LaborDashboardPage from "./pages/LaborDashboardPage";
+
 import BudgetValuationPage from "./pages/BudgetValuationPage";
 import NotFound from "./pages/NotFound";
 
@@ -201,14 +201,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <WorkersPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/labor-dashboard"
-                element={
-                  <ProtectedRoute>
-                    <LaborDashboardPage />
                   </ProtectedRoute>
                 }
               />

@@ -13,7 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, HardHat, UserCheck, Store } from 'lucide-react';
+import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, UserCheck, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/AuthProvider';
 import { logger } from '@/lib/logger';
@@ -23,11 +23,6 @@ const menuItems = [
     title: "Dashboard",
     url: "/dashboard",
     icon: Home,
-  },
-  {
-    title: "Panel Laboral",
-    url: "/labor-dashboard",
-    icon: HardHat,
   },
   {
     title: "Restaurantes",
