@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,7 +62,7 @@ export const RestaurantAssignmentDialog: React.FC<RestaurantAssignmentDialogProp
         onClose();
       }
     } catch (error) {
-      console.error('Error assigning restaurants:', error);
+      logger.error('Failed to assign restaurants', { error: error.message, action: 'assign_restaurants' });
       toast.error('Error al asignar restaurantes');
     } finally {
       setAssigning(false);

@@ -1,4 +1,5 @@
 import React from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Database, FileSpreadsheet, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ export const HistoricalDataTab: React.FC = () => {
   const navigate = useNavigate();
 
   const handleNavigateToRestaurant = (siteNumber: string) => {
-    console.log('Navigating to restaurant:', siteNumber);
+    logger.debug('Navigating to restaurant', { siteNumber, action: 'navigate_restaurant' });
     navigate(`/profit-loss/${siteNumber}`);
   };
 

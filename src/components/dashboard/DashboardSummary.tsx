@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, TrendingUp, DollarSign, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,10 +16,11 @@ export const DashboardSummary = ({
   displayRestaurants, 
   isTemporaryData = false 
 }: DashboardSummaryProps) => {
-  console.log('DashboardSummary - Props:', {
+  logger.debug('DashboardSummary props', { 
     totalRestaurants,
     restaurantsCount: displayRestaurants?.length || 0,
-    isTemporaryData
+    isTemporaryData,
+    component: 'DashboardSummary'
   });
 
   // Verificación exhaustiva de datos
@@ -30,7 +32,7 @@ export const DashboardSummary = ({
     try {
       return r?.status === 'active' || !r?.status;
     } catch (error) {
-      console.warn('DashboardSummary - Error filtering restaurant:', error);
+      logger.warn('Error filtering restaurant', { error: error.message, action: 'filter_restaurant' });
       return false;
     }
   }).length;
@@ -43,7 +45,7 @@ export const DashboardSummary = ({
       }
       return sum;
     } catch (error) {
-      console.warn('DashboardSummary - Error calculating revenue:', error);
+      logger.warn('Error calculating revenue', { error: error.message, action: 'calculate_revenue' });
       return sum;
     }
   }, 0);
@@ -51,11 +53,11 @@ export const DashboardSummary = ({
   const avgRevenue = safeTotalRestaurants > 0 ? totalRevenue / safeTotalRestaurants : 0;
 
   const handleRefresh = () => {
-    console.log('DashboardSummary - Refreshing page');
+    logger.debug('Refreshing dashboard page', { action: 'refresh_page', component: 'DashboardSummary' });
     try {
       window.location.reload();
     } catch (error) {
-      console.error('DashboardSummary - Error refreshing page:', error);
+      logger.error('Error refreshing page', { error: error.message, action: 'refresh_page' });
     }
   };
 
@@ -170,7 +172,7 @@ export const DashboardSummary = ({
               {safeRestaurants.map((restaurant, index) => {
                 // Verificación exhaustiva de cada restaurant
                 if (!restaurant || typeof restaurant !== 'object') {
-                  console.warn('DashboardSummary - Invalid restaurant at index:', index);
+                  logger.warn('Invalid restaurant data', { index, action: 'validate_restaurant' });
                   return null;
                 }
 

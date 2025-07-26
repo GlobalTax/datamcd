@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,14 +48,14 @@ export const RestaurantAssignments: React.FC = () => {
         .order('assigned_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching assignments:', error);
+        logger.error('Failed to fetch restaurant assignments', { error: error.message, action: 'fetch_assignments' });
         toast.error('Error al cargar las asignaciones');
         return;
       }
 
       setAssignments(data as RestaurantAssignment[]);
     } catch (err) {
-      console.error('Error in fetchAssignments:', err);
+      logger.error('Error in fetchAssignments', { error: err.message, action: 'fetch_assignments' });
       toast.error('Error al cargar las asignaciones');
     } finally {
       setLoading(false);
@@ -80,7 +81,7 @@ export const RestaurantAssignments: React.FC = () => {
       toast.success('Asignación eliminada correctamente');
       fetchAssignments();
     } catch (err) {
-      console.error('Error removing assignment:', err);
+      logger.error('Failed to remove assignment', { error: err.message, action: 'remove_assignment' });
       toast.error('Error al eliminar la asignación');
     }
   };

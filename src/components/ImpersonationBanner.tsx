@@ -1,4 +1,5 @@
 import React from 'react';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { User, X } from 'lucide-react';
@@ -44,7 +45,7 @@ export const ImpersonationBanner: React.FC = () => {
       </Alert>
     );
   } catch (error) {
-    console.error('ImpersonationBanner error:', error);
+    logger.error('ImpersonationBanner error', { error: error.message, component: 'ImpersonationBanner' });
     return null;
   }
 };

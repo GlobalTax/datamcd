@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,7 +61,7 @@ export const FranchiseesManagement: React.FC = () => {
     password: ''
   });
 
-  console.log('FranchiseesManagement render - loading:', loading, 'error:', error, 'franchisees:', franchisees);
+  logger.debug('FranchiseesManagement render', { loading, hasError: !!error, franchiseeCount: franchisees?.length });
 
   // Cálculos de paginación con franquiciados filtrados
   const totalPages = Math.ceil(filteredFranchisees.length / ITEMS_PER_PAGE);
@@ -123,7 +124,7 @@ export const FranchiseesManagement: React.FC = () => {
           .eq('id', authData.user.id);
 
         if (profileError) {
-          console.error('Error updating profile:', profileError);
+          logger.error('Failed to update profile', { error: profileError.message, action: 'update_profile' });
         }
 
         const { error: franchiseeError } = await supabase
@@ -140,7 +141,7 @@ export const FranchiseesManagement: React.FC = () => {
           });
 
         if (franchiseeError) {
-          console.error('Error creating franchisee:', franchiseeError);
+          logger.error('Failed to create franchisee', { error: franchiseeError.message, action: 'create_franchisee' });
           toast.error('Error al crear el franquiciado');
           return;
         }
@@ -151,7 +152,7 @@ export const FranchiseesManagement: React.FC = () => {
         onRefresh();
       }
     } catch (error) {
-      console.error('Error in handleCreate:', error);
+      logger.error('Error in handleCreate', { error: error.message, action: 'create_franchisee' });
       toast.error('Error al crear el franquiciado');
     } finally {
       setCreating(false);
@@ -189,7 +190,7 @@ export const FranchiseesManagement: React.FC = () => {
       resetForm();
       onRefresh();
     } catch (error) {
-      console.error('Error in handleEdit:', error);
+      logger.error('Error in handleEdit', { error: error.message, action: 'edit_franchisee' });
       toast.error('Error al actualizar el franquiciado');
     } finally {
       setUpdating(false);
@@ -215,7 +216,7 @@ export const FranchiseesManagement: React.FC = () => {
       toast.success('Franquiciado eliminado exitosamente');
       onRefresh();
     } catch (error) {
-      console.error('Error in handleDelete:', error);
+      logger.error('Error in handleDelete', { error: error.message, action: 'delete_franchisee' });
       toast.error('Error al eliminar el franquiciado');
     }
   };

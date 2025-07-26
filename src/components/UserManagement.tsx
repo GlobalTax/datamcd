@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +30,7 @@ const UserManagement = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching users:', error);
+        logger.error('Failed to fetch users', { error: error.message, action: 'fetch_users' });
         toast.error('Error al cargar usuarios');
         return;
       }
@@ -42,7 +43,7 @@ const UserManagement = () => {
 
       setUsers(typedUsers);
     } catch (error) {
-      console.error('Error in fetchUsers:', error);
+      logger.error('Error in fetchUsers', { error: error.message, action: 'fetch_users' });
       toast.error('Error al cargar usuarios');
     } finally {
       setLoading(false);
@@ -62,7 +63,7 @@ const UserManagement = () => {
         .eq('id', userId);
 
       if (error) {
-        console.error('Error deleting user:', error);
+        logger.error('Failed to delete user', { error: error.message, action: 'delete_user' });
         toast.error('Error al eliminar usuario');
         return;
       }
@@ -70,7 +71,7 @@ const UserManagement = () => {
       toast.success('Usuario eliminado exitosamente');
       fetchUsers();
     } catch (error) {
-      console.error('Error in handleDeleteUser:', error);
+      logger.error('Error in handleDeleteUser', { error: error.message, action: 'delete_user' });
       toast.error('Error al eliminar usuario');
     }
   };

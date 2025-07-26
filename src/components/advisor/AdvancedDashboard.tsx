@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -86,7 +87,7 @@ export const AdvancedDashboard: React.FC = () => {
         revenueGrowth: 8.2 // Mock data - sería calculado con datos históricos
       });
     } catch (error) {
-      console.error('Error fetching KPI data:', error);
+      logger.error('Failed to fetch KPI data', { error: error.message, action: 'fetch_kpi_data' });
     }
   };
 
@@ -121,7 +122,7 @@ export const AdvancedDashboard: React.FC = () => {
       ];
       setRecentActivity(mockActivity);
     } catch (error) {
-      console.error('Error fetching recent activity:', error);
+      logger.error('Failed to fetch recent activity', { error: error.message, action: 'fetch_recent_activity' });
     }
   };
 

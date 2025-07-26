@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -61,7 +62,7 @@ export const AdvancedReports: React.FC = () => {
         report_type: item.report_type as 'kpi' | 'financial' | 'operational' | 'comparative'
       })));
     } catch (error) {
-      console.error('Error fetching templates:', error);
+      logger.error('Failed to fetch report templates', { error: error.message, action: 'fetch_templates' });
       toast.error('Error al cargar plantillas');
     }
   };
@@ -87,7 +88,7 @@ export const AdvancedReports: React.FC = () => {
         } : undefined
       })));
     } catch (error) {
-      console.error('Error fetching reports:', error);
+      logger.error('Failed to fetch reports', { error: error.message, action: 'fetch_reports' });
       toast.error('Error al cargar reportes');
     }
   };
@@ -148,7 +149,7 @@ export const AdvancedReports: React.FC = () => {
       toast.success('Reporte generado exitosamente');
       fetchReports();
     } catch (error) {
-      console.error('Error generating report:', error);
+      logger.error('Failed to generate report', { error: error.message, action: 'generate_report' });
       toast.error('Error al generar reporte');
     }
   };
@@ -165,7 +166,7 @@ export const AdvancedReports: React.FC = () => {
       toast.success('Reporte eliminado exitosamente');
       fetchReports();
     } catch (error) {
-      console.error('Error deleting report:', error);
+      logger.error('Failed to delete report', { error: error.message, action: 'delete_report' });
       toast.error('Error al eliminar reporte');
     }
   };

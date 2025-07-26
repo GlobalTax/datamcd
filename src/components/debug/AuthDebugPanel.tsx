@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +15,7 @@ export const AuthDebugPanel: React.FC = () => {
   const refreshDebugInfo = () => {
     const info = getDebugInfo();
     setDebugInfo(info);
-    console.log('AUTH_DEBUG: Current state:', info);
+    logger.debug('Auth debug state', { ...info, component: 'AuthDebugPanel' });
   };
 
   const getStatusColor = (status: string) => {

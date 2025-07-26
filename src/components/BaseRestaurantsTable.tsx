@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -167,7 +168,7 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
       resetForm();
       onRefresh();
     } catch (error) {
-      console.error('Error in handleCreate:', error);
+      logger.error('Failed to create restaurant', { error: error.message, action: 'create_restaurant' });
       toast.error('Error al crear el restaurante');
     } finally {
       setCreating(false);
@@ -211,7 +212,7 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
       resetForm();
       onRefresh();
     } catch (error) {
-      console.error('Error in handleEdit:', error);
+      logger.error('Failed to edit restaurant', { error: error.message, action: 'edit_restaurant' });
       toast.error('Error al actualizar el restaurante');
     } finally {
       setUpdating(false);
@@ -237,7 +238,7 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
       toast.success('Restaurante eliminado exitosamente');
       onRefresh();
     } catch (error) {
-      console.error('Error in handleDelete:', error);
+      logger.error('Failed to delete restaurant', { error: error.message, action: 'delete_restaurant' });
       toast.error('Error al eliminar el restaurante');
     }
   };

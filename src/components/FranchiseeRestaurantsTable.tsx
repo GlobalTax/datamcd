@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -73,7 +74,7 @@ export const FranchiseeRestaurantsTable: React.FC<FranchiseeRestaurantsTableProp
     });
   };
 
-  console.log('FranchiseeRestaurantsTable - Rendering with restaurants:', restaurants);
+  logger.debug('FranchiseeRestaurantsTable rendering', { restaurantCount: restaurants?.length, component: 'FranchiseeRestaurantsTable' });
 
   if (restaurants.length === 0) {
     return (
@@ -135,7 +136,7 @@ export const FranchiseeRestaurantsTable: React.FC<FranchiseeRestaurantsTableProp
                   baseRestaurant?.address, 
                   baseRestaurant?.city
                 );
-                console.log('FranchiseeRestaurantsTable - Processing restaurant:', restaurant);
+                logger.debug('Processing restaurant', { restaurantId: restaurant.id, component: 'FranchiseeRestaurantsTable' });
                 
                 return (
                   <TableRow key={restaurant.id}>

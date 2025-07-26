@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,7 +52,7 @@ export const DataImportDialog: React.FC<DataImportDialogProps> = ({ onImportComp
       setCsvData('');
       onImportComplete();
     } catch (error) {
-      console.error('Error parsing data:', error);
+      logger.error('Failed to parse import data', { error: error.message, action: 'parse_data' });
       toast.error('Error al procesar los datos');
     }
   };
