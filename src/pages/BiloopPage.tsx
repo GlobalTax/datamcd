@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Building2, FileText, Users, Package, TestTube, UserCheck, Settings2, Check, X } from 'lucide-react';
+import { Loader2, Building2, FileText, Users, Package, TestTube, UserCheck, Settings2, Check, X, Edit2, Save } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { useBiloop, BiloopCompany, BiloopInvoice, BiloopCustomer } from '@/hooks/useBiloop';
 import { useFranchisees } from '@/hooks/data/useFranchisees';
 import { useIntegrationConfig } from '@/hooks/useIntegrationConfig';
@@ -18,6 +19,8 @@ const BiloopPage = () => {
   const [customers, setCustomers] = useState<BiloopCustomer[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
   const [selectedFranchiseeId, setSelectedFranchiseeId] = useState<string>('');
+  const [editingCompanyId, setEditingCompanyId] = useState<string>('');
+  const [tempCompanyId, setTempCompanyId] = useState<string>('');
   
   const { 
     loading: biloopLoading, 
@@ -28,7 +31,7 @@ const BiloopPage = () => {
   } = useBiloop();
   
   const { franchisees, loading: franchiseesLoading } = useFranchisees();
-  const { configs, loading: configsLoading, getConfigStatus, testConnection: testIntegrationConnection } = useIntegrationConfig();
+  const { configs, loading: configsLoading, getConfigStatus, testConnection: testIntegrationConnection, saveConfig } = useIntegrationConfig();
   const { toast } = useToast();
 
   const loading = biloopLoading || franchiseesLoading || configsLoading;
@@ -118,6 +121,46 @@ const BiloopPage = () => {
     await testIntegrationConnection('biloop', selectedFranchiseeId);
   };
 
+  const handleEditCompanyId = (franchiseeId: string, currentCompanyId: string) => {
+    setEditingCompanyId(franchiseeId);
+    setTempCompanyId(currentCompanyId || '');
+  };
+
+  const handleSaveCompanyId = async (franchiseeId: string) => {
+    try {
+      const currentConfig = configs[franchiseeId] || {};
+
+      const updatedConfig = {
+        ...currentConfig,
+        biloop: {
+          ...currentConfig.biloop,
+          company_id: tempCompanyId
+        }
+      };
+
+      await saveConfig(updatedConfig, franchiseeId);
+      setEditingCompanyId('');
+      setTempCompanyId('');
+      
+      toast({
+        title: "Éxito",
+        description: "Company ID actualizado correctamente",
+      });
+    } catch (error) {
+      console.error('Error saving company ID:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el Company ID",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCompanyId('');
+    setTempCompanyId('');
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
@@ -183,13 +226,56 @@ const BiloopPage = () => {
                           <div className="text-sm text-muted-foreground">{franchisee.company_name}</div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {hasCompanyId ? (
-                          <Badge variant="outline">{config.biloop.company_id}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">No configurado</span>
-                        )}
-                      </TableCell>
+                       <TableCell>
+                         {editingCompanyId === franchisee.id ? (
+                           <div className="flex items-center gap-2">
+                             <Input
+                               value={tempCompanyId}
+                               onChange={(e) => setTempCompanyId(e.target.value)}
+                               placeholder="Ingresa company ID"
+                               className="w-32"
+                               onClick={(e) => e.stopPropagation()}
+                             />
+                             <Button
+                               size="sm"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 handleSaveCompanyId(franchisee.id);
+                               }}
+                             >
+                               <Save className="h-4 w-4" />
+                             </Button>
+                             <Button
+                               size="sm"
+                               variant="outline"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 handleCancelEdit();
+                               }}
+                             >
+                               <X className="h-4 w-4" />
+                             </Button>
+                           </div>
+                         ) : (
+                           <div className="flex items-center gap-2">
+                             {hasCompanyId ? (
+                               <Badge variant="outline">{config.biloop.company_id}</Badge>
+                             ) : (
+                               <span className="text-muted-foreground">No configurado</span>
+                             )}
+                             <Button
+                               size="sm"
+                               variant="ghost"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 handleEditCompanyId(franchisee.id, hasCompanyId ? config.biloop.company_id : '');
+                               }}
+                             >
+                               <Edit2 className="h-4 w-4" />
+                             </Button>
+                           </div>
+                         )}
+                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {hasCompanyId ? (
