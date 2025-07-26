@@ -272,6 +272,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  // Función para limpiar completamente el storage de auth
+  const clearAuthStorage = useCallback(() => {
+    try {
+      // Limpiar todas las claves relacionadas con Supabase auth
+      const keys = ['supabase.auth.token', 'sb-ckvqfrppnfhoadcpqhld-auth-token'];
+      keys.forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
+      
+      // Limpiar cualquier clave que empiece con 'sb-'
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-') || key.includes('supabase')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('sb-') || key.includes('supabase')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    } catch (error) {
+      logger.error('Error clearing auth storage', {}, error as Error);
+    }
+  }, []);
+
   // Inicialización del sistema de autenticación
   useEffect(() => {
     if (authInitialized.current) return;
@@ -284,6 +311,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const handleAuthStateChange = async (event: string, newSession: Session | null) => {
       // Si hay error de token refresh, limpiar sesión local
       if (event === 'TOKEN_REFRESHED' && !newSession) {
+        clearAuthStorage();
         await supabase.auth.signOut();
         return;
       }
@@ -317,7 +345,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
         // Si hay error de token refresh, limpiar todo
-        if (error && error.message.includes('refresh')) {
+        if (error && (error.message.includes('refresh') || error.message.includes('token'))) {
+          clearAuthStorage();
           await supabase.auth.signOut();
           setLoading(false);
           return;
@@ -331,8 +360,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error: any) {
         logger.authError('Failed to initialize authentication', {}, error);
         
-        // Si es error de token refresh, limpiar sesión
-        if (error.message?.includes('refresh') || error.message?.includes('token')) {
+        // Si es error de token refresh, limpiar sesión completamente
+        if (error.message?.includes('refresh') || error.message?.includes('token') || error.message?.includes('Invalid')) {
+          clearAuthStorage();
           try {
             await supabase.auth.signOut();
           } catch (signOutError) {
@@ -344,6 +374,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
+    // Limpiar storage corrupto al inicio
+    clearAuthStorage();
+    
     // Configurar listener primero, luego verificar sesión inicial
     setupAuthListener();
     initializeAuth();
@@ -354,7 +387,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authSubscription.unsubscribe();
       }
     };
-  }, [debouncedFetchUserData]);
+  }, [debouncedFetchUserData, clearAuthStorage]);
 
   // Efecto separado para manejar el loading después de fetch de datos
   useEffect(() => {
