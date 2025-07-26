@@ -282,6 +282,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Función para manejar cambios de estado de autenticación
     const handleAuthStateChange = async (event: string, newSession: Session | null) => {
+      // Si hay error de token refresh, limpiar sesión local
+      if (event === 'TOKEN_REFRESHED' && !newSession) {
+        await supabase.auth.signOut();
+        return;
+      }
+      
       // Sincronizar el estado de sesión primero
       setSession(newSession);
       
@@ -305,18 +311,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return subscription;
     };
 
-    // Verificar sesión inicial
+    // Verificar sesión inicial con manejo de errores de token
     const initializeAuth = async () => {
       try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        
+        // Si hay error de token refresh, limpiar todo
+        if (error && error.message.includes('refresh')) {
+          await supabase.auth.signOut();
+          setLoading(false);
+          return;
+        }
         
         if (initialSession) {
           await handleAuthStateChange('INITIAL_SESSION', initialSession);
         } else {
           setLoading(false);
         }
-      } catch (error) {
-        logger.authError('Failed to initialize authentication', {}, error as Error);
+      } catch (error: any) {
+        logger.authError('Failed to initialize authentication', {}, error);
+        
+        // Si es error de token refresh, limpiar sesión
+        if (error.message?.includes('refresh') || error.message?.includes('token')) {
+          try {
+            await supabase.auth.signOut();
+          } catch (signOutError) {
+            // Ignorar errores de signOut si ya hay problemas de sesión
+          }
+        }
+        
         setLoading(false);
       }
     };
