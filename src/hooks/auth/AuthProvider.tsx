@@ -374,9 +374,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Limpiar storage corrupto al inicio
-    clearAuthStorage();
-    
     // Configurar listener primero, luego verificar sesión inicial
     setupAuthListener();
     initializeAuth();
