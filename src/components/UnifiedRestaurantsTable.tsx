@@ -33,7 +33,40 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
-import { UnifiedRestaurant } from '@/hooks/useUnifiedRestaurants';
+// Define UnifiedRestaurant interface locally - will be moved to types later
+export interface UnifiedRestaurant {
+  id: string;
+  restaurant_name: string;
+  site_number: string;
+  address: string;
+  city: string;
+  state?: string;
+  autonomous_community?: string;
+  restaurant_type: string;
+  opening_date?: string;
+  created_at: string;
+  status?: string;
+  franchisee_id?: string;
+  assignment?: {
+    id: string;
+    franchisee_id: string;
+    franchise_start_date?: string;
+    franchise_end_date?: string;
+    monthly_rent?: number;
+    last_year_revenue?: number;
+    average_monthly_sales?: number;
+    status?: string;
+    assigned_at: string;
+  };
+  franchisee_info?: {
+    id: string;
+    franchisee_name: string;
+    company_name?: string;
+    city?: string;
+    state?: string;
+  };
+  isAssigned: boolean;
+}
 
 interface UnifiedRestaurantsTableProps {
   restaurants: UnifiedRestaurant[];

@@ -25,7 +25,7 @@ import { FranchiseesManagement } from '@/components/FranchiseesManagement';
 import { useFranchisees } from '@/hooks/useFranchisees';
 import { AdvisorReports } from '@/components/AdvisorReports';
 import { UnifiedRestaurantsTable } from '@/components/UnifiedRestaurantsTable';
-import { useUnifiedRestaurants } from '@/hooks/useUnifiedRestaurants';
+import { useRestaurants } from '@/hooks/data/useRestaurants';
 import { AdvancedDashboard } from '@/components/advisor/AdvancedDashboard';
 import { NotificationCenter } from '@/components/advisor/NotificationCenter';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -41,7 +41,24 @@ const AdvisorPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { restaurants, loading: restaurantsLoading, refetch: refetchRestaurants, stats } = useUnifiedRestaurants();
+  const { restaurants: rawRestaurants, isLoading: restaurantsLoading, refetch: refetchRestaurants, stats } = useRestaurants();
+  
+  // Transform to UnifiedRestaurant format
+  const restaurants = React.useMemo(() => {
+    return rawRestaurants.map(restaurant => ({
+      ...restaurant,
+      isAssigned: !!restaurant.franchisee_id,
+      assignment: restaurant.franchisee_id ? {
+        id: restaurant.id,
+        franchisee_id: restaurant.franchisee_id,
+        franchise_start_date: (restaurant as any).franchise_start_date,
+        franchise_end_date: (restaurant as any).franchise_end_date,
+        monthly_rent: (restaurant as any).monthly_rent,
+        status: restaurant.status,
+        assigned_at: restaurant.created_at,
+      } : undefined,
+    }));
+  }, [rawRestaurants]);
   const { franchisees, loading: franchiseesLoading } = useFranchisees();
 
   if (loading) {

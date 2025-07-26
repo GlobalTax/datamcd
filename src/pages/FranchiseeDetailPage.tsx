@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Building, Mail, Phone, MapPin, User, Clock, Wifi, WifiOff, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useFranchiseeDetail } from '@/hooks/useFranchiseeDetail';
+import { useFranchisee } from '@/hooks/data/useFranchisees';
 import { useImpersonation } from '@/hooks/useImpersonation';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { toast } from 'sonner';
@@ -27,7 +27,10 @@ export default function FranchiseeDetailPage() {
   console.log('FranchiseeDetailPage - franchiseeId type:', typeof franchiseeId);
   console.log('FranchiseeDetailPage - window.location.pathname:', window.location.pathname);
   
-  const { franchisee, restaurants, loading, error, refetch } = useFranchiseeDetail(franchiseeId);
+  const { data: franchisee, isLoading: loading, error, refetch } = useFranchisee(franchiseeId || '');
+  
+  // For now, return empty restaurants - we'll implement proper restaurant fetching later
+  const restaurants: any[] = [];
   const franchiseeUsersRef = useRef<FranchiseeUsersRef>(null);
   const { user } = useUnifiedAuth();
   const { startImpersonation } = useImpersonation();
@@ -66,7 +69,7 @@ export default function FranchiseeDetailPage() {
         <div className="text-center py-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Error al cargar el franquiciado</h2>
           <p className="text-gray-600 mb-4">
-            {error || 'Franquiciado no encontrado'}
+            {error?.message || error?.toString() || 'Franquiciado no encontrado'}
           </p>
           <p className="text-sm text-gray-500 mb-4">
             ID del franquiciado: {franchiseeId || 'No proporcionado'}

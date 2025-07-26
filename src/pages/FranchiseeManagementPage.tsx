@@ -2,8 +2,11 @@ import React from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { FranchiseesManagement } from "@/components/FranchiseesManagement";
+import { useFranchisees } from '@/hooks/data/useFranchisees';
 
 const FranchiseeManagementPage = () => {
+  const { refetch } = useFranchisees(); // For future optimizations
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
