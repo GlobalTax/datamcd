@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
 import { AnalysisTabs } from './AnalysisTabs';
+import { logger } from '@/lib/logger';
 
 export const AnalysisSpecificDashboard: React.FC = () => {
   const { franchisee } = useUnifiedAuth();
@@ -11,11 +12,13 @@ export const AnalysisSpecificDashboard: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('all');
 
-  console.log('=== AnalysisSpecificDashboard DEBUG ===');
-  console.log('Franchisee:', franchisee?.franchisee_name);
-  console.log('Restaurants:', restaurants?.length || 0);
-  console.log('Selected year:', selectedYear);
-  console.log('Selected restaurant:', selectedRestaurant);
+  logger.debug('AnalysisSpecificDashboard initialized', {
+    component: 'AnalysisSpecificDashboard',
+    franchisee: franchisee?.franchisee_name,
+    restaurantCount: restaurants?.length || 0,
+    selectedYear,
+    selectedRestaurant
+  });
 
   if (loading) {
     return (

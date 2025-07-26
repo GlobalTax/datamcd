@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useUnifiedAuth } from "@/hooks/auth/useUnifiedAuth";
+import { logger } from "@/lib/logger";
 
 export const DebugSection = () => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ export const DebugSection = () => {
       <p className="text-sm text-yellow-700">Loading: {loading ? 'true' : 'false'}</p>
       <Button 
         onClick={() => {
-          console.log('DebugSection - Force redirect clicked');
+          logger.userAction('Force dashboard redirect', user.id, { component: 'DebugSection' });
           navigate('/dashboard', { replace: true });
         }}
         className="mt-2 text-xs"

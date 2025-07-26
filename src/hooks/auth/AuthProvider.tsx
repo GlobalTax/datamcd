@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 // Tipos consolidados - Simplificado para superadmin
 interface UserProfile {
@@ -178,7 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await createFranchisee(userId);
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      logger.authError('Failed to fetch user data', { userId, retryCount }, error as Error);
       
       // Retry logic para errores temporales
       if (retryCount < 2) {
@@ -221,7 +222,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
-        console.error('Error creating franchisee:', error);
+        logger.dataError('Failed to create franchisee', 'franchisees', 'insert', { userId }, error);
         // Crear franquiciado fallback local
         const fallbackFranchisee: Franchisee = {
           id: `temp-${userId}`,
@@ -237,7 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setFranchisee(newFranchisee);
       }
     } catch (error) {
-      console.error('Unexpected error creating franchisee:', error);
+      logger.error('Unexpected error creating franchisee', { userId }, error as Error);
     }
   }, [session]);
 
@@ -260,13 +261,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('status', 'active');
 
       if (error) {
-        console.error('Error fetching restaurants:', error);
+        logger.dataError('Failed to fetch restaurants', 'franchisee_restaurants', 'select', { franchiseeId }, error);
         setRestaurants([]);
       } else {
         setRestaurants(restaurantData || []);
       }
     } catch (error) {
-      console.error('Error fetching restaurants:', error);
+      logger.error('Unexpected error fetching restaurants', { franchiseeId }, error as Error);
       setRestaurants([]);
     }
   }, []);
@@ -315,7 +316,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error in initialization:', error);
+        logger.authError('Failed to initialize authentication', {}, error as Error);
         setLoading(false);
       }
     };
@@ -348,7 +349,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
-        console.error('Sign in error:', error);
+        logger.authError('Sign in failed', { email }, error);
         toast.error(error.message);
         return { error: error.message };
       }
@@ -356,7 +357,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Sesión iniciada correctamente');
       return {};
     } catch (error: any) {
-      console.error('Unexpected sign in error:', error);
+      logger.authError('Unexpected sign in error', { email }, error);
       toast.error('Error inesperado al iniciar sesión');
       return { error: 'Error inesperado al iniciar sesión' };
     }
@@ -378,7 +379,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
-        console.error('Sign up error:', error);
+        logger.authError('Sign up failed', { email }, error);
         toast.error(error.message);
         return { error: error.message };
       }
@@ -386,7 +387,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Cuenta creada. Revisa tu email para confirmar.');
       return {};
     } catch (error: any) {
-      console.error('Unexpected sign up error:', error);
+      logger.authError('Unexpected sign up error', { email }, error);
       toast.error('Error inesperado al registrarse');
       return { error: 'Error inesperado al registrarse' };
     }
@@ -396,13 +397,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signOut();
       if (error && !error.message.includes('Session not found')) {
-        console.error('Sign out error:', error);
+        logger.authError('Sign out failed', {}, error);
         toast.error(error.message);
       } else {
         toast.success('Sesión cerrada correctamente');
       }
     } catch (error: any) {
-      console.error('Unexpected sign out error:', error);
+      logger.authError('Unexpected sign out error', {}, error);
       toast.error('Error al cerrar sesión');
     }
   }, []);
