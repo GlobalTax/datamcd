@@ -20,7 +20,14 @@ export default function LaborDashboardPage() {
             </div>
           </header>
 
-          <main className="flex-1">
+          <main className="flex-1 p-6 space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Dashboard Laboral</h1>
+                <p className="text-gray-600">Análisis de métricas laborales y gestión de personal</p>
+              </div>
+            </div>
+
             <LaborDashboard franchiseeId={effectiveFranchisee?.id} />
           </main>
         </SidebarInset>

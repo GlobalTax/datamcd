@@ -114,7 +114,7 @@ export default function AnnualBudgetPage() {
 
             {/* Financial Statement Tabs */}
             {selectedRestaurant ? (
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+              <Card>
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <div className="border-b border-gray-200 px-6 pt-6">
                     <TabsList className="inline-flex h-auto p-0 space-x-8 bg-transparent">
@@ -156,7 +156,7 @@ export default function AnnualBudgetPage() {
                     </TabsContent>
                   </div>
                 </Tabs>
-              </div>
+              </Card>
             ) : (
               <Card>
                 <CardContent className="p-8 text-center">
