@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Employee, EmployeeFormData, EmployeeStats } from '@/types/employee';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export const useEmployees = (restaurantId?: string) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -23,7 +24,10 @@ export const useEmployees = (restaurantId?: string) => {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching employees:', error);
+        logger.error('Error fetching employees', { 
+          component: 'useEmployees',
+          restaurantId
+        }, error);
         toast.error('Error al cargar empleados');
         return;
       }
@@ -80,7 +84,10 @@ export const useEmployees = (restaurantId?: string) => {
         .single();
 
       if (error) {
-        console.error('Error creating employee:', error);
+        logger.error('Error creating employee', { 
+          component: 'useEmployees',
+          restaurantId
+        }, error);
         toast.error('Error al crear empleado: ' + error.message);
         return false;
       }

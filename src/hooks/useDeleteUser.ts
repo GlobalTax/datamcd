@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export const useDeleteUser = () => {
   const { user } = useUnifiedAuth();
@@ -16,7 +17,13 @@ export const useDeleteUser = () => {
 
     try {
       setDeleting(true);
-      console.log('Iniciando eliminación de usuario:', { franchiseeId, userId, userName });
+      logger.info('Starting user deletion', { 
+        component: 'useDeleteUser',
+        action: 'deleteUser',
+        franchiseeId,
+        userId,
+        userName
+      });
 
       // 1. Desvincular el franquiciado del usuario (esto es lo más importante)
       const { error: franchiseeError } = await supabase

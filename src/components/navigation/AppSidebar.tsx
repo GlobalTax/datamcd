@@ -16,6 +16,7 @@ import {
 import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, HardHat, UserCheck, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { logger } from '@/lib/logger';
 
 const menuItems = [
   {
@@ -102,7 +103,10 @@ export function AppSidebar() {
 
   // Log de debugging detallado
   const debugInfo = getDebugInfo?.() || {};
-  console.log('SIDEBAR DEBUG:', debugInfo);
+  logger.debug('Sidebar debug info', { 
+    component: 'AppSidebar',
+    debugInfo
+  });
 
   const handleSignOut = async () => {
     await signOut();

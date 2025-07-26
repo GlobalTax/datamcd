@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/auth/AuthProvider';
+import { logger } from '@/lib/logger';
 
 export const useBaseRestaurants = () => {
   const { user } = useAuth();
@@ -10,7 +11,10 @@ export const useBaseRestaurants = () => {
 
   const fetchRestaurants = async () => {
     if (!user) {
-      console.log('User not authenticated for base restaurants');
+      logger.warn('User not authenticated for base restaurants', { 
+        component: 'useBaseRestaurants',
+        action: 'fetchRestaurants'
+      });
       setLoading(false);
       return;
     }
@@ -18,7 +22,10 @@ export const useBaseRestaurants = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching base restaurants for user:', user.id);
+      logger.debug('Fetching base restaurants for user', { 
+        component: 'useBaseRestaurants',
+        userId: user.id
+      });
 
       const { data, error } = await supabase
         .from('base_restaurants')

@@ -17,6 +17,7 @@ import {
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface AlertRule {
   id: string;
@@ -69,7 +70,11 @@ export const NotificationCenter: React.FC = () => {
         alert_type: item.alert_type as 'performance' | 'financial' | 'operational' | 'compliance'
       })));
     } catch (error) {
-      console.error('Error fetching alert rules:', error);
+      logger.error('Error fetching alert rules', { 
+        component: 'NotificationCenter',
+        action: 'fetchAlertRules',
+        userId: user?.id
+      }, error as Error);
       toast.error('Error al cargar reglas de alerta');
     }
   };
@@ -113,7 +118,11 @@ export const NotificationCenter: React.FC = () => {
       ];
       setAlertInstances(mockAlerts);
     } catch (error) {
-      console.error('Error fetching alert instances:', error);
+      logger.error('Error fetching alert instances', { 
+        component: 'NotificationCenter',
+        action: 'fetchAlertInstances',
+        userId: user?.id
+      }, error as Error);
       toast.error('Error al cargar alertas');
     }
   };
@@ -148,7 +157,11 @@ export const NotificationCenter: React.FC = () => {
       });
       fetchAlertRules();
     } catch (error) {
-      console.error('Error creating alert rule:', error);
+      logger.error('Error creating alert rule', { 
+        component: 'NotificationCenter',
+        action: 'createAlertRule',
+        userId: user?.id
+      }, error as Error);
       toast.error('Error al crear regla de alerta');
     }
   };
@@ -177,7 +190,11 @@ export const NotificationCenter: React.FC = () => {
       toast.success(`Regla ${!isActive ? 'activada' : 'desactivada'} exitosamente`);
       fetchAlertRules();
     } catch (error) {
-      console.error('Error toggling alert rule:', error);
+      logger.error('Error toggling alert rule', { 
+        component: 'NotificationCenter',
+        action: 'toggleAlertRule',
+        userId: user?.id
+      }, error as Error);
       toast.error('Error al cambiar estado de la regla');
     }
   };

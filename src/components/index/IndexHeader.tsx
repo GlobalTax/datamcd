@@ -3,23 +3,37 @@ import { Button } from "@/components/ui/button";
 import { Store, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUnifiedAuth } from "@/hooks/auth/useUnifiedAuth";
+import { logger } from "@/lib/logger";
 
 export const IndexHeader = () => {
   const navigate = useNavigate();
   const { user } = useUnifiedAuth();
 
   const handleUserRedirect = () => {
-    console.log('IndexHeader - Manual navigation button clicked for user role:', user?.role);
+    logger.info('Manual navigation button clicked', { 
+      component: 'IndexHeader',
+      action: 'handleUserRedirect',
+      userRole: user?.role
+    });
     try {
       if (user && ['asesor', 'admin', 'superadmin'].includes(user.role)) {
-        console.log('IndexHeader - Manual redirect to /advisor');
+        logger.info('Redirecting to advisor', { 
+          component: 'IndexHeader',
+          userRole: user.role
+        });
         navigate('/advisor');
       } else {
-        console.log('IndexHeader - Manual redirect to /dashboard');
+        logger.info('Redirecting to dashboard', { 
+          component: 'IndexHeader',
+          userRole: user?.role
+        });
         navigate('/dashboard');
       }
     } catch (error) {
-      console.error('IndexHeader - Error in manual navigation:', error);
+      logger.error('Error in manual navigation', { 
+        component: 'IndexHeader',
+        action: 'handleUserRedirect'
+      }, error as Error);
     }
   };
 

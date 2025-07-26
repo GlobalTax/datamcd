@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import { FileUploadCard } from './historical/FileUploadCard';
 import { CopyPasteCard } from './historical/CopyPasteCard';
 import { DetailedCopyPasteCard } from './historical/DetailedCopyPasteCard';
@@ -27,7 +28,12 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
   const [progress, setProgress] = useState(0);
 
   const handleDataParsed = (data: YearlyData[], importMethod: ImportMethod) => {
-    console.log('Datos procesados:', data);
+    logger.info('Data processed for import', { 
+      component: 'HistoricalDataImporter',
+      action: 'handleDataParsed',
+      dataCount: data.length,
+      importMethod
+    });
     
     // Si ya tenemos datos, combinar con los nuevos (evitar duplicados por año)
     const existingYears = yearlyDataList.map(item => item.year);

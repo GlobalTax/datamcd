@@ -7,6 +7,7 @@ import { FileSpreadsheet, Upload, Info } from 'lucide-react';
 import { parseDetailedDataFromText } from './detailedUtils';
 import { YearlyData, ImportMethod } from './types';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface DetailedCopyPasteCardProps {
   onDataParsed: (data: YearlyData[], method: ImportMethod) => void;
@@ -16,18 +17,27 @@ export const DetailedCopyPasteCard: React.FC<DetailedCopyPasteCardProps> = ({ on
   const [csvData, setCsvData] = useState('');
 
   const parseDetailedData = () => {
-    console.log('=== DETAILED COPY PASTE DEBUG ===');
-    console.log('CSV data length:', csvData.length);
-    console.log('First 300 chars:', csvData.substring(0, 300));
+    logger.debug('Starting detailed data parsing', { 
+      component: 'DetailedCopyPasteCard',
+      action: 'parseDetailedData',
+      dataLength: csvData.length,
+      preview: csvData.substring(0, 300)
+    });
     
     try {
       const data = parseDetailedDataFromText(csvData);
-      console.log('Parsed detailed data successfully:', data.length, 'years');
-      console.log('Sample data:', data[0]);
+      logger.info('Detailed data parsed successfully', { 
+        component: 'DetailedCopyPasteCard',
+        yearsCount: data.length,
+        sampleData: data[0]
+      });
       onDataParsed(data, 'detailed');
       toast.success(`${data.length} años de datos detallados procesados correctamente`);
     } catch (error) {
-      console.error('Error parsing detailed data:', error);
+      logger.error('Error parsing detailed data', { 
+        component: 'DetailedCopyPasteCard',
+        action: 'parseDetailedData'
+      }, error as Error);
       toast.error('Error al procesar los datos: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     }
   };

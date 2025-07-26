@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, Users, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { User } from '@/types/auth';
+import { logger } from '@/lib/logger';
 
 interface FranchiseeUsersProps {
   franchiseeId: string;
@@ -38,7 +39,9 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
     try {
       setLoading(true);
       
-      console.log('DEBUG: Fetching users for franchisee:', {
+      logger.debug('Fetching users for franchisee', { 
+        component: 'FranchiseeUsers',
+        action: 'fetchFranchiseeUsers',
         franchiseeId,
         franchiseeName,
         userRole: user?.role
@@ -54,14 +57,21 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
         .maybeSingle();
 
       if (franchiseeError) {
-        console.error('Error fetching franchisee:', franchiseeError);
+        logger.error('Error fetching franchisee', { 
+          component: 'FranchiseeUsers',
+          action: 'fetchFranchiseeUsers',
+          franchiseeId
+        }, franchiseeError);
         toast.error('Error al cargar el franquiciado');
         return;
       }
 
       if (franchiseeData?.user_id) {
         userIds.push(franchiseeData.user_id);
-        console.log('DEBUG: Added direct franchisee user:', franchiseeData.user_id);
+        logger.debug('Added direct franchisee user', { 
+          component: 'FranchiseeUsers',
+          userId: franchiseeData.user_id
+        });
       }
 
       // 2. Buscar usuarios staff asociados al franquiciado
@@ -71,19 +81,28 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
         .eq('franchisee_id', franchiseeId);
 
       if (staffError) {
-        console.error('Error fetching staff users:', staffError);
+        logger.error('Error fetching staff users', { 
+          component: 'FranchiseeUsers',
+          franchiseeId
+        }, staffError);
       } else if (staffUsers) {
         staffUsers.forEach(staff => {
           if (staff.user_id && !userIds.includes(staff.user_id)) {
             userIds.push(staff.user_id);
           }
         });
-        console.log('DEBUG: Added staff users:', staffUsers.length);
+        logger.debug('Added staff users', { 
+          component: 'FranchiseeUsers',
+          staffCount: staffUsers.length
+        });
       }
 
       // 3. Solo buscar por nombre si no encontramos usuarios y es necesario
       if (userIds.length === 0 && franchiseeName) {
-        console.log('DEBUG: No direct users found, searching by name parts');
+        logger.debug('No direct users found, searching by name parts', { 
+          component: 'FranchiseeUsers',
+          franchiseeName
+        });
         
         // Dividir el nombre en palabras de al menos 3 caracteres
         const searchTerms = franchiseeName
@@ -92,7 +111,10 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
           .filter(term => term.length >= 3)
           .slice(0, 3); // Máximo 3 términos para evitar consultas muy complejas
 
-        console.log('DEBUG: Search terms:', searchTerms);
+        logger.debug('Search terms generated', { 
+          component: 'FranchiseeUsers',
+          searchTerms
+        });
 
         for (const term of searchTerms) {
           const cleanTerm = term.replace(/[^\w\s]/g, ''); // Remover caracteres especiales
@@ -105,21 +127,31 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
               .limit(10); // Limitar resultados
 
             if (!profilesError && relatedProfiles) {
-              console.log(`DEBUG: Found ${relatedProfiles.length} profiles matching "${cleanTerm}"`);
+              logger.debug('Found profiles matching search term', { 
+                component: 'FranchiseeUsers',
+                profilesCount: relatedProfiles.length,
+                searchTerm: cleanTerm
+              });
               relatedProfiles.forEach(profile => {
                 if (!userIds.includes(profile.id)) {
                   userIds.push(profile.id);
                 }
               });
             } else if (profilesError) {
-              console.error('Error searching profiles by name:', profilesError);
+              logger.error('Error searching profiles by name', { 
+                component: 'FranchiseeUsers',
+                searchTerm: cleanTerm
+              }, profilesError);
             }
           }
         }
       }
 
       // 4. Obtener perfiles completos
-      console.log('DEBUG: Final user IDs to fetch:', userIds);
+      logger.debug('Final user IDs to fetch', { 
+        component: 'FranchiseeUsers',
+        userIds
+      });
       
       if (userIds.length > 0) {
         const { data: userProfiles, error: usersError } = await supabase
@@ -129,7 +161,10 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
           .order('created_at', { ascending: false });
 
         if (usersError) {
-          console.error('Error fetching user profiles:', usersError);
+          logger.error('Error fetching user profiles', { 
+            component: 'FranchiseeUsers',
+            userIds
+          }, usersError);
           toast.error('Error al cargar los usuarios');
           return;
         }
@@ -139,14 +174,23 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
           role: userData.role as 'admin' | 'franchisee' | 'staff' | 'superadmin' | 'asesor'
         }));
 
-        console.log('DEBUG: Final users found:', typedUsers);
+        logger.debug('Final users found', { 
+          component: 'FranchiseeUsers',
+          usersCount: typedUsers.length
+        });
         setUsers(typedUsers);
       } else {
-        console.log('DEBUG: No users found for franchisee');
+        logger.debug('No users found for franchisee', { 
+          component: 'FranchiseeUsers',
+          franchiseeId
+        });
         setUsers([]);
       }
     } catch (error) {
-      console.error('Error in fetchFranchiseeUsers:', error);
+      logger.error('Error in fetchFranchiseeUsers', { 
+        component: 'FranchiseeUsers',
+        franchiseeId
+      }, error as Error);
       toast.error('Error al cargar los usuarios');
     } finally {
       setLoading(false);
@@ -174,7 +218,10 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
         .eq('id', userId);
 
       if (error) {
-        console.error('Error deleting user:', error);
+        logger.error('Error deleting user', { 
+          component: 'FranchiseeUsers',
+          userId
+        }, error);
         toast.error('Error al eliminar usuario');
         return;
       }
@@ -182,7 +229,10 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
       toast.success('Usuario eliminado exitosamente');
       fetchFranchiseeUsers();
     } catch (error) {
-      console.error('Error in handleDeleteUser:', error);
+      logger.error('Error in handleDeleteUser', { 
+        component: 'FranchiseeUsers',
+        userId
+      }, error as Error);
       toast.error('Error al eliminar usuario');
     }
   };

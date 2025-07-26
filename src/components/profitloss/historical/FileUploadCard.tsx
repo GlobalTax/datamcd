@@ -7,6 +7,7 @@ import { File, Download } from 'lucide-react';
 import { parseDataFromText, downloadTemplate } from './utils';
 import { YearlyData, ImportMethod } from './types';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface FileUploadCardProps {
   onDataParsed: (data: YearlyData[], method: ImportMethod) => void;
@@ -17,14 +18,22 @@ export const FileUploadCard: React.FC<FileUploadCardProps> = ({ onDataParsed }) 
     const file = event.target.files?.[0];
     if (!file) return;
 
-    console.log('=== FILE UPLOAD DEBUG ===');
-    console.log('File selected:', file.name, file.type, file.size);
+    logger.debug('File selected for upload', { 
+      component: 'FileUploadCard',
+      action: 'handleFileUpload',
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size
+    });
 
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      console.log('File content loaded, length:', text.length);
-      console.log('First 200 chars:', text.substring(0, 200));
+      logger.debug('File content loaded', { 
+        component: 'FileUploadCard',
+        textLength: text.length,
+        preview: text.substring(0, 200)
+      });
       
       // Detectar el separador automáticamente
       let separator = '\t';
@@ -34,29 +43,45 @@ export const FileUploadCard: React.FC<FileUploadCardProps> = ({ onDataParsed }) 
         separator = ';';
       }
 
-      console.log('Detected separator:', separator);
+      logger.debug('Separator detected', { 
+        component: 'FileUploadCard',
+        separator
+      });
 
       try {
         const data = parseDataFromText(text, separator);
-        console.log('Parsed data successfully:', data.length, 'years');
-        console.log('Sample data:', data[0]);
+        logger.info('File data parsed successfully', { 
+          component: 'FileUploadCard',
+          yearsCount: data.length,
+          sampleData: data[0]
+        });
         onDataParsed(data, 'file');
         toast.success(`Archivo cargado correctamente. Detectado separador: "${separator}"`);
       } catch (error) {
-        console.error('Error reading file:', error);
+        logger.error('Error reading file', { 
+          component: 'FileUploadCard',
+          fileName: file.name
+        }, error as Error);
         toast.error('Error al leer el archivo. Verifica el formato.');
       }
     };
 
     reader.onerror = (error) => {
-      console.error('FileReader error:', error);
+      logger.error('FileReader error', { 
+        component: 'FileUploadCard',
+        fileName: file.name
+      }, error as any);
       toast.error('Error al leer el archivo.');
     };
 
     if (file.type.includes('text') || file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
       reader.readAsText(file);
     } else {
-      console.error('Invalid file type:', file.type);
+      logger.warn('Invalid file type selected', { 
+        component: 'FileUploadCard',
+        fileName: file.name,
+        fileType: file.type
+      });
       toast.error('Por favor, sube un archivo .csv, .txt o copia los datos directamente.');
     }
   };
