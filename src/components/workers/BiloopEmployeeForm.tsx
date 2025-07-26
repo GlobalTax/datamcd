@@ -22,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BiloopEmployee } from '@/hooks/useBiloop';
+import { logger } from '@/lib/logger';
 
 const employeeFormSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
@@ -79,7 +80,7 @@ export const BiloopEmployeeForm: React.FC<BiloopEmployeeFormProps> = ({
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error creating employee:', error);
+      logger.error('Error creating employee', {}, error as Error);
     }
   };
 

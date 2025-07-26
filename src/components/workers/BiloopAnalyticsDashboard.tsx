@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useBiloop } from '@/hooks/useBiloop';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 interface BiloopAnalyticsDashboardProps {
   selectedCompany: string;
@@ -77,7 +78,7 @@ export const BiloopAnalyticsDashboard: React.FC<BiloopAnalyticsDashboardProps> =
         description: "Datos analíticos cargados correctamente",
       });
     } catch (error) {
-      console.error('Error loading analytics data:', error);
+      logger.error('Error loading analytics data', {}, error as Error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los datos analíticos",

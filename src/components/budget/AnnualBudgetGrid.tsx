@@ -87,7 +87,7 @@ export const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({
       fetchActualData(restaurantId, year);
       toast.success('Dato real actualizado correctamente');
     } catch (error) {
-      console.error('Error updating actual data:', error);
+      logger.error('Error updating actual data', { restaurantId, year, rowId, field, value }, error as Error);
       toast.error('Error al actualizar el dato real');
     }
   };

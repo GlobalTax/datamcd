@@ -1,13 +1,14 @@
 // Componentes simplificados que eliminan verificaciones de role
 import React from 'react';
 import { useAuth } from '@/hooks/auth/AuthProvider';
+import { logger } from '@/lib/logger';
 
 // Quantum components simplificados
 export const SimplifiedQuantumDataDialog = ({ children }: { children: React.ReactNode }) => {
   const { franchisee } = useAuth();
   
   return (
-    <div onClick={() => console.log('Quantum data for:', franchisee?.franchisee_name)}>
+    <div onClick={() => logger.debug('Quantum data requested', { franchiseeName: franchisee?.franchisee_name })}>
       {children}
     </div>
   );

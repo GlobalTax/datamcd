@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { conceptMapping, normalizeConceptName, isHeaderOrTotalLine } from './conceptMapping';
 import { parseNumber } from './numberParser';
 import { convertDetailedToStandard, createEmptyDetailedYearlyData } from './dataConverter';
+import { logger } from '@/lib/logger';
 
 interface SingleYearCopyPasteCardProps {
   onDataParsed: (data: YearlyData[], method: ImportMethod) => void;
@@ -21,13 +22,10 @@ export const SingleYearCopyPasteCard: React.FC<SingleYearCopyPasteCardProps> = (
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const parseSingleYearData = () => {
-    console.log('=== SINGLE YEAR PARSER DEBUG ===');
-    console.log('Selected year:', selectedYear);
-    console.log('CSV data length:', csvData.length);
+    logger.debug('Starting single year parser', { selectedYear, csvDataLength: csvData.length });
     
     try {
       const lines = csvData.trim().split('\n').filter(line => line.trim());
-      console.log('Number of lines:', lines.length);
       
       if (lines.length === 0) {
         throw new Error('No hay datos para procesar');
@@ -50,13 +48,10 @@ export const SingleYearCopyPasteCard: React.FC<SingleYearCopyPasteCardProps> = (
         
         // Saltar líneas de totales y encabezados
         if (isHeaderOrTotalLine(concept)) {
-          console.log(`Skipping header/total line: "${rawConcept}"`);
           continue;
         }
         
         const mappedField = conceptMapping[concept];
-        
-        console.log(`Line ${i}: "${rawConcept}" -> "${concept}" -> ${mappedField || 'UNMAPPED'}`);
 
         if (mappedField) {
           // Buscar el valor en las siguientes columnas (saltar porcentajes)
@@ -68,33 +63,29 @@ export const SingleYearCopyPasteCard: React.FC<SingleYearCopyPasteCardProps> = (
             }
             
             value = parseNumber(rawValue);
-            console.log(`  Value found: "${rawValue}" -> ${value}`);
             break;
           }
           
           if (mappedField !== 'year') {
             (detailedData as any)[mappedField] = value;
           }
-        } else {
-          console.log(`Concept not mapped: "${rawConcept}" -> "${concept}"`);
         }
       }
 
       // Convertir a formato estándar
       const standardData = convertDetailedToStandard(detailedData);
       
-      console.log('Final parsed data for year', selectedYear, ':', {
-        net_sales: standardData.net_sales,
-        food_cost: standardData.food_cost,
-        paper_cost: standardData.paper_cost,
-        crew_labor: standardData.crew_labor
+      logger.debug('Single year parsing completed', {
+        year: selectedYear,
+        netSales: standardData.net_sales,
+        foodCost: standardData.food_cost
       });
 
       onDataParsed([standardData], 'detailed');
       toast.success(`Datos del año ${selectedYear} procesados correctamente`);
       
     } catch (error) {
-      console.error('Error parsing single year data:', error);
+      logger.error('Error parsing single year data', { selectedYear }, error as Error);
       toast.error('Error al procesar los datos: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     }
   };

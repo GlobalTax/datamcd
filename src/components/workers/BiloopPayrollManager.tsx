@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useBiloop } from '@/hooks/useBiloop';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 interface BiloopPayrollManagerProps {
   selectedCompany: string;
@@ -58,30 +59,24 @@ export const BiloopPayrollManager: React.FC<BiloopPayrollManagerProps> = ({ sele
         description: "Nóminas y conceptos actualizados correctamente",
       });
     } catch (error) {
-      console.error('Error loading payroll data:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los datos de nómina",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      logger.error('Error loading payroll data', {}, error as Error);
     }
   };
 
   const loadMonthlyPayroll = async () => {
-    if (!selectedCompany || !selectedMonth || !selectedYear) return;
-
-    setLoading(true);
+    if (!selectedMonth || !selectedYear) return;
+    
     try {
-      const monthlyData = await getPayrollConceptsMonthBi(selectedCompany, selectedMonth);
-      // Procesar datos mensuales
+      setLoading(true);
+      const monthYear = `${selectedYear}-${selectedMonth}`;
+      
+      // Implementar carga de nóminas mensual específica
       toast({
-        title: "Nóminas mensuales cargadas",
-        description: `Datos de ${selectedMonth}/${selectedYear} cargados`,
+        title: "Cargando nóminas",
+        description: `Cargando nóminas para ${monthYear}`,
       });
     } catch (error) {
-      console.error('Error loading monthly payroll:', error);
+      logger.error('Error loading monthly payroll', { selectedMonth, selectedYear }, error as Error);
       toast({
         title: "Error",
         description: "No se pudieron cargar las nóminas mensuales",

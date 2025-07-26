@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useBiloop } from '@/hooks/useBiloop';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 interface BiloopContractManagerProps {
   selectedCompany: string;
@@ -53,7 +54,7 @@ export const BiloopContractManager: React.FC<BiloopContractManagerProps> = ({ se
         description: "Tipos y vencimientos actualizados correctamente",
       });
     } catch (error) {
-      console.error('Error loading contract data:', error);
+      logger.error('Error loading contract data', {}, error as Error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los datos de contratos",

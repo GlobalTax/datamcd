@@ -12,6 +12,8 @@ import ValuationActions from './ValuationActions';
 import ValuationStatusCard from './ValuationStatusCard';
 import SaveValuationDialog from './SaveValuationDialog';
 import LoadValuationDialog from './LoadValuationDialog';
+import { logger } from '@/lib/logger';
+import { Restaurant } from '@/types/restaurant';
 
 interface SimpleValuationManagerProps {
   onRestaurantSelected: (restaurantId: string, restaurantName: string) => void;
@@ -47,35 +49,32 @@ const SimpleValuationManager = ({
   const [isNewValuationOpen, setIsNewValuationOpen] = useState(false);
   const [isLoadValuationOpen, setIsLoadValuationOpen] = useState(false);
 
-  console.log('SimpleValuationManager - Restaurant data:', {
-    authUser: authUser ? { id: authUser.id, role: authUser.role } : null,
-    isAdmin,
-    restaurantsCount: restaurants?.length || 0,
-    loading
+  logger.debug('SimpleValuationManager restaurant data', {
+    userRole: authUser?.role,
+    franchiseeId: franchisee?.id,
+    restaurantsCount: restaurants.length
   });
 
-  const restaurantOptions = isAdmin 
-    ? restaurants.map(r => ({
-        id: r.id,
-        name: r.restaurant_name || (r as any).base_restaurant?.restaurant_name || 'Sin nombre',
-        site_number: r.site_number || (r as any).base_restaurant?.site_number || '',
-        franchisee_name: (r as any).franchisee_info?.franchisee_name || 'Sin asignar'
-      }))
-    : franchiseeRestaurants.map(r => ({
-        id: (r as any).base_restaurant?.id || r.id,
-        name: (r as any).base_restaurant?.restaurant_name || r.restaurant_name || 'Sin nombre',
-        site_number: (r as any).base_restaurant?.site_number || r.site_number || '',
-        franchisee_name: franchisee?.franchisee_name || ''
-      }));
+  const handleRestaurantSelect = (restaurant: any) => {
+    setSelectedRestaurantId(restaurant.id);
+    setSelectedRestaurantName(restaurant.name || restaurant.restaurant_name || 'Sin nombre');
+    logger.debug('Restaurant selected', { restaurantId: restaurant.id, name: restaurant.name });
+    
+    onRestaurantSelected(restaurant.id, restaurant.name || restaurant.restaurant_name || 'Sin nombre');
+    toast.success(`Restaurante seleccionado: ${restaurant.name || restaurant.restaurant_name}`);
+  };
+
+  const restaurantOptions = restaurants.map(r => ({
+    id: r.id,
+    name: (r as any).name || (r as any).restaurant_name || 'Sin nombre',
+    location: (r as any).location || 'Sin ubicación',
+    site_number: (r as any).site_number || 'N/A'
+  }));
 
   const handleRestaurantChange = (restaurantId: string) => {
-    const restaurant = restaurantOptions.find(r => r.id === restaurantId);
+    const restaurant = restaurants.find(r => r.id === restaurantId);
     if (restaurant) {
-      console.log('Restaurant selected:', restaurant);
-      setSelectedRestaurantId(restaurantId);
-      setSelectedRestaurantName(restaurant.name);
-      onRestaurantSelected(restaurantId, restaurant.name);
-      toast.success(`Restaurante seleccionado: ${restaurant.name}`);
+      handleRestaurantSelect(restaurant);
     }
   };
 

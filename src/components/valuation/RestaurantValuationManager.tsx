@@ -11,6 +11,7 @@ import RestaurantSelector from './RestaurantSelector';
 import ValuationHistory from './ValuationHistory';
 import { Save, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface RestaurantValuationManagerProps {
   currentValuationData: any;
@@ -85,7 +86,7 @@ const RestaurantValuationManager = ({
       setIsNewValuationOpen(false);
       onSaveSuccess();
     } catch (error) {
-      console.error('Error saving valuation:', error);
+      logger.error('Error saving valuation', {}, error as Error);
     }
   };
 

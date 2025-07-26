@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +36,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
   const baseRestaurant = restaurant.base_restaurant;
 
   if (!baseRestaurant) {
-    console.warn('Restaurant without base_restaurant data:', restaurant);
+    logger.warn('Restaurant without base_restaurant data', { restaurantId: restaurant.id });
     return null;
   }
 

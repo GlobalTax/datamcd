@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useBiloop, BiloopEmployee } from '@/hooks/useBiloop';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 interface BiloopWorkersTableProps {
   selectedCompany: string;
@@ -53,7 +54,7 @@ export const BiloopWorkersTable: React.FC<BiloopWorkersTableProps> = ({ selected
         description: `Se han cargado ${employeesArray.length} empleados`,
       });
     } catch (error) {
-      console.error('Error loading employees:', error);
+      logger.error('Error loading employees', {}, error as Error);
       setEmployees([]);
       toast({
         title: "Error",

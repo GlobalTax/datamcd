@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useBiloop } from '@/hooks/useBiloop';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 interface BiloopIncidenceManagerProps {
   selectedCompany: string;
@@ -60,7 +61,7 @@ export const BiloopIncidenceManager: React.FC<BiloopIncidenceManagerProps> = ({ 
         description: "Incidencias y causas actualizadas correctamente",
       });
     } catch (error) {
-      console.error('Error loading incidence data:', error);
+      logger.error('Error loading incidence data', {}, error as Error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los datos de incidencias",
