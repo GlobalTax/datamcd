@@ -17,7 +17,14 @@ const OrquestPage: React.FC = () => {
             </div>
           </header>
 
-          <main className="flex-1">
+          <main className="flex-1 p-6 space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Orquest</h1>
+                <p className="text-gray-600">Gestión de servicios y medidas de Orquest</p>
+              </div>
+            </div>
+
             <OrquestDashboard />
           </main>
         </SidebarInset>

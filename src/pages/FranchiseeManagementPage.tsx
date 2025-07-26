@@ -20,7 +20,14 @@ const FranchiseeManagementPage = () => {
             </div>
           </header>
 
-          <main className="flex-1">
+          <main className="flex-1 p-6 space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Gestión de Franquiciados</h1>
+                <p className="text-gray-600">Administrar franquiciados y sus restaurantes</p>
+              </div>
+            </div>
+
             <FranchiseesManagement />
           </main>
         </SidebarInset>
