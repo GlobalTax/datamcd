@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Franchisee } from '@/types/restaurant';
+import { Franchisee } from '@/types/core';
 import { Plus, Building, Mail, Phone } from 'lucide-react';
 
 interface FranchiseeSelectorProps {
   franchisees: Franchisee[];
   selectedFranchisee: Franchisee | null;
   onSelectFranchisee: (franchisee: Franchisee) => void;
-  onAddFranchisee: (franchisee: Omit<Franchisee, 'id' | 'createdAt' | 'restaurants'>) => void;
+  onAddFranchisee: (franchisee: Omit<Franchisee, 'id' | 'created_at' | 'updated_at'>) => void;
 }
 
 export function FranchiseeSelector({ 
@@ -22,16 +22,21 @@ export function FranchiseeSelector({
 }: FranchiseeSelectorProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newFranchisee, setNewFranchisee] = useState({
-    name: '',
+    franchisee_name: '',
+    user_id: '',
     email: '',
     phone: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newFranchisee.name && newFranchisee.email) {
-      onAddFranchisee(newFranchisee);
-      setNewFranchisee({ name: '', email: '', phone: '' });
+    if (newFranchisee.franchisee_name && newFranchisee.email) {
+      onAddFranchisee({
+        franchisee_name: newFranchisee.franchisee_name,
+        user_id: newFranchisee.user_id || 'temp-user-id',
+        email: newFranchisee.email,
+      });
+      setNewFranchisee({ franchisee_name: '', user_id: '', email: '', phone: '' });
       setShowAddForm(false);
     }
   };
@@ -61,8 +66,8 @@ export function FranchiseeSelector({
                 <Label htmlFor="name" className="text-gray-700 font-medium">Nombre *</Label>
                 <Input
                   id="name"
-                  value={newFranchisee.name}
-                  onChange={(e) => setNewFranchisee(prev => ({ ...prev, name: e.target.value }))}
+                  value={newFranchisee.franchisee_name}
+                  onChange={(e) => setNewFranchisee(prev => ({ ...prev, franchisee_name: e.target.value }))}
                   className="mt-1 border-gray-300 focus:border-red-500 focus:ring-red-500"
                   required
                 />
@@ -114,20 +119,20 @@ export function FranchiseeSelector({
                 <Building className="w-6 h-6 text-red-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg text-gray-900 mb-1">{franchisee.name}</h3>
+                <h3 className="font-semibold text-lg text-gray-900 mb-1">{franchisee.franchisee_name}</h3>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Mail className="w-4 h-4" />
-                    <span className="truncate">{franchisee.email}</span>
+                    <span className="truncate">{franchisee.profiles?.email || franchisee.email || 'Sin email'}</span>
                   </div>
-                  {franchisee.phone && (
+                  {franchisee.profiles?.phone && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Phone className="w-4 h-4" />
-                      <span>{franchisee.phone}</span>
+                      <span>{franchisee.profiles.phone}</span>
                     </div>
                   )}
                   <div className="mt-3 px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-full inline-block">
-                    {franchisee.restaurants.length} restaurantes
+                    {franchisee.total_restaurants || 0} restaurantes
                   </div>
                 </div>
               </div>

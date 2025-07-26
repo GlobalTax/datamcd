@@ -28,3 +28,20 @@ export interface RestaurantValuation {
   currentValuation: number;
   projectedYears: number;
 }
+
+export interface ValuationFormData {
+  valuationDate: string;
+  initialSales: number;
+  salesGrowthRate: number;
+  inflationRate: number;
+  discountRate: number;
+  yearsRemaining: number;
+  pacPercentage: number;
+  rentPercentage: number;
+  serviceFeesPercentage: number;
+  depreciation: number;
+  interest: number;
+  loanPayment: number;
+  rentIndex: number;
+  miscellaneous: number;
+}

@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Restaurant, ValuationFormData } from '@/types/restaurant';
+import { ValuationFormData } from '@/types/restaurant';
+import { Restaurant } from '@/types/core';
 import { calculateRestaurantValuation } from '@/utils/valuationCalculator';
 import { Calculator, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
@@ -82,8 +83,8 @@ export function ValuationForm({ restaurant, onSaveValuation }: ValuationFormProp
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Valoración de {currentRestaurant.name}</h2>
-          <p className="text-gray-600">{currentRestaurant.location}</p>
+          <h2 className="text-2xl font-bold">Valoración de {(currentRestaurant as any).name || (currentRestaurant as Restaurant).restaurant_name}</h2>
+          <p className="text-gray-600">{(currentRestaurant as any).location || (currentRestaurant as Restaurant).address}</p>
         </div>
       </div>
 

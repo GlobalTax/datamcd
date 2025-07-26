@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Restaurant, Franchisee } from '@/types/restaurant';
+import { Restaurant, Franchisee } from '@/types/core';
 import { Plus, MapPin, Calendar, TrendingUp, Hash, Euro, Building2 } from 'lucide-react';
 
 interface RestaurantManagerProps {
   franchisee: Franchisee;
-  onAddRestaurant: (restaurant: Omit<Restaurant, 'id' | 'createdAt' | 'currentValuation' | 'valuationHistory'>) => void;
+  onAddRestaurant: (restaurant: Omit<Restaurant, 'id' | 'created_at' | 'updated_at'>) => void;
   onSelectRestaurant: (restaurant: Restaurant) => void;
   selectedRestaurant: Restaurant | null;
 }
@@ -46,9 +46,14 @@ export function RestaurantManager({
     e.preventDefault();
     if (newRestaurant.name && newRestaurant.location && newRestaurant.contractEndDate && newRestaurant.siteNumber && newRestaurant.franchiseEndDate) {
       onAddRestaurant({
-        ...newRestaurant,
-        franchiseeId: franchisee.id,
-        leaseEndDate: newRestaurant.isOwnedByMcD ? undefined : newRestaurant.leaseEndDate
+        franchisee_id: franchisee.id,
+        site_number: newRestaurant.siteNumber,
+        restaurant_name: newRestaurant.name,
+        address: newRestaurant.location,
+        city: '',
+        country: 'España',
+        restaurant_type: 'traditional',
+        status: 'active'
       });
       setNewRestaurant({ 
         name: '', 
@@ -70,8 +75,8 @@ export function RestaurantManager({
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Restaurantes de {franchisee.name}</h2>
-          <p className="text-gray-600">{franchisee.restaurants.length} restaurantes registrados</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Restaurantes de {franchisee.franchisee_name}</h2>
+          <p className="text-gray-600">{franchisee.total_restaurants || 0} restaurantes registrados</p>
         </div>
         <Button 
           onClick={() => setShowAddForm(!showAddForm)}
@@ -220,7 +225,8 @@ export function RestaurantManager({
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
-        {franchisee.restaurants.map((restaurant) => (
+        {/* TODO: Implementar listado de restaurantes cuando se integre con el backend */}
+        {([] as Restaurant[]).map((restaurant) => (
           <div
             key={restaurant.id}
             className={`bg-white border border-gray-200 rounded-xl p-6 cursor-pointer transition-all hover:shadow-lg hover:border-red-200 ${
@@ -231,10 +237,10 @@ export function RestaurantManager({
             <div className="space-y-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold text-xl text-gray-900">{restaurant.name}</h3>
+                  <h3 className="font-semibold text-xl text-gray-900">{restaurant.restaurant_name}</h3>
                   <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                     <Hash className="w-4 h-4" />
-                    <span>Site: {restaurant.siteNumber}</span>
+                    <span>Site: {restaurant.site_number}</span>
                   </div>
                 </div>
                 <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -245,66 +251,35 @@ export function RestaurantManager({
               <div className="space-y-3">
                 <div className="flex items-center gap-3 text-gray-600">
                   <MapPin className="w-5 h-5" />
-                  <span className="font-medium">{restaurant.location}</span>
+                  <span className="font-medium">{restaurant.address}</span>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Euro className="w-4 h-4 text-green-600" />
-                    <div>
-                      <p className="text-xs text-gray-500">Facturación</p>
-                      <p className="font-medium">€{formatNumber(restaurant.lastYearRevenue)}</p>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Euro className="w-4 h-4 text-green-600" />
+                      <div>
+                        <p className="text-xs text-gray-500">Facturación</p>
+                        <p className="font-medium">€{formatNumber(0)}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Building2 className="w-4 h-4 text-blue-600" />
-                    <div>
-                      <p className="text-xs text-gray-500">Renta Base</p>
-                      <p className="font-medium">€{formatNumber(restaurant.baseRent)}</p>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Building2 className="w-4 h-4 text-blue-600" />
+                      <div>
+                        <p className="text-xs text-gray-500">Renta Base</p>
+                        <p className="font-medium">€{formatNumber(0)}</p>
+                      </div>
                     </div>
-                  </div>
                 </div>
                 
                 <div className="flex items-center gap-3 text-gray-600">
                   <Calendar className="w-5 h-5" />
-                  <span>Contrato hasta: <span className="font-medium">{new Date(restaurant.contractEndDate).toLocaleDateString('es-ES')}</span></span>
+                  <span>Apertura: <span className="font-medium">{restaurant.opening_date ? new Date(restaurant.opening_date).toLocaleDateString('es-ES') : 'N/A'}</span></span>
                 </div>
-                
-                <div className="flex items-center gap-3 text-gray-600">
-                  <Calendar className="w-5 h-5" />
-                  <span>Franquicia hasta: <span className="font-medium">{restaurant.franchiseEndDate ? new Date(restaurant.franchiseEndDate).toLocaleDateString('es-ES') : 'N/A'}</span></span>
-                </div>
-                
-                {restaurant.isOwnedByMcD ? (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
-                    <span className="text-yellow-800 text-sm font-medium">Propiedad de McDonald's</span>
-                  </div>
-                ) : restaurant.leaseEndDate && (
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <Calendar className="w-5 h-5" />
-                    <span>Alquiler hasta: <span className="font-medium">{new Date(restaurant.leaseEndDate).toLocaleDateString('es-ES')}</span></span>
-                  </div>
-                )}
               </div>
-              
-              {restaurant.currentValuation && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-5 h-5 text-green-600" />
-                    <span className="font-semibold text-green-800">Valoración Actual</span>
-                  </div>
-                  <p className="text-2xl font-bold text-green-800">
-                    €{formatNumber(restaurant.currentValuation.finalValuation)}
-                  </p>
-                  <p className="text-sm text-green-600 mt-1">
-                    Actualizada: {new Date(restaurant.currentValuation.valuationDate).toLocaleDateString('es-ES')}
-                  </p>
-                </div>
-              )}
               
               <div className="pt-2 border-t border-gray-100">
                 <p className="text-sm text-gray-500">
-                  {restaurant.valuationHistory.length} valoraciones realizadas
+                  Estado: {restaurant.status}
                 </p>
               </div>
             </div>
@@ -312,13 +287,13 @@ export function RestaurantManager({
         ))}
       </div>
 
-      {franchisee.restaurants.length === 0 && !showAddForm && (
+      {(franchisee.total_restaurants || 0) === 0 && !showAddForm && (
         <div className="text-center py-16">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <MapPin className="w-10 h-10 text-gray-400" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">No hay restaurantes</h3>
-          <p className="text-gray-600 mb-6">Agrega el primer restaurante para {franchisee.name}</p>
+          <p className="text-gray-600 mb-6">Agrega el primer restaurante para {franchisee.franchisee_name}</p>
           <Button 
             onClick={() => setShowAddForm(true)}
             className="bg-red-600 hover:bg-red-700 text-white font-medium px-6"

@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Restaurant, Franchisee } from '@/types/restaurant';
+import { Restaurant, Franchisee } from '@/types/core';
 import { Plus, Edit, MapPin, Euro, Building2, Hash, Calendar, Shield, TrendingUp, Trash2 } from 'lucide-react';
 
 interface RestaurantDataManagerProps {
@@ -43,47 +43,31 @@ export function RestaurantDataManager({ franchisees, onUpdateFranchisees, onSele
   });
 
   // Get all restaurants from all franchisees
-  const allRestaurants = franchisees.flatMap(f => 
-    f.restaurants.map(r => ({ ...r, franchiseeName: f.name }))
-  );
+  const allRestaurants: (Restaurant & { franchiseeName: string })[] = [];
+  // TODO: Implementar la lógica para obtener restaurantes cuando se integre con el backend
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.location || !formData.franchiseeId || !formData.franchiseEndDate) return;
 
-    const restaurantData = {
-      ...formData,
+    const restaurantData: Restaurant = {
       id: editingRestaurant?.id || Date.now().toString(),
-      valuationHistory: editingRestaurant?.valuationHistory || [],
-      currentValuation: editingRestaurant?.currentValuation,
-      createdAt: editingRestaurant?.createdAt || new Date(),
-      // Don't include leaseEndDate if it's owned by McD
-      leaseEndDate: formData.isOwnedByMcD ? undefined : formData.leaseEndDate
+      franchisee_id: formData.franchiseeId,
+      site_number: formData.siteNumber,
+      restaurant_name: formData.name,
+      address: formData.location,
+      city: '',
+      country: 'España',
+      restaurant_type: 'traditional',
+      status: 'active',
+      created_at: editingRestaurant?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
-    const updatedFranchisees = franchisees.map(f => {
-      if (f.id === formData.franchiseeId) {
-        if (editingRestaurant) {
-          // Update existing restaurant
-          return {
-            ...f,
-            restaurants: f.restaurants.map(r => 
-              r.id === editingRestaurant.id ? restaurantData : r
-            )
-          };
-        } else {
-          // Add new restaurant
-          return {
-            ...f,
-            restaurants: [...f.restaurants, restaurantData]
-          };
-        }
-      }
-      return f;
-    });
-
-    onUpdateFranchisees(updatedFranchisees);
+    // TODO: Implementar actualización de restaurantes con el servicio
+    console.log('Restaurant data to save:', restaurantData);
+    onUpdateFranchisees(franchisees);
     resetForm();
   };
 
@@ -107,17 +91,17 @@ export function RestaurantDataManager({ franchisees, onUpdateFranchisees, onSele
 
   const handleEdit = (restaurant: Restaurant & { franchiseeName: string }) => {
     setFormData({
-      name: restaurant.name,
-      location: restaurant.location,
-      contractEndDate: restaurant.contractEndDate,
-      siteNumber: restaurant.siteNumber,
-      lastYearRevenue: restaurant.lastYearRevenue || 0,
-      baseRent: restaurant.baseRent || 0,
-      rentIndex: restaurant.rentIndex || 0,
-      franchiseeId: restaurant.franchiseeId,
-      franchiseEndDate: restaurant.franchiseEndDate || '',
-      leaseEndDate: restaurant.leaseEndDate || '',
-      isOwnedByMcD: restaurant.isOwnedByMcD || false
+      name: restaurant.restaurant_name,
+      location: restaurant.address,
+      contractEndDate: '',
+      siteNumber: restaurant.site_number,
+      lastYearRevenue: 0,
+      baseRent: 0,
+      rentIndex: 0,
+      franchiseeId: restaurant.franchisee_id,
+      franchiseEndDate: '',
+      leaseEndDate: '',
+      isOwnedByMcD: false
     });
     setEditingRestaurant(restaurant);
     setShowAddForm(true);
@@ -131,7 +115,7 @@ export function RestaurantDataManager({ franchisees, onUpdateFranchisees, onSele
 
   const handleViewRestaurant = (restaurant: Restaurant & { franchiseeName: string }) => {
     // Navigate to the restaurant's dedicated page
-    window.open(`/restaurant/${restaurant.siteNumber}`, '_blank');
+    window.open(`/restaurant/${restaurant.site_number}`, '_blank');
   };
 
   const handleNavigateToDemo = () => {
@@ -139,12 +123,9 @@ export function RestaurantDataManager({ franchisees, onUpdateFranchisees, onSele
   };
 
   const handleDeleteRestaurant = (restaurant: Restaurant & { franchiseeName: string }) => {
-    const updatedFranchisees = franchisees.map(f => ({
-      ...f,
-      restaurants: f.restaurants.filter(r => r.id !== restaurant.id)
-    }));
-    
-    onUpdateFranchisees(updatedFranchisees);
+    // TODO: Implementar eliminación de restaurantes con el servicio
+    console.log('Delete restaurant:', restaurant.id);
+    onUpdateFranchisees(franchisees);
   };
 
   const formatNumber = (value: number | undefined | null): string => {
@@ -191,7 +172,7 @@ export function RestaurantDataManager({ franchisees, onUpdateFranchisees, onSele
                   >
                     <option value="">Seleccionar franquiciado</option>
                     {franchisees.map(f => (
-                      <option key={f.id} value={f.id}>{f.name}</option>
+                      <option key={f.id} value={f.id}>{f.franchisee_name}</option>
                     ))}
                   </select>
                 </div>
@@ -382,11 +363,11 @@ export function RestaurantDataManager({ franchisees, onUpdateFranchisees, onSele
                     <td className="border border-gray-300 p-4 bg-white font-manrope">
                       <div className="flex items-center gap-2">
                         <Hash className="w-4 h-4 text-gray-400" />
-                        <span className="font-medium">{restaurant.siteNumber}</span>
+                        <span className="font-medium">{restaurant.site_number}</span>
                       </div>
                     </td>
                     <td className="border border-gray-300 p-4 bg-white font-semibold font-manrope">
-                      {restaurant.name}
+                      {restaurant.restaurant_name}
                     </td>
                     <td className="border border-gray-300 p-4 bg-white font-manrope">
                       {restaurant.franchiseeName}
@@ -394,62 +375,41 @@ export function RestaurantDataManager({ franchisees, onUpdateFranchisees, onSele
                     <td className="border border-gray-300 p-4 bg-white font-manrope">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-gray-400" />
-                        {restaurant.location}
+                        {restaurant.address}
                       </div>
                     </td>
                     <td className="border border-gray-300 p-4 bg-white font-manrope">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-blue-600" />
-                        {restaurant.franchiseEndDate ? new Date(restaurant.franchiseEndDate).toLocaleDateString('es-ES') : 'N/A'}
+                        N/A
                       </div>
                     </td>
                     <td className="border border-gray-300 p-4 bg-white font-manrope">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-orange-600" />
-                        {restaurant.isOwnedByMcD ? 
-                          <span className="text-green-600 font-medium">Propiedad McD</span> : 
-                          (restaurant.leaseEndDate ? new Date(restaurant.leaseEndDate).toLocaleDateString('es-ES') : 'N/A')
-                        }
+                        N/A
                       </div>
                     </td>
                     <td className="border border-gray-300 p-4 bg-white font-manrope">
-                      {restaurant.isOwnedByMcD ? (
-                        <div className="flex items-center gap-1">
-                          <Shield className="w-4 h-4 text-green-600" />
-                          <span className="text-green-600 font-medium">McD</span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-500">Alquiler</span>
-                      )}
+                      <span className="text-gray-500">N/A</span>
                     </td>
                     <td className="border border-gray-300 p-4 bg-white text-right font-manrope">
                       <div className="flex items-center justify-end gap-1">
                         <Euro className="w-4 h-4 text-green-600" />
-                        <span className="font-medium">{formatNumber(restaurant.lastYearRevenue)}</span>
+                        <span className="font-medium">{formatNumber(0)}</span>
                       </div>
                     </td>
                     <td className="border border-gray-300 p-4 bg-white text-right font-manrope">
                       <div className="flex items-center justify-end gap-1">
                         <Building2 className="w-4 h-4 text-blue-600" />
-                        <span className="font-medium">{formatNumber(restaurant.baseRent)}</span>
+                        <span className="font-medium">{formatNumber(0)}</span>
                       </div>
                     </td>
                     <td className="border border-gray-300 p-4 bg-white text-right font-manrope font-medium">
-                      €{formatNumber(restaurant.rentIndex)}
+                      €{formatNumber(0)}
                     </td>
                     <td className="border border-gray-300 p-4 bg-white text-center font-manrope">
-                      {restaurant.currentValuation ? (
-                        <div>
-                          <p className="text-sm font-semibold text-green-800">
-                            €{formatNumber(restaurant.currentValuation.finalValuation)}
-                          </p>
-                          <p className="text-xs text-green-600">
-                            {new Date(restaurant.currentValuation.valuationDate).toLocaleDateString('es-ES')}
-                          </p>
-                        </div>
-                      ) : (
-                        <span className="text-gray-500 text-sm">Sin valorar</span>
-                      )}
+                      <span className="text-gray-500 text-sm">Sin valorar</span>
                     </td>
                     <td className="border border-gray-300 p-4 bg-white text-center">
                       <div className="flex justify-center gap-2">
@@ -485,7 +445,7 @@ export function RestaurantDataManager({ franchisees, onUpdateFranchisees, onSele
                             <AlertDialogHeader>
                               <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Se eliminará permanentemente el restaurante "{restaurant.name}" y todos sus datos asociados.
+                                Esta acción no se puede deshacer. Se eliminará permanentemente el restaurante "{restaurant.restaurant_name}" y todos sus datos asociados.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
