@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useOrquest } from './useOrquest';
 import { useBiloop, BiloopEmployee } from './useBiloop';
+import { useBiloopConfig } from './useBiloopConfig';
 import { useToast } from './use-toast';
 
 // Interfaz unificada para trabajadores con vinculación por NIF
@@ -67,13 +68,29 @@ export const useWorkersPanel = (franchiseeId?: string) => {
     loading: biloopLoading 
   } = useBiloop();
 
+  // Configuración de Biloop para obtener el company_id correcto
+  const { config: biloopConfig, isConfigured: isBiloopConfigured } = useBiloopConfig(franchiseeId);
+
   const [biloopEmployees, setBiloopEmployees] = useState<BiloopEmployee[]>([]);
 
   // Función para cargar empleados de Biloop
   const loadBiloopEmployees = async () => {
+    if (!isBiloopConfigured()) {
+      console.log('Biloop not configured for this franchisee');
+      setBiloopEmployees([]);
+      return;
+    }
+
+    const companyId = biloopConfig?.company_id;
+    if (!companyId) {
+      console.log('No company_id configured for Biloop');
+      setBiloopEmployees([]);
+      return;
+    }
+
     try {
-      console.log('Loading Biloop employees...');
-      const employees = await getEmployees("demo_company");
+      console.log('Loading Biloop employees for company:', companyId);
+      const employees = await getEmployees(companyId);
       console.log('Biloop employees loaded:', employees.length);
       setBiloopEmployees(employees);
     } catch (error) {
@@ -312,10 +329,10 @@ export const useWorkersPanel = (franchiseeId?: string) => {
 
   // Efectos para cargar y unificar datos
   useEffect(() => {
-    if (franchiseeId) {
+    if (franchiseeId && biloopConfig) {
       loadBiloopEmployees();
     }
-  }, [franchiseeId]);
+  }, [franchiseeId, biloopConfig]);
 
   useEffect(() => {
     unifyWorkerData();

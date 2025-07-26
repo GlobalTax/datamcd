@@ -6,49 +6,28 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useOrquestConfig } from '@/hooks/useOrquestConfig';
+import { useIntegrationConfig, IntegrationConfig } from '@/hooks/useIntegrationConfig';
 import { useFranchisees } from '@/hooks/useFranchisees';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Database, Key, CheckCircle, XCircle, Settings } from 'lucide-react';
+import { Building2, Database, Key, CheckCircle, XCircle, Settings, Wifi, AlertCircle } from 'lucide-react';
 
-interface ApiConfig {
-  orquest?: {
-    apiKey: string;
-    baseUrl: string;
-    businessId: string;
-  };
-  biloop?: {
-    subscriptionKey: string;
-    token: string;
-  };
-}
+// Removed old interface - now using IntegrationConfig from hook
 
 export const FranchiseeApiConfig: React.FC = () => {
   const [selectedFranchisee, setSelectedFranchisee] = useState<string>('');
-  const [configs, setConfigs] = useState<Record<string, ApiConfig>>({});
   const [isEditing, setIsEditing] = useState(false);
-  const [currentConfig, setCurrentConfig] = useState<ApiConfig>({});
+  const [currentConfig, setCurrentConfig] = useState<IntegrationConfig>({});
+  const [connectionStatus, setConnectionStatus] = useState<Record<string, 'testing' | 'success' | 'error'>>({});
   
   const { franchisees, loading: franchiseesLoading } = useFranchisees();
   const { toast } = useToast();
-
-  // Cargar configuraciones guardadas del localStorage
-  useEffect(() => {
-    const savedConfigs = localStorage.getItem('franchisee-api-configs');
-    if (savedConfigs) {
-      try {
-        setConfigs(JSON.parse(savedConfigs));
-      } catch (error) {
-        console.error('Error loading saved configs:', error);
-      }
-    }
-  }, []);
-
-  // Guardar configuraciones en localStorage
-  const saveConfigs = (newConfigs: Record<string, ApiConfig>) => {
-    localStorage.setItem('franchisee-api-configs', JSON.stringify(newConfigs));
-    setConfigs(newConfigs);
-  };
+  const { 
+    configs, 
+    loading: configLoading, 
+    saveConfig, 
+    testConnection, 
+    getConfigStatus 
+  } = useIntegrationConfig();
 
   // Cargar configuración del franquiciado seleccionado
   useEffect(() => {
@@ -59,7 +38,7 @@ export const FranchiseeApiConfig: React.FC = () => {
     }
   }, [selectedFranchisee, configs]);
 
-  const handleSaveConfig = () => {
+  const handleSaveConfig = async () => {
     if (!selectedFranchisee) {
       toast({
         title: "Error",
@@ -69,38 +48,34 @@ export const FranchiseeApiConfig: React.FC = () => {
       return;
     }
 
-    const newConfigs = {
-      ...configs,
-      [selectedFranchisee]: currentConfig
-    };
+    const success = await saveConfig(currentConfig, selectedFranchisee);
+    if (success) {
+      setIsEditing(false);
+    }
+  };
 
-    saveConfigs(newConfigs);
-    setIsEditing(false);
+  const isOrquestConfigured = (config: IntegrationConfig) => {
+    return config.orquest?.api_key && config.orquest?.base_url && config.orquest?.business_id;
+  };
+
+  const isBiloopConfigured = (config: IntegrationConfig) => {
+    return config.biloop?.company_id;
+  };
+
+  const handleTestConnection = async (type: 'orquest' | 'biloop') => {
+    if (!selectedFranchisee) return;
     
-    toast({
-      title: "Configuración guardada",
-      description: "Las API keys se han guardado correctamente",
-    });
-  };
-
-  const isOrquestConfigured = (config: ApiConfig) => {
-    return config.orquest?.apiKey && config.orquest?.baseUrl && config.orquest?.businessId;
-  };
-
-  const isBiloopConfigured = (config: ApiConfig) => {
-    return config.biloop?.subscriptionKey && config.biloop?.token;
-  };
-
-  const getConfigStatus = (config: ApiConfig) => {
-    const orquestOk = isOrquestConfigured(config);
-    const biloopOk = isBiloopConfigured(config);
+    setConnectionStatus(prev => ({ ...prev, [`${selectedFranchisee}-${type}`]: 'testing' }));
     
-    if (orquestOk && biloopOk) return { status: 'complete', label: 'Completa', variant: 'default' as const };
-    if (orquestOk || biloopOk) return { status: 'partial', label: 'Parcial', variant: 'secondary' as const };
-    return { status: 'none', label: 'Sin configurar', variant: 'destructive' as const };
+    const success = await testConnection(type, selectedFranchisee);
+    
+    setConnectionStatus(prev => ({ 
+      ...prev, 
+      [`${selectedFranchisee}-${type}`]: success ? 'success' : 'error' 
+    }));
   };
 
-  if (franchiseesLoading) {
+  if (franchiseesLoading || configLoading) {
     return (
       <Card>
         <CardHeader>
@@ -182,6 +157,19 @@ export const FranchiseeApiConfig: React.FC = () => {
                     ) : (
                       <XCircle className="h-4 w-4 text-red-500" />
                     )}
+                    {connectionStatus[`${selectedFranchisee}-orquest`] && (
+                      <div className="ml-auto">
+                        {connectionStatus[`${selectedFranchisee}-orquest`] === 'testing' && (
+                          <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full" />
+                        )}
+                        {connectionStatus[`${selectedFranchisee}-orquest`] === 'success' && (
+                          <Wifi className="h-4 w-4 text-green-500" />
+                        )}
+                        {connectionStatus[`${selectedFranchisee}-orquest`] === 'error' && (
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                        )}
+                      </div>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -192,10 +180,15 @@ export const FranchiseeApiConfig: React.FC = () => {
                       type="password"
                       placeholder="API Key de Orquest"
                       disabled={!isEditing}
-                      value={currentConfig.orquest?.apiKey || ''}
+                      value={currentConfig.orquest?.api_key || ''}
                       onChange={(e) => setCurrentConfig({
                         ...currentConfig,
-                        orquest: { ...currentConfig.orquest, apiKey: e.target.value, baseUrl: currentConfig.orquest?.baseUrl || '', businessId: currentConfig.orquest?.businessId || '' }
+                        orquest: { 
+                          ...currentConfig.orquest, 
+                          api_key: e.target.value, 
+                          base_url: currentConfig.orquest?.base_url || 'https://pre-mc.orquest.es', 
+                          business_id: currentConfig.orquest?.business_id || 'MCDONALDS_ES' 
+                        }
                       })}
                     />
                   </div>
@@ -203,12 +196,17 @@ export const FranchiseeApiConfig: React.FC = () => {
                     <Label htmlFor="orquest-base-url">Base URL</Label>
                     <Input
                       id="orquest-base-url"
-                      placeholder="https://api.orquest.com"
+                      placeholder="https://pre-mc.orquest.es"
                       disabled={!isEditing}
-                      value={currentConfig.orquest?.baseUrl || ''}
+                      value={currentConfig.orquest?.base_url || ''}
                       onChange={(e) => setCurrentConfig({
                         ...currentConfig,
-                        orquest: { ...currentConfig.orquest, baseUrl: e.target.value, apiKey: currentConfig.orquest?.apiKey || '', businessId: currentConfig.orquest?.businessId || '' }
+                        orquest: { 
+                          ...currentConfig.orquest, 
+                          base_url: e.target.value, 
+                          api_key: currentConfig.orquest?.api_key || '', 
+                          business_id: currentConfig.orquest?.business_id || 'MCDONALDS_ES' 
+                        }
                       })}
                     />
                   </div>
@@ -216,15 +214,34 @@ export const FranchiseeApiConfig: React.FC = () => {
                     <Label htmlFor="orquest-business-id">Business ID</Label>
                     <Input
                       id="orquest-business-id"
-                      placeholder="ID del negocio en Orquest"
+                      placeholder="MCDONALDS_ES"
                       disabled={!isEditing}
-                      value={currentConfig.orquest?.businessId || ''}
+                      value={currentConfig.orquest?.business_id || ''}
                       onChange={(e) => setCurrentConfig({
                         ...currentConfig,
-                        orquest: { ...currentConfig.orquest, businessId: e.target.value, apiKey: currentConfig.orquest?.apiKey || '', baseUrl: currentConfig.orquest?.baseUrl || '' }
+                        orquest: { 
+                          ...currentConfig.orquest, 
+                          business_id: e.target.value, 
+                          api_key: currentConfig.orquest?.api_key || '', 
+                          base_url: currentConfig.orquest?.base_url || 'https://pre-mc.orquest.es' 
+                        }
                       })}
                     />
                   </div>
+                  
+                  {isOrquestConfigured(currentConfig) && !isEditing && (
+                    <div className="pt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleTestConnection('orquest')}
+                        disabled={connectionStatus[`${selectedFranchisee}-orquest`] === 'testing'}
+                      >
+                        <Wifi className="h-4 w-4 mr-2" />
+                        Probar Conexión
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -233,43 +250,62 @@ export const FranchiseeApiConfig: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Database className="h-4 w-4" />
-                    Integraloop API
+                    Biloop API
                     {isBiloopConfigured(currentConfig) ? (
                       <CheckCircle className="h-4 w-4 text-green-500" />
                     ) : (
                       <XCircle className="h-4 w-4 text-red-500" />
                     )}
+                    {connectionStatus[`${selectedFranchisee}-biloop`] && (
+                      <div className="ml-auto">
+                        {connectionStatus[`${selectedFranchisee}-biloop`] === 'testing' && (
+                          <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full" />
+                        )}
+                        {connectionStatus[`${selectedFranchisee}-biloop`] === 'success' && (
+                          <Wifi className="h-4 w-4 text-green-500" />
+                        )}
+                        {connectionStatus[`${selectedFranchisee}-biloop`] === 'error' && (
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                        )}
+                      </div>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-2">
-                    <Label htmlFor="biloop-subscription-key">Subscription Key</Label>
+                    <Label htmlFor="biloop-company-id">Company ID</Label>
                     <Input
-                      id="biloop-subscription-key"
-                      type="password"
-                      placeholder="SUBSCRIPTION_KEY de Integraloop"
+                      id="biloop-company-id"
+                      placeholder="Número de empresa en Biloop (ej: demo_company)"
                       disabled={!isEditing}
-                      value={currentConfig.biloop?.subscriptionKey || ''}
+                      value={currentConfig.biloop?.company_id || ''}
                       onChange={(e) => setCurrentConfig({
                         ...currentConfig,
-                        biloop: { ...currentConfig.biloop, subscriptionKey: e.target.value, token: currentConfig.biloop?.token || '' }
+                        biloop: { 
+                          ...currentConfig.biloop, 
+                          company_id: e.target.value 
+                        }
                       })}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="biloop-token">Token</Label>
-                    <Input
-                      id="biloop-token"
-                      type="password"
-                      placeholder="Token de autenticación"
-                      disabled={!isEditing}
-                      value={currentConfig.biloop?.token || ''}
-                      onChange={(e) => setCurrentConfig({
-                        ...currentConfig,
-                        biloop: { ...currentConfig.biloop, token: e.target.value, subscriptionKey: currentConfig.biloop?.subscriptionKey || '' }
-                      })}
-                    />
+                  <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded">
+                    <p><strong>Nota:</strong> Las credenciales API globales de Biloop se configuran a nivel de sistema.</p>
+                    <p>Aquí solo necesitas especificar el número de empresa específico para este franquiciado.</p>
                   </div>
+                  
+                  {isBiloopConfigured(currentConfig) && !isEditing && (
+                    <div className="pt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleTestConnection('biloop')}
+                        disabled={connectionStatus[`${selectedFranchisee}-biloop`] === 'testing'}
+                      >
+                        <Wifi className="h-4 w-4 mr-2" />
+                        Probar Conexión
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -291,7 +327,7 @@ export const FranchiseeApiConfig: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle>Resumen de Configuraciones</CardTitle>
-            <CardDescription>Estado de las API keys por franquiciado</CardDescription>
+            <CardDescription>Estado de las configuraciones de integración por franquiciado</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -303,8 +339,18 @@ export const FranchiseeApiConfig: React.FC = () => {
                   <div key={franchisee.id} className="flex items-center justify-between p-2 border rounded">
                     <span className="font-medium">{franchisee.franchisee_name}</span>
                     <div className="flex items-center gap-2">
-                      {isOrquestConfigured(config) && <Building2 className="h-4 w-4 text-green-500" />}
-                      {isBiloopConfigured(config) && <Database className="h-4 w-4 text-green-500" />}
+                      {isOrquestConfigured(config) && (
+                        <div className="flex items-center gap-1">
+                          <Building2 className="h-4 w-4 text-green-500" />
+                          <span className="text-xs text-green-600">Orquest</span>
+                        </div>
+                      )}
+                      {isBiloopConfigured(config) && (
+                        <div className="flex items-center gap-1">
+                          <Database className="h-4 w-4 text-green-500" />
+                          <span className="text-xs text-green-600">Biloop</span>
+                        </div>
+                      )}
                       <Badge variant={status.variant}>{status.label}</Badge>
                     </div>
                   </div>

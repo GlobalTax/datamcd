@@ -2,8 +2,11 @@ import React from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { WorkersPanel } from '@/components/workers/WorkersPanel';
+import { useAuth } from '@/hooks/auth/AuthProvider';
 
 export default function WorkersPage() {
+  const { user } = useAuth();
+  
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
