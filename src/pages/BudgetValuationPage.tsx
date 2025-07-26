@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
-import { useValuationBudgets } from '@/hooks/useValuationBudgets';
-import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
+import { useBudgets } from '@/hooks/data/useBudgets';
+import { useRestaurants } from '@/hooks/data/useRestaurants';
 import { BudgetList } from '@/components/budget/BudgetList';
 import { BudgetForm } from '@/components/budget/BudgetForm';
 import { BudgetDetail } from '@/components/budget/BudgetDetail';
@@ -13,8 +13,8 @@ import { Plus, ArrowLeft, TrendingUp, Calculator, DollarSign } from 'lucide-reac
 import { ValuationBudget } from '@/types/budget';
 
 export default function BudgetValuationPage() {
-  const { budgets, loading, createBudget, updateBudget, deleteBudget } = useValuationBudgets();
-  const { restaurants, loading: restaurantsLoading } = useFranchiseeRestaurants();
+  const { valuationBudgets: budgets, loading, createValuationBudget, updateValuationBudget, deleteValuationBudget } = useBudgets({ mode: 'valuation' });
+  const { restaurants, loading: restaurantsLoading } = useRestaurants();
   const [currentView, setCurrentView] = useState<'list' | 'create' | 'detail'>('list');
   const [selectedBudget, setSelectedBudget] = useState<ValuationBudget | null>(null);
 
@@ -34,7 +34,7 @@ export default function BudgetValuationPage() {
   };
 
   const handleFormSubmit = async (data: any) => {
-    const success = await createBudget(data);
+    const success = await createValuationBudget(data);
     if (success) {
       setCurrentView('list');
     }
@@ -163,7 +163,7 @@ export default function BudgetValuationPage() {
             <BudgetList
               budgets={budgets}
               onSelectBudget={handleSelectBudget}
-              onDeleteBudget={deleteBudget}
+              onDeleteBudget={deleteValuationBudget}
             />
           )}
 
@@ -178,8 +178,8 @@ export default function BudgetValuationPage() {
           {currentView === 'detail' && selectedBudget && (
             <BudgetDetail
               budget={selectedBudget}
-              onUpdate={updateBudget}
-              onDelete={deleteBudget}
+              onUpdate={updateValuationBudget}
+              onDelete={deleteValuationBudget}
               onBack={handleBack}
             />
           )}

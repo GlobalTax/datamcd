@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { useBudgetData } from '@/hooks/useBudgetData';
+import { useBudgets } from '@/hooks/data/useBudgets';
 import { useActualData } from '@/hooks/useActualData';
-import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
+import { useRestaurants } from '@/hooks/data/useRestaurants';
 import { BudgetTable } from './BudgetTable';
 import { BudgetGridHeader } from './BudgetGridHeader';
 import { BudgetGridStatus } from './BudgetGridStatus';
@@ -22,17 +22,22 @@ export const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({
   const [viewMode, setViewMode] = useState<'budget' | 'comparison' | 'actuals'>('budget');
   const [showOnlySummary, setShowOnlySummary] = useState(false);
   
-  const { restaurants } = useFranchiseeRestaurants();
+  const { restaurants } = useRestaurants();
   
   const {
-    rowData,
+    annualBudgets: rowData,
     hasChanges,
     loading,
     error,
     handleCellChange,
-    handleSave,
+    saveAnnualBudgets,
     reloadData
-  } = useBudgetData(restaurantId, year);
+  } = useBudgets({ 
+    mode: 'annual', 
+    restaurantId, 
+    year,
+    autoFetch: true 
+  });
 
   const {
     actualData,
@@ -43,7 +48,9 @@ export const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({
   } = useActualData();
 
   const selectedRestaurant = restaurants.find(r => r.id === restaurantId);
-  const restaurantName = selectedRestaurant?.base_restaurant?.restaurant_name;
+  const restaurantName = (selectedRestaurant as any)?.restaurant_name || 
+                          (selectedRestaurant as any)?.name || 
+                          'Restaurante desconocido';
 
   // Cargar datos reales automáticamente
   useEffect(() => {
@@ -104,7 +111,12 @@ export const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({
           loading={loading}
           budgetData={rowData}
           restaurantName={restaurantName}
-          onSave={handleSave}
+          onSave={async () => {
+            const success = await saveAnnualBudgets(restaurantId, year, rowData);
+            if (success) {
+              toast.success('Presupuesto guardado correctamente');
+            }
+          }}
           viewMode={viewMode}
           onToggleViewMode={handleToggleViewMode}
           showOnlySummary={showOnlySummary}
