@@ -15,7 +15,7 @@ import {
   Calendar,
   Target
 } from 'lucide-react';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useAuth } from '@/hooks/auth/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 
 interface KPIData {
@@ -37,7 +37,7 @@ interface RecentActivity {
 }
 
 export const AdvancedDashboard: React.FC = () => {
-  const { user } = useUnifiedAuth();
+  const { user } = useAuth();
   const [kpiData, setKpiData] = useState<KPIData>({
     totalFranchisees: 0,
     totalRestaurants: 0,

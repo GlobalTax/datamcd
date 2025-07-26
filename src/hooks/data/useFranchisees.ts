@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useAuth } from '@/hooks/auth/AuthProvider';
 import { logger } from '@/lib/logger';
 import { FranchiseeService } from '@/services/api/franchiseeService';
 import { Franchisee } from '@/types/auth';
@@ -23,7 +23,7 @@ export interface UseFranchiseesReturn {
  * Reemplaza: useFranchisees, useSimplifiedFranchisees
  */
 export const useFranchisees = (): UseFranchiseesReturn => {
-  const { user } = useUnifiedAuth();
+  const { user } = useAuth();
   const [franchisees, setFranchisees] = useState<Franchisee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

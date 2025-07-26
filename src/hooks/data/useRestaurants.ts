@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useAuth } from '@/hooks/auth/AuthProvider';
 import { logger } from '@/lib/logger';
 import { 
   RestaurantService, 
@@ -34,7 +34,7 @@ export interface UseRestaurantsReturn {
  * useUnifiedRestaurants, useBaseRestaurants, useSimplifiedFranchiseeRestaurants
  */
 export const useRestaurants = (config: RestaurantConfig = {}): UseRestaurantsReturn => {
-  const { user } = useUnifiedAuth();
+  const { user } = useAuth();
   const [restaurants, setRestaurants] = useState<UnifiedRestaurant[] | BaseRestaurant[] | FranchiseeRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

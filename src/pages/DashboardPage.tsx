@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useAuth } from '@/hooks/auth/AuthProvider';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
@@ -40,7 +40,7 @@ const DashboardPage = () => {
     isImpersonating,
     effectiveFranchisee,
     getDebugInfo
-  } = useUnifiedAuth();
+  } = useAuth();
   const navigate = useNavigate();
   
   // Simular isUsingCache para compatibilidad

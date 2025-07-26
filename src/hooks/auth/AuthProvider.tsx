@@ -508,4 +508,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 // Export legacy hooks para mantener compatibilidad
+// Re-export for backward compatibility
 export const useUnifiedAuth = useAuth;
