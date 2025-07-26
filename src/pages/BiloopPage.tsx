@@ -5,38 +5,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Building2, FileText, Users, Package, TestTube, UserCheck } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Loader2, Building2, FileText, Users, Package, TestTube, UserCheck, Settings2, Check, X } from 'lucide-react';
 import { useBiloop, BiloopCompany, BiloopInvoice, BiloopCustomer } from '@/hooks/useBiloop';
+import { useFranchisees } from '@/hooks/data/useFranchisees';
+import { useIntegrationConfig } from '@/hooks/useIntegrationConfig';
 import { useToast } from '@/hooks/use-toast';
 import { BiloopWorkersPanel } from '@/components/workers/BiloopWorkersPanel';
 
 const BiloopPage = () => {
-  const [companies, setCompanies] = useState<BiloopCompany[]>([]);
   const [invoices, setInvoices] = useState<BiloopInvoice[]>([]);
   const [customers, setCustomers] = useState<BiloopCustomer[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState<string>('');
+  const [selectedFranchiseeId, setSelectedFranchiseeId] = useState<string>('');
   
   const { 
-    loading, 
+    loading: biloopLoading, 
     getInvoices, 
     getCustomers, 
     getInventory, 
     testConnection 
   } = useBiloop();
   
+  const { franchisees, loading: franchiseesLoading } = useFranchisees();
+  const { configs, loading: configsLoading, getConfigStatus, testConnection: testIntegrationConnection } = useIntegrationConfig();
   const { toast } = useToast();
 
-  // Ya no cargamos empresas desde la API, sino que usamos el company_id del franquiciado
-  useEffect(() => {
-    // Aquí podrías obtener el company_id del franquiciado autenticado
-    // Por simplicidad, pondremos un placeholder
-    console.log('BiloopPage loaded - usar company_id del franquiciado');
-  }, []);
+  const loading = biloopLoading || franchiseesLoading || configsLoading;
+
+  const getSelectedFranchiseeConfig = () => {
+    return selectedFranchiseeId ? configs[selectedFranchiseeId] : null;
+  };
+
+  const getSelectedCompanyId = () => {
+    const config = getSelectedFranchiseeConfig();
+    return config?.biloop?.company_id || '';
+  };
 
   const loadInvoices = async () => {
+    const companyId = getSelectedCompanyId();
+    if (!companyId) {
+      toast({
+        title: "Error",
+        description: "Selecciona un franquiciado con configuración de Biloop",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const data = await getInvoices(selectedCompany);
+      const data = await getInvoices(companyId);
       const invoicesArray = Array.isArray(data) ? data : [];
       setInvoices(invoicesArray);
     } catch (error) {
@@ -46,8 +64,18 @@ const BiloopPage = () => {
   };
 
   const loadCustomers = async () => {
+    const companyId = getSelectedCompanyId();
+    if (!companyId) {
+      toast({
+        title: "Error",
+        description: "Selecciona un franquiciado con configuración de Biloop",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const data = await getCustomers(selectedCompany);
+      const data = await getCustomers(companyId);
       const customersArray = Array.isArray(data) ? data : [];
       setCustomers(customersArray);
     } catch (error) {
@@ -57,8 +85,18 @@ const BiloopPage = () => {
   };
 
   const loadInventory = async () => {
+    const companyId = getSelectedCompanyId();
+    if (!companyId) {
+      toast({
+        title: "Error",
+        description: "Selecciona un franquiciado con configuración de Biloop",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const data = await getInventory(selectedCompany);
+      const data = await getInventory(companyId);
       const inventoryArray = Array.isArray(data) ? data : [];
       setInventory(inventoryArray);
     } catch (error) {
@@ -68,7 +106,16 @@ const BiloopPage = () => {
   };
 
   const handleTestConnection = async () => {
-    await testConnection();
+    if (!selectedFranchiseeId) {
+      toast({
+        title: "Error",
+        description: "Selecciona un franquiciado primero",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await testIntegrationConnection('biloop', selectedFranchiseeId);
   };
 
   return (
@@ -91,81 +138,115 @@ const BiloopPage = () => {
           <main className="flex-1 p-6">
             <div className="space-y-6">
 
-      {/* Company Selector */}
-      {companies.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Empresas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {companies.map((company) => (
-                <Badge
-                  key={company.id}
-                  variant={selectedCompany === company.id ? "default" : "outline"}
-                  className="cursor-pointer"
-                  onClick={() => setSelectedCompany(company.id)}
-                >
-                  {company.name} ({company.taxId})
-                </Badge>
-              ))}
+      {/* Franchisee Configurations Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings2 className="h-5 w-5" />
+            Configuración de Franquiciados
+          </CardTitle>
+          <CardDescription>
+            Configuración de Biloop por franquiciado. Cada franquiciado debe tener su company_id configurado.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="ml-2">Cargando franquiciados...</span>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Franquiciado</TableHead>
+                  <TableHead>Company ID</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {franchisees.map((franchisee) => {
+                  const config = configs[franchisee.id];
+                  const status = getConfigStatus(config);
+                  const hasCompanyId = config?.biloop?.company_id;
+                  
+                  return (
+                    <TableRow 
+                      key={franchisee.id}
+                      className={selectedFranchiseeId === franchisee.id ? "bg-muted/50" : "cursor-pointer hover:bg-muted/25"}
+                      onClick={() => setSelectedFranchiseeId(franchisee.id)}
+                    >
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{franchisee.franchisee_name}</div>
+                          <div className="text-sm text-muted-foreground">{franchisee.company_name}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {hasCompanyId ? (
+                          <Badge variant="outline">{config.biloop.company_id}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">No configurado</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {hasCompanyId ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <X className="h-4 w-4 text-red-600" />
+                          )}
+                          <Badge variant={status.variant}>
+                            {hasCompanyId ? 'Configurado' : 'Pendiente'}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedFranchiseeId(franchisee.id);
+                            handleTestConnection();
+                          }}
+                          disabled={!hasCompanyId}
+                        >
+                          <TestTube className="h-4 w-4 mr-2" />
+                          Probar
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="workers" className="space-y-4">
         <TabsList>
           <TabsTrigger value="workers">Trabajadores</TabsTrigger>
-          <TabsTrigger value="companies">Empresas</TabsTrigger>
           <TabsTrigger value="invoices">Facturas</TabsTrigger>
           <TabsTrigger value="customers">Clientes</TabsTrigger>
           <TabsTrigger value="inventory">Inventario</TabsTrigger>
         </TabsList>
 
         <TabsContent value="workers" className="space-y-4">
-          <BiloopWorkersPanel />
-        </TabsContent>
-
-        <TabsContent value="companies" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Empresas ({companies.length})
-              </CardTitle>
-              <CardDescription>
-                Lista de empresas disponibles en Biloop
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading && (
-                <div className="flex items-center justify-center p-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
+          {selectedFranchiseeId ? (
+            <BiloopWorkersPanel />
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center text-muted-foreground">
+                  <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Selecciona un franquiciado de la tabla superior para ver sus trabajadores</p>
                 </div>
-              )}
-              <div className="grid gap-4">
-                {companies.map((company) => (
-                  <div
-                    key={company.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div>
-                      <h3 className="font-semibold">{company.name}</h3>
-                      <p className="text-sm text-muted-foreground">CIF: {company.taxId}</p>
-                      {company.email && (
-                        <p className="text-sm text-muted-foreground">{company.email}</p>
-                      )}
-                    </div>
-                    <Badge variant="secondary">{company.id}</Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="invoices" className="space-y-4">
@@ -178,10 +259,15 @@ const BiloopPage = () => {
               <CardDescription>
                 Facturas de la empresa seleccionada
               </CardDescription>
-              <Button onClick={loadInvoices} disabled={loading || !selectedCompany}>
+              <Button onClick={loadInvoices} disabled={loading || !selectedFranchiseeId || !getSelectedCompanyId()}>
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Cargar facturas
               </Button>
+              {selectedFranchiseeId && !getSelectedCompanyId() && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Este franquiciado no tiene configurado el company_id de Biloop
+                </p>
+              )}
             </CardHeader>
             <CardContent>
               <div className="grid gap-4">
@@ -222,10 +308,15 @@ const BiloopPage = () => {
               <CardDescription>
                 Clientes de la empresa seleccionada
               </CardDescription>
-              <Button onClick={loadCustomers} disabled={loading || !selectedCompany}>
+              <Button onClick={loadCustomers} disabled={loading || !selectedFranchiseeId || !getSelectedCompanyId()}>
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Cargar clientes
               </Button>
+              {selectedFranchiseeId && !getSelectedCompanyId() && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Este franquiciado no tiene configurado el company_id de Biloop
+                </p>
+              )}
             </CardHeader>
             <CardContent>
               <div className="grid gap-4">
@@ -262,10 +353,15 @@ const BiloopPage = () => {
               <CardDescription>
                 Productos e inventario de la empresa seleccionada
               </CardDescription>
-              <Button onClick={loadInventory} disabled={loading || !selectedCompany}>
+              <Button onClick={loadInventory} disabled={loading || !selectedFranchiseeId || !getSelectedCompanyId()}>
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Cargar inventario
               </Button>
+              {selectedFranchiseeId && !getSelectedCompanyId() && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Este franquiciado no tiene configurado el company_id de Biloop
+                </p>
+              )}
             </CardHeader>
             <CardContent>
               <div className="grid gap-4">
