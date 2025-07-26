@@ -1,2 +1,2 @@
-// Re-export para mantener compatibilidad
-export { useAuth as useUnifiedAuth, AuthProvider as UnifiedAuthProvider } from './AuthProvider';
+// Redirige al AuthProvider consolidado
+export { useAuth as useUnifiedAuth } from './AuthProvider';
