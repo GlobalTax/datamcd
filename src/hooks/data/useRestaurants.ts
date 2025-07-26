@@ -1,201 +1,227 @@
-import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
-import { useAuth } from '@/hooks/auth/AuthProvider';
-import { logger } from '@/lib/logger';
-import { 
-  RestaurantService, 
-  RestaurantConfig, 
-  UnifiedRestaurant 
-} from '@/services/api/restaurantService';
-import { BaseRestaurant, FranchiseeRestaurant } from '@/types/franchiseeRestaurant';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { restaurantService } from '@/services';
+import { toast } from '@/hooks/use-toast';
+import type { Restaurant, BaseRestaurant, FranchiseeRestaurant } from '@/types/core';
 
+// Query keys for cache management
+export const restaurantKeys = {
+  all: ['restaurants'] as const,
+  lists: () => [...restaurantKeys.all, 'list'] as const,
+  list: (filters: Record<string, any>) => [...restaurantKeys.lists(), { filters }] as const,
+  details: () => [...restaurantKeys.all, 'detail'] as const,
+  detail: (id: string) => [...restaurantKeys.details(), id] as const,
+};
+
+// Configuration interface for restaurant hooks
+export interface RestaurantConfig {
+  includeAssignments?: boolean;
+  includeBase?: boolean;
+  franchiseeId?: string;
+  filters?: {
+    city?: string;
+    state?: string;
+    status?: string;
+  };
+}
+
+// Statistics interface
 export interface RestaurantStats {
   total: number;
   assigned: number;
   available: number;
 }
 
-export interface UseRestaurantsReturn {
-  restaurants: UnifiedRestaurant[] | BaseRestaurant[] | FranchiseeRestaurant[];
-  loading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-  stats: RestaurantStats;
-  // CRUD Operations
-  create: (data: Omit<BaseRestaurant, 'id' | 'created_at' | 'updated_at'>) => Promise<BaseRestaurant>;
-  update: (id: string, data: Partial<BaseRestaurant>) => Promise<BaseRestaurant>;
-  delete: (id: string) => Promise<void>;
-  assign: (franchiseeId: string, baseRestaurantId: string, assignmentData?: Partial<FranchiseeRestaurant>) => Promise<FranchiseeRestaurant>;
-}
+// Main hook for restaurants data management
+export function useRestaurants(config: RestaurantConfig = {}) {
+  const queryClient = useQueryClient();
 
-/**
- * Hook consolidado para gestionar restaurantes.
- * Reemplaza: useFranchiseeRestaurants, useOptimizedFranchiseeRestaurants, 
- * useUnifiedRestaurants, useBaseRestaurants, useSimplifiedFranchiseeRestaurants
- */
-export const useRestaurants = (config: RestaurantConfig = {}): UseRestaurantsReturn => {
-  const { user } = useAuth();
-  const [restaurants, setRestaurants] = useState<UnifiedRestaurant[] | BaseRestaurant[] | FranchiseeRestaurant[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Query for fetching restaurants
+  const {
+    data: restaurants = [],
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: restaurantKeys.list(config),
+    queryFn: () => restaurantService.getRestaurants(),
+    select: (data) => {
+      if (!data.success || !data.data) return [];
+      return applyFilters(data.data, config.filters);
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
 
-  const fetchRestaurants = useCallback(async () => {
-    if (!user) {
-      logger.info('No user found, skipping restaurant fetch');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      
-      logger.info('Fetching restaurants with config', { 
-        config, 
-        userId: user.id, 
-        userRole: user.role 
-      });
-
-      let data: UnifiedRestaurant[] | BaseRestaurant[] | FranchiseeRestaurant[];
-
-      // Determinar qué tipo de datos necesitamos basado en la configuración
-      if (config.includeBase && config.includeAssignments) {
-        // Caso: Vista unificada (para asesores/admins)
-        data = await RestaurantService.getUnifiedRestaurants();
-      } else if (config.includeBase && !config.includeAssignments) {
-        // Caso: Solo restaurantes base
-        data = await RestaurantService.getBaseRestaurants();
+  // Mutation for creating base restaurants
+  const createMutation = useMutation({
+    mutationFn: (restaurantData: Omit<BaseRestaurant, 'id' | 'created_at' | 'updated_at'>) =>
+      restaurantService.createRestaurant(restaurantData),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: restaurantKeys.all });
+        toast({
+          title: "Éxito",
+          description: "Restaurante creado correctamente",
+        });
       } else {
-        // Caso por defecto: Restaurantes del franquiciado
-        const franchiseeId = config.franchiseeId;
-        
-        if (!franchiseeId && user.role === 'franchisee') {
-          logger.warn('Franchisee user without franchisee ID');
-          setError('Usuario franquiciado sin ID de franquicia');
-          return;
-        }
-
-        data = await RestaurantService.getFranchiseeRestaurants(franchiseeId);
+        toast({
+          title: "Error",
+          description: response.error || "Error al crear el restaurante",
+          variant: "destructive",
+        });
       }
-
-      // Aplicar filtros si se proporcionan
-      if (config.filters) {
-        data = applyFilters(data, config.filters);
-      }
-
-      setRestaurants(data);
-      logger.info('Restaurants fetched successfully', { 
-        count: data.length,
-        type: getDataType(config)
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Error inesperado al crear el restaurante",
+        variant: "destructive",
       });
+      console.error('Create restaurant error:', error);
+    },
+  });
 
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al cargar los restaurantes';
-      logger.error('Failed to fetch restaurants', { error: err, config });
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, config]);
+  // Mutation for updating base restaurants
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<BaseRestaurant> }) =>
+      restaurantService.updateRestaurant(id, data),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: restaurantKeys.all });
+        toast({
+          title: "Éxito",
+          description: "Restaurante actualizado correctamente",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Error al actualizar el restaurante",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Error inesperado al actualizar el restaurante",
+        variant: "destructive",
+      });
+      console.error('Update restaurant error:', error);
+    },
+  });
 
-  const create = useCallback(async (data: Omit<BaseRestaurant, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const newRestaurant = await RestaurantService.createBaseRestaurant(data);
-      toast.success('Restaurante creado exitosamente');
-      await fetchRestaurants();
-      return newRestaurant;
-    } catch (error) {
-      logger.error('Failed to create restaurant', { error, data });
-      toast.error('Error al crear el restaurante');
-      throw error;
-    }
-  }, [fetchRestaurants]);
+  // Mutation for deleting base restaurants
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => restaurantService.deleteRestaurant(id),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: restaurantKeys.all });
+        toast({
+          title: "Éxito",
+          description: "Restaurante eliminado correctamente",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Error al eliminar el restaurante",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Error inesperado al eliminar el restaurante",
+        variant: "destructive",
+      });
+      console.error('Delete restaurant error:', error);
+    },
+  });
 
-  const update = useCallback(async (id: string, data: Partial<BaseRestaurant>) => {
-    try {
-      const updatedRestaurant = await RestaurantService.updateBaseRestaurant(id, data);
-      toast.success('Restaurante actualizado exitosamente');
-      await fetchRestaurants();
-      return updatedRestaurant;
-    } catch (error) {
-      logger.error('Failed to update restaurant', { error, id, data });
-      toast.error('Error al actualizar el restaurante');
-      throw error;
-    }
-  }, [fetchRestaurants]);
+  // Mutation for assigning restaurants to franchisees
+  const assignMutation = useMutation({
+    mutationFn: ({ franchiseeId, baseRestaurantId }: { franchiseeId: string; baseRestaurantId: string }) =>
+      restaurantService.assignRestaurant(franchiseeId, baseRestaurantId),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: restaurantKeys.all });
+        toast({
+          title: "Éxito",
+          description: "Restaurante asignado correctamente",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Error al asignar el restaurante",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Error inesperado al asignar el restaurante",
+        variant: "destructive",
+      });
+      console.error('Assign restaurant error:', error);
+    },
+  });
 
-  const deleteRestaurant = useCallback(async (id: string) => {
-    try {
-      await RestaurantService.deleteBaseRestaurant(id);
-      toast.success('Restaurante eliminado exitosamente');
-      await fetchRestaurants();
-    } catch (error) {
-      logger.error('Failed to delete restaurant', { error, id });
-      toast.error('Error al eliminar el restaurante');
-      throw error;
-    }
-  }, [fetchRestaurants]);
-
-  const assign = useCallback(async (franchiseeId: string, baseRestaurantId: string, assignmentData?: Partial<FranchiseeRestaurant>) => {
-    try {
-      const assignment = await RestaurantService.assignRestaurant(franchiseeId, baseRestaurantId, assignmentData);
-      toast.success('Restaurante asignado exitosamente');
-      await fetchRestaurants();
-      return assignment;
-    } catch (error) {
-      logger.error('Failed to assign restaurant', { error, franchiseeId, baseRestaurantId });
-      toast.error('Error al asignar el restaurante');
-      throw error;
-    }
-  }, [fetchRestaurants]);
-
-  // Calcular estadísticas
+  // Calculate statistics
   const stats: RestaurantStats = {
     total: restaurants.length,
-    assigned: restaurants.filter(r => 'isAssigned' in r ? r.isAssigned : 'assignment' in r).length,
-    available: restaurants.filter(r => 'isAssigned' in r ? !r.isAssigned : !('assignment' in r)).length
+    assigned: restaurants.filter((r: any) => r.franchisee_id).length,
+    available: restaurants.filter((r: any) => !r.franchisee_id).length,
   };
-
-  useEffect(() => {
-    fetchRestaurants();
-  }, [fetchRestaurants]);
 
   return {
+    // Data
     restaurants,
-    loading,
-    error,
-    refetch: fetchRestaurants,
     stats,
-    create,
-    update,
-    delete: deleteRestaurant,
-    assign
-  };
-};
 
-// Función auxiliar para aplicar filtros
-function applyFilters(
-  restaurants: any[], 
-  filters: RestaurantConfig['filters']
-): any[] {
+    // Loading states (legacy compatibility)
+    loading: isLoading,
+    isLoading,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isDeleting: deleteMutation.isPending,
+    isAssigning: assignMutation.isPending,
+
+    // Error states
+    error,
+    createError: createMutation.error,
+    updateError: updateMutation.error,
+    deleteError: deleteMutation.error,
+    assignError: assignMutation.error,
+
+    // Actions
+    refetch,
+    create: createMutation.mutate,
+    update: updateMutation.mutate,
+    delete: deleteMutation.mutate,
+    assign: assignMutation.mutate,
+  };
+}
+
+// Helper function to apply filters
+function applyFilters(restaurants: Restaurant[], filters?: RestaurantConfig['filters']): Restaurant[] {
   if (!filters) return restaurants;
 
-  return restaurants.filter((restaurant: any) => {
-    // Para FranchiseeRestaurant, la ciudad está en base_restaurant
-    const city = restaurant.city || restaurant.base_restaurant?.city;
-    const state = restaurant.state || restaurant.base_restaurant?.state;
-    
-    if (filters.city && city !== filters.city) return false;
-    if (filters.state && state !== filters.state) return false;
-    if (filters.status && 'status' in restaurant && restaurant.status !== filters.status) return false;
+  return restaurants.filter((restaurant) => {
+    if (filters.city && restaurant.city !== filters.city) return false;
+    if (filters.state && restaurant.state !== filters.state) return false;
+    if (filters.status && restaurant.status !== filters.status) return false;
     return true;
   });
 }
 
-// Función auxiliar para determinar el tipo de datos
-function getDataType(config: RestaurantConfig): string {
-  if (config.includeBase && config.includeAssignments) return 'unified';
-  if (config.includeBase && !config.includeAssignments) return 'base';
-  return 'franchisee';
+// Hook for a single restaurant
+export function useRestaurant(id: string) {
+  return useQuery({
+    queryKey: restaurantKeys.detail(id),
+    queryFn: () => restaurantService.getRestaurant(id),
+    select: (data) => data.success ? data.data : null,
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+  });
 }

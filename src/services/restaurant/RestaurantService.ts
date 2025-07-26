@@ -59,6 +59,59 @@ export class RestaurantService extends BaseService {
       return createResponse(data);
     }, 'RestaurantService.assignRestaurant');
   }
+
+  async getRestaurant(id: string): Promise<ServiceResponse<Restaurant>> {
+    return this.executeQuery(async () => {
+      const { data, error } = await supabase
+        .from('franchisee_restaurants')
+        .select(`
+          *,
+          base_restaurant:base_restaurant_id (*),
+          franchisee:franchisee_id (*)
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) return createResponse(null, error.message);
+      
+      const restaurant = {
+        ...data.base_restaurant,
+        franchisee_id: data.franchisee_id,
+        status: data.status,
+        franchise_start_date: data.franchise_start_date,
+        franchise_end_date: data.franchise_end_date,
+        monthly_rent: data.monthly_rent
+      };
+
+      return createResponse(restaurant);
+    }, 'RestaurantService.getRestaurant');
+  }
+
+  async updateRestaurant(id: string, updates: Partial<BaseRestaurant>): Promise<ServiceResponse<BaseRestaurant>> {
+    return this.executeQuery(async () => {
+      const { data, error } = await supabase
+        .from('base_restaurants')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) return createResponse(null, error.message);
+      return createResponse(data);
+    }, 'RestaurantService.updateRestaurant');
+  }
+
+  async deleteRestaurant(id: string): Promise<ServiceResponse<void>> {
+    return this.executeQuery(async () => {
+      const { error } = await supabase
+        .from('base_restaurants')
+        .delete()
+        .eq('id', id);
+
+      if (error) return createResponse(null, error.message);
+      return createResponse(undefined);
+    }, 'RestaurantService.deleteRestaurant');
+  }
 }
 
 export const restaurantService = new RestaurantService();

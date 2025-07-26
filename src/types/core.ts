@@ -124,6 +124,42 @@ export interface FranchiseeRestaurant {
   notes?: string;
 }
 
+// === TIPOS DE EMPLEADOS ===
+export interface Employee {
+  id: string;
+  restaurant_id: string;
+  employee_number: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  position: string;
+  department?: string;
+  status: 'active' | 'inactive' | 'terminated';
+  hire_date: string;
+  contract_start_date: string;
+  contract_end_date?: string;
+  termination_date?: string;
+  contract_type: string;
+  hourly_rate?: number;
+  base_salary?: number;
+  weekly_hours?: number;
+  salary_frequency?: string;
+  schedule_type?: string;
+  social_security_number?: string;
+  bank_account?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  vacation_days_per_year?: number;
+  vacation_days_used?: number;
+  vacation_days_pending?: number;
+  sick_days_used?: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+}
+
 // === COMPATIBILIDAD ===
 // Re-export para mantener compatibilidad con archivos existentes
 export type { FranchiseeInvitation, FranchiseeAccessLog, FranchiseeActivityLog } from './franchiseeInvitation';

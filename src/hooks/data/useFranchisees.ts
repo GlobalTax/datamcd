@@ -1,135 +1,179 @@
-import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
-import { useAuth } from '@/hooks/auth/AuthProvider';
-import { logger } from '@/lib/logger';
-import { FranchiseeService } from '@/services/api/franchiseeService';
-import { Franchisee } from '@/types/auth';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { franchiseeService } from '@/services';
+import { toast } from '@/hooks/use-toast';
+import type { Franchisee } from '@/types/core';
 
-export interface UseFranchiseesReturn {
-  franchisees: Franchisee[];
-  loading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-  // CRUD Operations
-  create: (data: Omit<Franchisee, 'id' | 'created_at' | 'updated_at'>) => Promise<Franchisee>;
-  update: (id: string, data: Partial<Franchisee>) => Promise<Franchisee>;
-  delete: (id: string) => Promise<void>;
-  assignRestaurant: (franchiseeId: string, baseRestaurantId: string) => Promise<void>;
-  getFranchisee: (id: string) => Promise<Franchisee | null>;
+// Query keys for cache management
+export const franchiseeKeys = {
+  all: ['franchisees'] as const,
+  lists: () => [...franchiseeKeys.all, 'list'] as const,
+  list: (filters: Record<string, any>) => [...franchiseeKeys.lists(), { filters }] as const,
+  details: () => [...franchiseeKeys.all, 'detail'] as const,
+  detail: (id: string) => [...franchiseeKeys.details(), id] as const,
+};
+
+// Configuration interface for franchisee hooks
+export interface FranchiseeConfig {
+  includeRestaurants?: boolean;
+  includeStats?: boolean;
+  filters?: {
+    status?: string;
+    hasRestaurants?: boolean;
+  };
 }
 
-/**
- * Hook consolidado para gestionar franquiciados.
- * Reemplaza: useFranchisees, useSimplifiedFranchisees
- */
-export const useFranchisees = (): UseFranchiseesReturn => {
-  const { user } = useAuth();
-  const [franchisees, setFranchisees] = useState<Franchisee[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// Main hook for franchisees data management
+export function useFranchisees(config: FranchiseeConfig = {}) {
+  const queryClient = useQueryClient();
 
-  const fetchFranchisees = useCallback(async () => {
-    if (!user || !['asesor', 'admin', 'superadmin'].includes(user.role)) {
-      logger.info('User role not authorized for franchisees access', { userRole: user?.role });
-      setLoading(false);
-      return;
-    }
+  // Query for fetching franchisees
+  const {
+    data: franchisees = [],
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: franchiseeKeys.list(config),
+    queryFn: () => franchiseeService.getFranchisees(),
+    select: (data) => {
+      if (!data.success || !data.data) return [];
+      return applyFilters(data.data, config.filters);
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
 
-    try {
-      setLoading(true);
-      setError(null);
-      
-      logger.info('Fetching franchisees', { userId: user.id, userRole: user.role });
+  // Mutation for creating franchisees
+  const createMutation = useMutation({
+    mutationFn: (franchiseeData: Omit<Franchisee, 'id' | 'created_at' | 'updated_at'>) =>
+      franchiseeService.createFranchisee(franchiseeData),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: franchiseeKeys.all });
+        toast({
+          title: "Éxito",
+          description: "Franquiciado creado correctamente",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Error al crear el franquiciado",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Error inesperado al crear el franquiciado",
+        variant: "destructive",
+      });
+      console.error('Create franchisee error:', error);
+    },
+  });
 
-      const data = await FranchiseeService.getFranchisees();
-      setFranchisees(data);
-      
-      logger.info('Franchisees fetched successfully', { count: data.length });
-      toast.success(`${data.length} franquiciados cargados`);
+  // Mutation for updating franchisees
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Franchisee> }) =>
+      franchiseeService.updateFranchisee(id, data),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: franchiseeKeys.all });
+        toast({
+          title: "Éxito",
+          description: "Franquiciado actualizado correctamente",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Error al actualizar el franquiciado",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Error inesperado al actualizar el franquiciado",
+        variant: "destructive",
+      });
+      console.error('Update franchisee error:', error);
+    },
+  });
 
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al cargar los franquiciados';
-      logger.error('Failed to fetch franchisees', { error: err });
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  const create = useCallback(async (data: Omit<Franchisee, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const newFranchisee = await FranchiseeService.createFranchisee(data);
-      toast.success('Franquiciado creado exitosamente');
-      await fetchFranchisees();
-      return newFranchisee;
-    } catch (error) {
-      logger.error('Failed to create franchisee', { error, data });
-      toast.error('Error al crear el franquiciado');
-      throw error;
-    }
-  }, [fetchFranchisees]);
-
-  const update = useCallback(async (id: string, data: Partial<Franchisee>) => {
-    try {
-      const updatedFranchisee = await FranchiseeService.updateFranchisee(id, data);
-      toast.success('Franquiciado actualizado exitosamente');
-      await fetchFranchisees();
-      return updatedFranchisee;
-    } catch (error) {
-      logger.error('Failed to update franchisee', { error, id, data });
-      toast.error('Error al actualizar el franquiciado');
-      throw error;
-    }
-  }, [fetchFranchisees]);
-
-  const deleteFranchisee = useCallback(async (id: string) => {
-    try {
-      await FranchiseeService.deleteFranchisee(id);
-      toast.success('Franquiciado eliminado exitosamente');
-      await fetchFranchisees();
-    } catch (error) {
-      logger.error('Failed to delete franchisee', { error, id });
-      toast.error('Error al eliminar el franquiciado');
-      throw error;
-    }
-  }, [fetchFranchisees]);
-
-  const assignRestaurant = useCallback(async (franchiseeId: string, baseRestaurantId: string) => {
-    try {
-      await FranchiseeService.assignRestaurant(franchiseeId, baseRestaurantId);
-      toast.success('Restaurante asignado exitosamente');
-      await fetchFranchisees(); // Refresh para actualizar el contador de restaurantes
-    } catch (error) {
-      logger.error('Failed to assign restaurant', { error, franchiseeId, baseRestaurantId });
-      const errorMessage = error instanceof Error ? error.message : 'Error al asignar el restaurante';
-      toast.error(errorMessage);
-      throw error;
-    }
-  }, [fetchFranchisees]);
-
-  const getFranchisee = useCallback(async (id: string) => {
-    try {
-      return await FranchiseeService.getFranchisee(id);
-    } catch (error) {
-      logger.error('Failed to get franchisee', { error, id });
-      throw error;
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchFranchisees();
-  }, [fetchFranchisees]);
+  // Mutation for deleting franchisees
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => franchiseeService.deleteFranchisee(id),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: franchiseeKeys.all });
+        toast({
+          title: "Éxito",
+          description: "Franquiciado eliminado correctamente",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Error al eliminar el franquiciado",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Error inesperado al eliminar el franquiciado",
+        variant: "destructive",
+      });
+      console.error('Delete franchisee error:', error);
+    },
+  });
 
   return {
+    // Data
     franchisees,
-    loading,
+
+    // Loading states (legacy compatibility)
+    loading: isLoading,
+    isLoading,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isDeleting: deleteMutation.isPending,
+
+    // Error states
     error,
-    refetch: fetchFranchisees,
-    create,
-    update,
-    delete: deleteFranchisee,
-    assignRestaurant,
-    getFranchisee
+    createError: createMutation.error,
+    updateError: updateMutation.error,
+    deleteError: deleteMutation.error,
+
+    // Actions
+    refetch,
+    create: createMutation.mutate,
+    update: updateMutation.mutate,
+    delete: deleteMutation.mutate,
   };
-};
+}
+
+// Helper function to apply filters
+function applyFilters(franchisees: Franchisee[], filters?: FranchiseeConfig['filters']): Franchisee[] {
+  if (!filters) return franchisees;
+
+  return franchisees.filter((franchisee) => {
+    if (filters.hasRestaurants !== undefined) {
+      const hasRestaurants = (franchisee.total_restaurants || 0) > 0;
+      if (filters.hasRestaurants !== hasRestaurants) return false;
+    }
+    return true;
+  });
+}
+
+// Hook for a single franchisee
+export function useFranchisee(id: string) {
+  return useQuery({
+    queryKey: franchiseeKeys.detail(id),
+    queryFn: () => franchiseeService.getFranchisee(id),
+    select: (data) => data.success ? data.data : null,
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+  });
+}

@@ -1,379 +1,223 @@
-import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import { logger } from '@/lib/logger';
-import { 
-  Employee, 
-  EmployeeFormData, 
-  EmployeeStats,
-  EmployeePayroll,
-  EmployeeTimeTracking,
-  EmployeeTimeOff 
-} from '@/types/employee';
-import { EmployeeServiceAPI } from '@/services/api/employeeService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { employeeService } from '@/services';
+import { toast } from '@/hooks/use-toast';
+import type { Employee } from '@/types/core';
 
-interface EmployeesConfig {
+// Query keys for cache management
+export const employeeKeys = {
+  all: ['employees'] as const,
+  lists: () => [...employeeKeys.all, 'list'] as const,
+  list: (filters: Record<string, any>) => [...employeeKeys.lists(), { filters }] as const,
+  details: () => [...employeeKeys.all, 'detail'] as const,
+  detail: (id: string) => [...employeeKeys.details(), id] as const,
+  byRestaurant: (restaurantId: string) => [...employeeKeys.all, 'restaurant', restaurantId] as const,
+};
+
+// Configuration interface for employee hooks
+export interface EmployeeConfig {
   restaurantId?: string;
-  includePayroll?: boolean;
-  includeTimeTracking?: boolean;
-  includeTimeOff?: boolean;
-  autoFetch?: boolean;
+  includeInactive?: boolean;
+  filters?: {
+    position?: string;
+    department?: string;
+    status?: string;
+  };
 }
 
-export const useEmployees = (config?: EmployeesConfig) => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [stats, setStats] = useState<EmployeeStats | null>(null);
-  const [payrollRecords, setPayrollRecords] = useState<EmployeePayroll[]>([]);
-  const [timeRecords, setTimeRecords] = useState<EmployeeTimeTracking[]>([]);
-  const [timeOffRequests, setTimeOffRequests] = useState<EmployeeTimeOff[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// Statistics interface
+export interface EmployeeStats {
+  total: number;
+  active: number;
+  inactive: number;
+  byPosition: Record<string, number>;
+  byDepartment: Record<string, number>;
+}
 
+// Main hook for employees data management
+export function useEmployees(config: EmployeeConfig = {}) {
+  const queryClient = useQueryClient();
+
+  // Query for fetching employees
   const {
-    restaurantId,
-    includePayroll = false,
-    includeTimeTracking = false,
-    includeTimeOff = false,
-    autoFetch = true
-  } = config || {};
+    data: employees = [],
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: employeeKeys.list(config),
+    queryFn: () => employeeService.getEmployees(config.restaurantId),
+    select: (data) => {
+      if (!data.success || !data.data) return [];
+      return applyFilters(data.data, config.filters, config.includeInactive);
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
 
-  // ============= EMPLEADOS =============
-  const fetchEmployees = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const data = await EmployeeServiceAPI.fetchEmployees(restaurantId);
-      setEmployees(data);
-      
-      const statsData = await EmployeeServiceAPI.calculateStats(data);
-      setStats(statsData);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al cargar empleados';
-      setError(errorMessage);
-      console.error('Error fetching employees:', err);
-      toast.error('Error al cargar empleados');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createEmployee = async (employeeData: EmployeeFormData, restaurantId: string): Promise<boolean> => {
-    try {
-      await EmployeeServiceAPI.createEmployee(employeeData, restaurantId);
-      
-      toast.success('Empleado creado exitosamente');
-      await fetchEmployees();
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al crear empleado';
-      console.error('Error creating employee:', err);
-      toast.error('Error al crear empleado: ' + errorMessage);
-      return false;
-    }
-  };
-
-  const updateEmployee = async (employeeId: string, employeeData: Partial<EmployeeFormData>): Promise<boolean> => {
-    try {
-      await EmployeeServiceAPI.updateEmployee(employeeId, employeeData);
-      
-      toast.success('Empleado actualizado exitosamente');
-      await fetchEmployees();
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar empleado';
-      console.error('Error updating employee:', err);
-      toast.error('Error al actualizar empleado: ' + errorMessage);
-      return false;
-    }
-  };
-
-  const deleteEmployee = async (employeeId: string): Promise<boolean> => {
-    try {
-      await EmployeeServiceAPI.deleteEmployee(employeeId);
-      
-      toast.success('Empleado eliminado exitosamente');
-      await fetchEmployees();
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al eliminar empleado';
-      console.error('Error deleting employee:', err);
-      toast.error('Error al eliminar empleado: ' + errorMessage);
-      return false;
-    }
-  };
-
-  // ============= NÓMINAS =============
-  const fetchPayrollRecords = async (period?: string) => {
-    if (!includePayroll) return;
-    
-    try {
-      setLoading(true);
-      
-      const data = await EmployeeServiceAPI.fetchPayrollRecords(restaurantId, period);
-      setPayrollRecords(data);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al cargar nóminas';
-      console.error('Error fetching payroll records:', err);
-      toast.error('Error al cargar registros de nómina');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generatePayroll = async (employeeId: string, periodStart: string, periodEnd: string): Promise<boolean> => {
-    try {
-      await EmployeeServiceAPI.generatePayroll(employeeId, periodStart, periodEnd);
-      
-      toast.success('Nómina generada exitosamente');
-      await fetchPayrollRecords();
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al generar nómina';
-      console.error('Error generating payroll:', err);
-      toast.error('Error al generar nómina: ' + errorMessage);
-      return false;
-    }
-  };
-
-  const updatePayrollStatus = async (payrollId: string, status: 'draft' | 'approved' | 'paid'): Promise<boolean> => {
-    try {
-      await EmployeeServiceAPI.updatePayrollStatus(payrollId, status);
-      
-      toast.success('Estado de nómina actualizado');
-      await fetchPayrollRecords();
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar estado de nómina';
-      console.error('Error updating payroll status:', err);
-      toast.error('Error al actualizar estado de nómina');
-      return false;
-    }
-  };
-
-  // ============= SEGUIMIENTO DE TIEMPO =============
-  const fetchTimeRecords = async (date?: string, employeeId?: string) => {
-    if (!includeTimeTracking) return;
-    
-    try {
-      setLoading(true);
-      
-      const data = await EmployeeServiceAPI.fetchTimeRecords(restaurantId, date, employeeId);
-      setTimeRecords(data);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al cargar registros de horarios';
-      console.error('Error fetching time records:', err);
-      toast.error('Error al cargar registros de horarios');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clockIn = async (employeeId: string): Promise<boolean> => {
-    try {
-      await EmployeeServiceAPI.clockIn(employeeId);
-      
-      toast.success('Entrada registrada exitosamente');
-      await fetchTimeRecords();
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al registrar entrada';
-      console.error('Error clocking in:', err);
-      toast.error(errorMessage);
-      return false;
-    }
-  };
-
-  const clockOut = async (employeeId: string): Promise<boolean> => {
-    try {
-      await EmployeeServiceAPI.clockOut(employeeId);
-      
-      toast.success('Salida registrada exitosamente');
-      await fetchTimeRecords();
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al registrar salida';
-      console.error('Error clocking out:', err);
-      toast.error(errorMessage);
-      return false;
-    }
-  };
-
-  const updateTimeRecord = async (recordId: string, updates: Partial<EmployeeTimeTracking>): Promise<boolean> => {
-    try {
-      await EmployeeServiceAPI.updateTimeRecord(recordId, updates);
-      
-      toast.success('Registro actualizado exitosamente');
-      await fetchTimeRecords();
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar registro';
-      console.error('Error updating time record:', err);
-      toast.error('Error al actualizar registro');
-      return false;
-    }
-  };
-
-  // ============= AUSENCIAS =============
-  const fetchTimeOffRequests = async () => {
-    if (!includeTimeOff) return;
-    
-    try {
-      setLoading(true);
-      
-      const data = await EmployeeServiceAPI.fetchTimeOffRequests(restaurantId);
-      setTimeOffRequests(data);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al cargar solicitudes de vacaciones';
-      console.error('Error fetching time off requests:', err);
-      toast.error('Error al cargar solicitudes de vacaciones');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const requestTimeOff = async (request: Omit<EmployeeTimeOff, 'id' | 'created_at' | 'updated_at'>): Promise<boolean> => {
-    try {
-      await EmployeeServiceAPI.createTimeOffRequest(request);
-      
-      toast.success('Solicitud creada exitosamente');
-      await fetchTimeOffRequests();
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al crear solicitud';
-      console.error('Error creating time off request:', err);
-      toast.error('Error al crear solicitud: ' + errorMessage);
-      return false;
-    }
-  };
-
-  const updateTimeOffRequest = async (requestId: string, updates: Partial<EmployeeTimeOff>): Promise<boolean> => {
-    try {
-      await EmployeeServiceAPI.updateTimeOffRequest(requestId, updates);
-      
-      toast.success('Solicitud actualizada exitosamente');
-      await fetchTimeOffRequests();
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar solicitud';
-      console.error('Error updating time off request:', err);
-      toast.error('Error al actualizar solicitud: ' + errorMessage);
-      return false;
-    }
-  };
-
-  const approveTimeOff = async (requestId: string, userId: string): Promise<boolean> => {
-    try {
-      await EmployeeServiceAPI.approveTimeOffRequest(requestId, userId);
-      
-      toast.success('Solicitud aprobada exitosamente');
-      await fetchTimeOffRequests();
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al aprobar solicitud';
-      console.error('Error approving time off request:', err);
-      toast.error('Error al aprobar solicitud: ' + errorMessage);
-      return false;
-    }
-  };
-
-  const rejectTimeOff = async (requestId: string, userId: string): Promise<boolean> => {
-    try {
-      await EmployeeServiceAPI.rejectTimeOffRequest(requestId, userId);
-      
-      toast.success('Solicitud rechazada');
-      await fetchTimeOffRequests();
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al rechazar solicitud';
-      console.error('Error rejecting time off request:', err);
-      toast.error('Error al rechazar solicitud: ' + errorMessage);
-      return false;
-    }
-  };
-
-  // ============= UTILIDADES =============
-  const getEmployeesByStatus = (status: Employee['status']) => 
-    EmployeeServiceAPI.getEmployeesByStatus(employees, status);
-
-  const getEmployeesByDepartment = (department: string) => 
-    EmployeeServiceAPI.getEmployeesByDepartment(employees, department);
-
-  const getActiveEmployees = () => 
-    EmployeeServiceAPI.getActiveEmployees(employees);
-
-  const getPendingTimeOffRequests = () => 
-    EmployeeServiceAPI.getPendingTimeOffRequests(timeOffRequests);
-
-  const getTodayTimeRecords = () => 
-    EmployeeServiceAPI.getTodayTimeRecords(timeRecords);
-
-  const getCurrentMonthPayroll = () => 
-    EmployeeServiceAPI.getCurrentMonthPayroll(payrollRecords);
-
-  // ============= EFFECTS =============
-  useEffect(() => {
-    if (autoFetch) {
-      fetchEmployees();
-      
-      if (includePayroll) {
-        fetchPayrollRecords();
+  // Mutation for creating employees
+  const createMutation = useMutation({
+    mutationFn: (employeeData: Omit<Employee, 'id' | 'created_at' | 'updated_at'>) =>
+      employeeService.createEmployee(employeeData),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: employeeKeys.all });
+        toast({
+          title: "Éxito",
+          description: "Empleado creado correctamente",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Error al crear el empleado",
+          variant: "destructive",
+        });
       }
-      if (includeTimeTracking) {
-        fetchTimeRecords();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Error inesperado al crear el empleado",
+        variant: "destructive",
+      });
+      console.error('Create employee error:', error);
+    },
+  });
+
+  // Mutation for updating employees
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Employee> }) =>
+      employeeService.updateEmployee(id, data),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: employeeKeys.all });
+        toast({
+          title: "Éxito",
+          description: "Empleado actualizado correctamente",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Error al actualizar el empleado",
+          variant: "destructive",
+        });
       }
-      if (includeTimeOff) {
-        fetchTimeOffRequests();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Error inesperado al actualizar el empleado",
+        variant: "destructive",
+      });
+      console.error('Update employee error:', error);
+    },
+  });
+
+  // Mutation for deleting employees
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => employeeService.deleteEmployee(id),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: employeeKeys.all });
+        toast({
+          title: "Éxito",
+          description: "Empleado eliminado correctamente",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Error al eliminar el empleado",
+          variant: "destructive",
+        });
       }
-    }
-  }, [restaurantId, includePayroll, includeTimeTracking, includeTimeOff, autoFetch]);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Error inesperado al eliminar el empleado",
+        variant: "destructive",
+      });
+      console.error('Delete employee error:', error);
+    },
+  });
+
+  // Calculate statistics
+  const stats: EmployeeStats = {
+    total: employees.length,
+    active: employees.filter((e: any) => e.status === 'active').length,
+    inactive: employees.filter((e: any) => e.status !== 'active').length,
+    byPosition: employees.reduce((acc: Record<string, number>, emp: any) => {
+      acc[emp.position] = (acc[emp.position] || 0) + 1;
+      return acc;
+    }, {}),
+    byDepartment: employees.reduce((acc: Record<string, number>, emp: any) => {
+      if (emp.department) {
+        acc[emp.department] = (acc[emp.department] || 0) + 1;
+      }
+      return acc;
+    }, {}),
+  };
 
   return {
-    // Estado
+    // Data
     employees,
     stats,
-    payrollRecords,
-    timeRecords,
-    timeOffRequests,
-    loading,
-    error,
 
-    // CRUD empleados
-    createEmployee,
-    updateEmployee,
-    deleteEmployee,
-    
-    // Gestión de nóminas
-    generatePayroll,
-    updatePayrollStatus,
-    fetchPayrollRecords,
-    
-    // Seguimiento de tiempo
-    clockIn,
-    clockOut,
-    updateTimeRecord,
-    fetchTimeRecords,
-    
-    // Gestión de ausencias
-    requestTimeOff,
-    approveTimeOff,
-    rejectTimeOff,
-    updateTimeOffRequest,
-    fetchTimeOffRequests,
-    
-    // Utilidades
-    getEmployeesByStatus,
-    getEmployeesByDepartment,
-    getActiveEmployees,
-    getPendingTimeOffRequests,
-    getTodayTimeRecords,
-    getCurrentMonthPayroll,
-    
-    // Refetch general
-    refetch: () => {
-      fetchEmployees();
-      if (includePayroll) fetchPayrollRecords();
-      if (includeTimeTracking) fetchTimeRecords();
-      if (includeTimeOff) fetchTimeOffRequests();
-    }
+    // Loading states (legacy compatibility)
+    loading: isLoading,
+    isLoading,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isDeleting: deleteMutation.isPending,
+
+    // Error states
+    error,
+    createError: createMutation.error,
+    updateError: updateMutation.error,
+    deleteError: deleteMutation.error,
+
+    // Actions
+    refetch,
+    create: createMutation.mutate,
+    update: updateMutation.mutate,
+    delete: deleteMutation.mutate,
   };
-};
+}
+
+// Helper function to apply filters
+function applyFilters(
+  employees: Employee[], 
+  filters?: EmployeeConfig['filters'],
+  includeInactive = false
+): Employee[] {
+  let filtered = employees;
+
+  // Filter by status unless includeInactive is true
+  if (!includeInactive) {
+    filtered = filtered.filter((emp: any) => emp.status === 'active');
+  }
+
+  if (!filters) return filtered;
+
+  return filtered.filter((employee: any) => {
+    if (filters.position && employee.position !== filters.position) return false;
+    if (filters.department && employee.department !== filters.department) return false;
+    if (filters.status && employee.status !== filters.status) return false;
+    return true;
+  });
+}
+
+// Hook for a single employee
+export function useEmployee(id: string) {
+  return useQuery({
+    queryKey: employeeKeys.detail(id),
+    queryFn: () => employeeService.getEmployee(id),
+    select: (data) => data.success ? data.data : null,
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// Hook for employees by restaurant
+export function useEmployeesByRestaurant(restaurantId: string) {
+  return useEmployees({ restaurantId });
+}
