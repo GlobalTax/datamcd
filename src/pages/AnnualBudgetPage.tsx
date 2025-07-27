@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AnnualBudgetGrid } from '@/components/budget/AnnualBudgetGrid';
-import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,7 +12,7 @@ import { BalanceSheetStatement } from '@/components/profitloss/BalanceSheetState
 import { CashFlowStatement } from '@/components/profitloss/CashFlowStatement';
 
 export default function AnnualBudgetPage() {
-  const { restaurants, loading: restaurantsLoading } = useFranchiseeRestaurants();
+  const { restaurants, loading: restaurantsLoading } = useUnifiedAuth();
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [activeTab, setActiveTab] = useState('budget');
@@ -31,7 +31,7 @@ export default function AnnualBudgetPage() {
     );
   }
 
-  const selectedRestaurantData = restaurants.find(r => r.id === selectedRestaurant);
+  const selectedRestaurantData = restaurants?.find(r => r.id === selectedRestaurant);
 
   return (
     <SidebarProvider>
@@ -98,7 +98,7 @@ export default function AnnualBudgetPage() {
                     <SelectValue placeholder="Seleccionar restaurante" />
                   </SelectTrigger>
                   <SelectContent>
-                    {restaurants.map((restaurant) => (
+                    {restaurants?.map((restaurant) => (
                       <SelectItem key={restaurant.id} value={restaurant.id}>
                         {restaurant.base_restaurant?.restaurant_name || 'Sin nombre'} - 
                         {restaurant.base_restaurant?.site_number || 'Sin número'}
