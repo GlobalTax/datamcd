@@ -13,12 +13,25 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, UserCheck, Store } from 'lucide-react';
+import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, UserCheck, Store, FileText, Bell, TrendingUp, Activity, Monitor, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/AuthProvider';
 import { logger } from '@/lib/logger';
 
-const menuItems = [
+type GeneralMenuItem = {
+  title: string;
+  url: string;
+  icon: React.ComponentType<any>;
+};
+
+type AdvisorMenuItem = {
+  title: string;
+  url: string;
+  icon: React.ComponentType<any>;
+  hash: string;
+};
+
+const generalMenuItems: GeneralMenuItem[] = [
   {
     title: "Dashboard",
     url: "/dashboard",
@@ -86,6 +99,69 @@ const menuItems = [
   },
 ];
 
+const advisorMenuItems: AdvisorMenuItem[] = [
+  {
+    title: "Dashboard",
+    url: "/advisor",
+    icon: LayoutDashboard,
+    hash: "dashboard",
+  },
+  {
+    title: "Franquiciados",
+    url: "/advisor",
+    icon: Building,
+    hash: "franchisees",
+  },
+  {
+    title: "Restaurantes",
+    url: "/advisor",
+    icon: Store,
+    hash: "restaurants",
+  },
+  {
+    title: "Analytics",
+    url: "/advisor",
+    icon: BarChart3,
+    hash: "analytics",
+  },
+  {
+    title: "Reportes",
+    url: "/advisor",
+    icon: FileText,
+    hash: "reports",
+  },
+  {
+    title: "Alertas",
+    url: "/advisor",
+    icon: Bell,
+    hash: "notifications",
+  },
+  {
+    title: "Valoración",
+    url: "/advisor",
+    icon: TrendingUp,
+    hash: "valuation",
+  },
+  {
+    title: "Presupuestos",
+    url: "/advisor",
+    icon: Activity,
+    hash: "budgets",
+  },
+  {
+    title: "Orquest",
+    url: "/advisor",
+    icon: Monitor,
+    hash: "orquest",
+  },
+  {
+    title: "Gestión",
+    url: "/advisor",
+    icon: Users,
+    hash: "management",
+  },
+];
+
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -108,6 +184,30 @@ export function AppSidebar() {
     navigate('/auth');
   };
 
+  // Determine which menu items to show based on current route
+  const isAdvisorPage = location.pathname === '/advisor';
+  const menuItems = isAdvisorPage ? advisorMenuItems : generalMenuItems;
+
+  // Handle navigation for advisor page with internal tabs
+  const handleNavigation = (item: GeneralMenuItem | AdvisorMenuItem) => {
+    if (isAdvisorPage && 'hash' in item) {
+      // For advisor page, we need to trigger the internal tab change
+      // This will be handled by posting a message to update the advisor page state
+      window.postMessage({ type: 'ADVISOR_TAB_CHANGE', tab: item.hash }, '*');
+    } else {
+      navigate(item.url);
+    }
+  };
+
+  // Determine active state for advisor tabs
+  const isActiveItem = (item: GeneralMenuItem | AdvisorMenuItem) => {
+    if (isAdvisorPage && 'hash' in item) {
+      // For advisor page, check if it's the current tab (this is simplified)
+      return location.pathname === item.url;
+    }
+    return location.pathname === item.url;
+  };
+
   return (
     <Sidebar className="w-64">
       <SidebarHeader className="p-6 border-b">
@@ -125,7 +225,7 @@ export function AppSidebar() {
       <SidebarContent className="p-4">
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-            Servicios
+            {isAdvisorPage ? 'Panel de Asesor' : 'Servicios'}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
@@ -133,10 +233,10 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild
-                    isActive={location.pathname === item.url}
+                    isActive={isActiveItem(item)}
                     className="w-full justify-start px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
                   >
-                    <button onClick={() => navigate(item.url)}>
+                    <button onClick={() => handleNavigation(item)}>
                       <item.icon className="w-4 h-4" />
                       <span className="font-medium">{item.title}</span>
                     </button>

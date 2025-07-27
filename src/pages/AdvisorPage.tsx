@@ -41,6 +41,18 @@ const AdvisorPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Listen for sidebar navigation messages
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'ADVISOR_TAB_CHANGE') {
+        setActiveTab(event.data.tab);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
   const { restaurants: rawRestaurants, isLoading: restaurantsLoading, refetch: refetchRestaurants, stats } = useRestaurants();
   
   // Transform to UnifiedRestaurant format
