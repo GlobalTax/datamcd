@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { OrquestServicesTable } from './OrquestServicesTable';
 import { OrquestEmployeesTable } from './OrquestEmployeesTable';
 import { OrquestMeasuresTable } from './OrquestMeasuresTable';
@@ -12,6 +13,7 @@ import { useOrquest } from '@/hooks/useOrquest';
 import { useOrquestConfig } from '@/hooks/useOrquestConfig';
 import { useOrquestMeasuresExtended } from '@/hooks/useOrquestMeasuresExtended';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useFranchisees } from '@/hooks/data/useFranchisees';
 import { 
   RefreshCw, 
   Settings, 
@@ -37,9 +39,30 @@ interface SyncStatus {
 }
 
 export const OrquestDashboard: React.FC = () => {
-  const { franchisee } = useUnifiedAuth();
-  const franchiseeId = franchisee?.id;
+  const { franchisee, user } = useUnifiedAuth();
   const { toast } = useToast();
+  
+  // Check if user is superadmin
+  const isSuperAdmin = user?.role === 'superadmin' || user?.role === 'admin';
+  
+  // State for franchisee selection (for superadmins)
+  const [selectedFranchiseeId, setSelectedFranchiseeId] = useState<string>('');
+  
+  // Get all franchisees if superadmin
+  const { franchisees, loading: franchiseesLoading } = useFranchisees();
+  
+  // Use selected franchisee ID or current user's franchisee ID
+  const effectiveFranchiseeId = isSuperAdmin ? selectedFranchiseeId : franchisee?.id;
+  
+  // Initialize selected franchisee for non-admins
+  useEffect(() => {
+    if (!isSuperAdmin && franchisee?.id) {
+      setSelectedFranchiseeId(franchisee.id);
+    }
+  }, [isSuperAdmin, franchisee?.id]);
+  
+  // Find selected franchisee name for display
+  const selectedFranchisee = franchisees.find(f => f.id === selectedFranchiseeId);
   
   // Estados
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
@@ -53,19 +76,19 @@ export const OrquestDashboard: React.FC = () => {
   const [configOpen, setConfigOpen] = useState(false);
   
   // Detectar modo fallback
-  const isInFallbackMode = franchiseeId?.startsWith('fallback-') || false;
-  const isValidUUID = franchiseeId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(franchiseeId);
-  const canSaveConfig = franchiseeId && isValidUUID && !isInFallbackMode;
+  const isInFallbackMode = effectiveFranchiseeId?.startsWith('fallback-') || false;
+  const isValidUUID = effectiveFranchiseeId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(effectiveFranchiseeId);
+  const canSaveConfig = effectiveFranchiseeId && isValidUUID && !isInFallbackMode;
   
   // Hooks
-  const { services, employees, loading, syncWithOrquest, syncEmployeesOnly } = useOrquest(franchiseeId);
-  const { isConfigured, config } = useOrquestConfig(franchiseeId);
+  const { services, employees, loading, syncWithOrquest, syncEmployeesOnly } = useOrquest(effectiveFranchiseeId);
+  const { isConfigured, config } = useOrquestConfig(effectiveFranchiseeId);
   const { 
     measures: extendedMeasures, 
     measureTypes, 
     loading: extendedMeasuresLoading,
     syncMeasuresFromOrquest,
-  } = useOrquestMeasuresExtended(franchiseeId);
+  } = useOrquestMeasuresExtended(effectiveFranchiseeId);
 
   // Efectos
   useEffect(() => {
@@ -237,6 +260,52 @@ export const OrquestDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Franchisee Selector for SuperAdmins */}
+      {isSuperAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Seleccionar Franquiciado
+            </CardTitle>
+            <CardDescription>
+              Selecciona el franquiciado para gestionar su integración con Orquest
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <Select value={selectedFranchiseeId} onValueChange={setSelectedFranchiseeId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar franquiciado..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {franchisees.map((franchisee) => (
+                      <SelectItem key={franchisee.id} value={franchisee.id}>
+                        {franchisee.franchisee_name} ({franchisee.total_restaurants || 0} restaurantes)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedFranchisee && (
+                <Badge variant="outline" className="px-3 py-1">
+                  Gestionando: {selectedFranchisee.franchisee_name}
+                </Badge>
+              )}
+            </div>
+            {!selectedFranchiseeId && (
+              <Alert className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Selecciona un franquiciado para ver y gestionar su configuración de Orquest.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl p-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -248,6 +317,11 @@ export const OrquestDashboard: React.FC = () => {
               <h1 className="text-2xl font-bold text-gray-900">Orquest Integration</h1>
               <p className="text-gray-600">
                 Sincronización con API de McDonald's España
+                {isSuperAdmin && selectedFranchisee && (
+                  <span className="block text-sm font-medium text-blue-600 mt-1">
+                    Franquiciado: {selectedFranchisee.franchisee_name}
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -272,7 +346,16 @@ export const OrquestDashboard: React.FC = () => {
       </div>
 
       {/* Alertas de estado */}
-      {isInFallbackMode && (
+      {isSuperAdmin && !selectedFranchiseeId && (
+        <Alert className="border-blue-200 bg-blue-50">
+          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            <strong>Selección requerida:</strong> Selecciona un franquiciado para ver y gestionar su configuración de Orquest.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {selectedFranchiseeId && isInFallbackMode && (
         <Alert className="border-amber-200 bg-amber-50">
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
@@ -282,7 +365,7 @@ export const OrquestDashboard: React.FC = () => {
         </Alert>
       )}
 
-      {!isInFallbackMode && !isConfigured() && (
+      {selectedFranchiseeId && !isInFallbackMode && !isConfigured() && (
         <Alert className="border-blue-200 bg-blue-50">
           <Settings className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-blue-800">
@@ -293,6 +376,7 @@ export const OrquestDashboard: React.FC = () => {
               size="sm" 
               className="ml-3"
               onClick={() => setConfigOpen(true)}
+              disabled={!selectedFranchiseeId}
             >
               Configurar Ahora
             </Button>
@@ -326,7 +410,8 @@ export const OrquestDashboard: React.FC = () => {
       )}
 
       {/* Métricas principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {selectedFranchiseeId && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -404,10 +489,12 @@ export const OrquestDashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
+      )}
 
       {/* Acciones de sincronización */}
-      <Card>
+      {selectedFranchiseeId && (
+        <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Zap className="w-5 h-5" />
@@ -455,10 +542,12 @@ export const OrquestDashboard: React.FC = () => {
             </Button>
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      )}
 
       {/* Tabs de contenido */}
-      <div className="grid grid-cols-1 gap-6">
+      {selectedFranchiseeId && (
+        <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Servicios Orquest</CardTitle>
@@ -504,13 +593,14 @@ export const OrquestDashboard: React.FC = () => {
             />
           </CardContent>
         </Card>
-      </div>
+        </div>
+      )}
 
       {/* Dialog de configuración */}
-      <OrquestConfigDialog
+      <OrquestConfigDialog 
         open={configOpen} 
         onOpenChange={setConfigOpen}
-        franchiseeId={franchiseeId}
+        franchiseeId={effectiveFranchiseeId}
       />
     </div>
   );
