@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Building2, FileText, Users, Package, TestTube, UserCheck, Settings2, Check, X, Edit2, Save } from 'lucide-react';
+import { Loader2, Building2, FileText, Users, TestTube, UserCheck, Settings2, Check, X, Edit2, Save } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useBiloop, BiloopCompany, BiloopInvoice, BiloopCustomer } from '@/hooks/useBiloop';
@@ -20,7 +20,6 @@ import { BiloopCompanyManager } from '@/components/workers/BiloopCompanyManager'
 const BiloopPage = () => {
   const [invoices, setInvoices] = useState<BiloopInvoice[]>([]);
   const [customers, setCustomers] = useState<BiloopCustomer[]>([]);
-  const [inventory, setInventory] = useState<any[]>([]);
   const [selectedFranchiseeId, setSelectedFranchiseeId] = useState<string>('');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   
@@ -28,7 +27,6 @@ const BiloopPage = () => {
     loading: biloopLoading, 
     getInvoices, 
     getCustomers, 
-    getInventory, 
     testConnection 
   } = useBiloop();
   
@@ -82,25 +80,6 @@ const BiloopPage = () => {
     }
   };
 
-  const loadInventory = async () => {
-    if (!selectedCompanyId) {
-      toast({
-        title: "Error",
-        description: "Selecciona una empresa de Biloop",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const data = await getInventory(selectedCompanyId);
-      const inventoryArray = Array.isArray(data) ? data : [];
-      setInventory(inventoryArray);
-    } catch (error) {
-      console.error('Error loading inventory:', error);
-      setInventory([]);
-    }
-  };
 
   const handleTestConnection = async () => {
     if (!selectedCompanyId) {
@@ -248,7 +227,6 @@ const BiloopPage = () => {
           <TabsTrigger value="workers">Trabajadores</TabsTrigger>
           <TabsTrigger value="invoices">Facturas</TabsTrigger>
           <TabsTrigger value="customers">Clientes</TabsTrigger>
-          <TabsTrigger value="inventory">Inventario</TabsTrigger>
         </TabsList>
 
         <TabsContent value="companies" className="space-y-4">
@@ -375,56 +353,6 @@ const BiloopPage = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="inventory" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Inventario ({inventory.length})
-              </CardTitle>
-              <CardDescription>
-                Productos e inventario de la empresa seleccionada
-              </CardDescription>
-              <Button onClick={loadInventory} disabled={loading || !selectedCompanyId}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Cargar inventario
-              </Button>
-              {selectedFranchiseeId && !selectedCompanyId && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  Selecciona una empresa de Biloop para cargar datos
-                </p>
-              )}
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                {inventory.map((item, index) => (
-                  <div
-                    key={item.id || index}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div>
-                      <h3 className="font-semibold">{item.name || item.description || `Artículo ${index + 1}`}</h3>
-                      {item.code && (
-                        <p className="text-sm text-muted-foreground">Código: {item.code}</p>
-                      )}
-                      {item.category && (
-                        <p className="text-sm text-muted-foreground">Categoría: {item.category}</p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      {item.quantity !== undefined && (
-                        <p className="font-semibold">Stock: {item.quantity}</p>
-                      )}
-                      {item.price && (
-                        <p className="text-sm text-muted-foreground">{item.price}€</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
             </div>
           </main>
