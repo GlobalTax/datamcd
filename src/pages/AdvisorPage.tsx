@@ -337,19 +337,12 @@ const AdvisorPage = () => {
 
                   {activeTab === 'restaurants' && (
                     <ErrorBoundary>
-                      <Card className="border-0 shadow-lg bg-card">
-                        <CardHeader>
-                          <CardTitle className="text-xl text-foreground">Gestión de Restaurantes</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                          <UnifiedRestaurantsTable 
-                            restaurants={restaurants} 
-                            loading={restaurantsLoading}
-                            onRefresh={refetchRestaurants}
-                            stats={stats}
-                          />
-                        </CardContent>
-                      </Card>
+                      <UnifiedRestaurantsTable 
+                        restaurants={restaurants} 
+                        loading={restaurantsLoading}
+                        onRefresh={refetchRestaurants}
+                        stats={stats}
+                      />
                     </ErrorBoundary>
                   )}
 
