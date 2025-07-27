@@ -41,12 +41,7 @@ export const IncidentManagement = () => {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Gestión de Incidencias</h1>
-          <p className="text-muted-foreground">
-            Gestiona las incidencias reportadas en los restaurantes
-          </p>
-        </div>
+        <div></div>
         <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nueva Incidencia

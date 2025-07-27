@@ -78,10 +78,7 @@ const EmployeePage = () => {
 
           <main className="flex-1 p-6 space-y-6">
             <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Gestión de Empleados</h1>
-                <p className="text-gray-600">Administración del personal de restaurantes</p>
-              </div>
+              <div></div>
               {restaurants.length > 1 && (
                 <Select
                   value={selectedRestaurantId}

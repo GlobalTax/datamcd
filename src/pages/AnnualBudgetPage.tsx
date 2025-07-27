@@ -54,10 +54,7 @@ export default function AnnualBudgetPage() {
           <main className="flex-1 p-6 space-y-6">
             {/* Header Controls */}
             <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Estados Financieros</h1>
-                <p className="text-gray-600">Presupuestos y análisis completo</p>
-              </div>
+              <div></div>
               <div className="flex gap-3">
                 <Select 
                   value={selectedYear.toString()} 

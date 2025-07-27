@@ -44,14 +44,7 @@ const ProfitLossPage = () => {
               <p className="text-sm text-gray-500">Análisis completo - Restaurante #{siteNumber}</p>
             </div>
           </header>
-          <main className="flex-1 p-6 space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Estados Financieros</h1>
-                <p className="text-gray-600">Análisis completo de rentabilidad - Restaurante #{siteNumber}</p>
-              </div>
-            </div>
-
+          <main className="flex-1 p-6">
             <FinancialStatementTabs restaurantId={siteNumber} />
           </main>
         </SidebarInset>
