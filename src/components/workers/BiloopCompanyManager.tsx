@@ -25,24 +25,19 @@ export const BiloopCompanyManager: React.FC<BiloopCompanyManagerProps> = ({ fran
   } = useBiloopCompanies(franchiseeId);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newCompanyData, setNewCompanyData] = useState<CreateBiloopCompanyData>({
-    biloop_company_id: '',
-    company_name: '',
-    is_primary: false,
-  });
+  const [newCompanyId, setNewCompanyId] = useState('');
 
   const handleAddCompany = async () => {
-    if (!newCompanyData.biloop_company_id || !newCompanyData.company_name) {
-      return;
-    }
+    if (!newCompanyId.trim()) return;
 
-    const result = await addCompany(newCompanyData, franchiseeId);
+    const result = await addCompany({
+      biloop_company_id: newCompanyId.trim(),
+      company_name: newCompanyId.trim(),
+      is_primary: companies.length === 0
+    }, franchiseeId);
+    
     if (result) {
-      setNewCompanyData({
-        biloop_company_id: '',
-        company_name: '',
-        is_primary: false,
-      });
+      setNewCompanyId('');
       setIsAddDialogOpen(false);
     }
   };
@@ -79,36 +74,10 @@ export const BiloopCompanyManager: React.FC<BiloopCompanyManagerProps> = ({ fran
                   <Label htmlFor="company_id">Company ID de Biloop</Label>
                   <Input
                     id="company_id"
-                    value={newCompanyData.biloop_company_id}
-                    onChange={(e) => setNewCompanyData(prev => ({
-                      ...prev,
-                      biloop_company_id: e.target.value
-                    }))}
+                    value={newCompanyId}
+                    onChange={(e) => setNewCompanyId(e.target.value)}
                     placeholder="Ej: 2005 CASTELL"
                   />
-                </div>
-                <div>
-                  <Label htmlFor="company_name">Nombre de la Empresa</Label>
-                  <Input
-                    id="company_name"
-                    value={newCompanyData.company_name}
-                    onChange={(e) => setNewCompanyData(prev => ({
-                      ...prev,
-                      company_name: e.target.value
-                    }))}
-                    placeholder="Ej: 2005 CASTELL, S.L.U."
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_primary"
-                    checked={newCompanyData.is_primary}
-                    onCheckedChange={(checked) => setNewCompanyData(prev => ({
-                      ...prev,
-                      is_primary: checked
-                    }))}
-                  />
-                  <Label htmlFor="is_primary">Establecer como empresa principal</Label>
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button
@@ -142,7 +111,7 @@ export const BiloopCompanyManager: React.FC<BiloopCompanyManagerProps> = ({ fran
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium">{company.company_name}</h4>
+                    <h4 className="font-medium">{company.biloop_company_id}</h4>
                     {company.is_primary && (
                       <Badge variant="default" className="flex items-center gap-1">
                         <Star className="h-3 w-3" />
@@ -150,9 +119,6 @@ export const BiloopCompanyManager: React.FC<BiloopCompanyManagerProps> = ({ fran
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Company ID: {company.biloop_company_id}
-                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   {!company.is_primary && hasMultipleCompanies() && (
@@ -180,7 +146,7 @@ export const BiloopCompanyManager: React.FC<BiloopCompanyManagerProps> = ({ fran
                       <AlertDialogHeader>
                         <AlertDialogTitle>¿Desactivar empresa?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          ¿Estás seguro de que quieres desactivar la empresa "{company.company_name}"? 
+                          ¿Estás seguro de que quieres desactivar la empresa "{company.biloop_company_id}"? 
                           Esta acción se puede revertir más tarde.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
