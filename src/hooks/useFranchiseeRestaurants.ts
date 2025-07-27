@@ -14,7 +14,8 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
   const fetchRestaurants = async () => {
     console.log('useFranchiseeRestaurants - fetchRestaurants started');
     console.log('useFranchiseeRestaurants - User:', user ? { id: user.id, role: user.role } : null);
-    console.log('useFranchiseeRestaurants - Franchisee:', franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null);
+    console.log('useFranchiseeRestaurants - Franchisee ID param:', franchiseeId);
+    console.log('useFranchiseeRestaurants - Context Franchisee:', franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null);
     
     try {
       if (!user) {
@@ -25,10 +26,12 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
         return;
       }
 
-      // Acceso simplificado - sin verificaciones de rol
-
-      if (!franchisee) {
-        console.log('useFranchiseeRestaurants - No franchisee data found for user');
+      // Determinar qué franquiciado usar: el parámetro o el del contexto
+      const targetFranchiseeId = franchiseeId || franchisee?.id;
+      const targetFranchisee = franchiseeId ? null : franchisee; // Si viene por parámetro, no tenemos el objeto completo
+      
+      if (!targetFranchiseeId) {
+        console.log('useFranchiseeRestaurants - No franchisee ID available');
         setRestaurants([]);
         setError('No se encontró información del franquiciado');
         setLoading(false);
@@ -36,14 +39,14 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
       }
 
       // Si es un franquiciado temporal, crear datos de prueba para desarrollo
-      if (franchisee.id.startsWith('temp-')) {
+      if (targetFranchiseeId.startsWith('temp-')) {
         console.log('useFranchiseeRestaurants - Temporary franchisee detected, using mock data');
         
         // Crear datos de prueba para franquiciados temporales
         const mockRestaurants: FranchiseeRestaurant[] = [
           {
             id: 'mock-1',
-            franchisee_id: franchisee.id,
+            franchisee_id: targetFranchiseeId,
             base_restaurant_id: 'mock-base-1',
             status: 'active',
             assigned_at: new Date().toISOString(),
@@ -60,7 +63,7 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
               restaurant_type: 'traditional',
               square_meters: 200,
               seating_capacity: 80,
-              franchisee_name: franchisee.franchisee_name,
+              franchisee_name: targetFranchisee?.franchisee_name || 'Franquiciado Test',
               franchisee_email: user?.email || '',
               company_tax_id: 'B12345678',
               opening_date: '2020-01-01',
@@ -73,7 +76,7 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
           },
           {
             id: 'mock-2',
-            franchisee_id: franchisee.id,
+            franchisee_id: targetFranchiseeId,
             base_restaurant_id: 'mock-base-2',
             status: 'active',
             assigned_at: new Date().toISOString(),
@@ -90,7 +93,7 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
               restaurant_type: 'traditional',
               square_meters: 180,
               seating_capacity: 75,
-              franchisee_name: franchisee.franchisee_name,
+              franchisee_name: targetFranchisee?.franchisee_name || 'Franquiciado Test',
               franchisee_email: user?.email || '',
               company_tax_id: 'B12345678',
               opening_date: '2021-03-15',
@@ -116,7 +119,7 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
       setLoading(true);
       setError(null);
 
-      console.log('useFranchiseeRestaurants - Fetching restaurants for real franchisee:', franchisee.id);
+      console.log('useFranchiseeRestaurants - Fetching restaurants for franchisee:', targetFranchiseeId);
 
       const { data, error } = await supabase
         .from('franchisee_restaurants')
@@ -145,7 +148,7 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
             created_by
           )
         `)
-        .eq('franchisee_id', franchisee.id)
+        .eq('franchisee_id', targetFranchiseeId)
         .eq('status', 'active');
 
       console.log('useFranchiseeRestaurants - Query result:', { data: data?.length || 0, error });

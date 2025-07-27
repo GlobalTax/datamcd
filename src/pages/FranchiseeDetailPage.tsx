@@ -15,6 +15,7 @@ import { UserCreationPanel } from '@/components/admin/UserCreationPanel';
 import { FranchiseeAccessHistory } from '@/components/franchisee/FranchiseeAccessHistory';
 import { FranchiseeActivityHistory } from '@/components/franchisee/FranchiseeActivityHistory';
 import { FranchiseeUsers, FranchiseeUsersRef } from '@/components/franchisee/FranchiseeUsers';
+import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -29,8 +30,8 @@ export default function FranchiseeDetailPage() {
   
   const { data: franchisee, isLoading: loading, error, refetch } = useFranchisee(franchiseeId || '');
   
-  // For now, return empty restaurants - we'll implement proper restaurant fetching later
-  const restaurants: any[] = [];
+  // Fetch restaurants for this franchisee
+  const { restaurants, loading: restaurantsLoading } = useFranchiseeRestaurants(franchiseeId);
   const franchiseeUsersRef = useRef<FranchiseeUsersRef>(null);
   const { user } = useUnifiedAuth();
   const { startImpersonation } = useImpersonation();
