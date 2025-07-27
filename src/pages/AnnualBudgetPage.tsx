@@ -4,6 +4,7 @@ import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useRestaurants } from '@/hooks/data/useRestaurants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableRestaurantSelect } from '@/components/ui/searchable-restaurant-select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Building, Calendar, Plus, Download, FileText } from 'lucide-react';
@@ -108,21 +109,23 @@ export default function AnnualBudgetPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Select value={selectedRestaurant} onValueChange={setSelectedRestaurant}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar restaurante" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {restaurants?.map((restaurant: any) => (
-                      <SelectItem key={restaurant.id} value={restaurant.id}>
-                        {isAdmin 
-                          ? `${restaurant.restaurant_name || 'Sin nombre'} - ${restaurant.site_number || 'Sin número'}`
-                          : `${restaurant.base_restaurant?.restaurant_name || 'Sin nombre'} - ${restaurant.base_restaurant?.site_number || 'Sin número'}`
-                        }
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableRestaurantSelect
+                  restaurants={restaurants?.map((restaurant: any) => ({
+                    id: restaurant.id,
+                    name: isAdmin 
+                      ? restaurant.restaurant_name || 'Sin nombre'
+                      : restaurant.base_restaurant?.restaurant_name || 'Sin nombre',
+                    site_number: isAdmin 
+                      ? restaurant.site_number || 'Sin número'
+                      : restaurant.base_restaurant?.site_number || 'Sin número',
+                    franchisee_name: isAdmin ? restaurant.franchisee_name : undefined
+                  })) || []}
+                  value={selectedRestaurant}
+                  onValueChange={setSelectedRestaurant}
+                  placeholder="Buscar restaurante..."
+                  loading={restaurantsLoading}
+                  disabled={loading}
+                />
               </CardContent>
             </Card>
 

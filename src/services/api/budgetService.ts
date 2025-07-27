@@ -37,7 +37,50 @@ export class BudgetService {
     }
 
     try {
-      // First verify restaurant access
+      // Check user role first
+      const { data: userProfile, error: userError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (userError) {
+        logger.error('Error checking user profile', { error: userError });
+        throw new Error('Error al verificar permisos de usuario');
+      }
+
+      const isAdmin = userProfile.role === 'superadmin' || userProfile.role === 'admin';
+
+      // For superadmins, allow direct access to base restaurants
+      if (isAdmin) {
+        // Check if restaurantId is a base_restaurant_id
+        const { data: baseRestaurant, error: baseRestaurantError } = await supabase
+          .from('base_restaurants')
+          .select('id')
+          .eq('id', restaurantId)
+          .single();
+
+        if (baseRestaurant) {
+          // For admin accessing base restaurant, use the base restaurant ID directly
+          const { data, error } = await supabase
+            .from('annual_budgets')
+            .select('*')
+            .eq('restaurant_id', restaurantId)
+            .eq('year', year)
+            .order('category', { ascending: true })
+            .order('subcategory', { ascending: true });
+
+          if (error) {
+            logger.error('Error fetching annual budgets for admin', { error });
+            throw new Error(`Error al cargar los presupuestos: ${error.message}`);
+          }
+
+          logger.info('Successfully fetched annual budgets for admin', { count: data?.length || 0 });
+          return data || [];
+        }
+      }
+
+      // For franchisees or if restaurant is not a base restaurant, verify access through franchisee_restaurants
       const { data: restaurantCheck, error: restaurantError } = await supabase
         .from('franchisee_restaurants')
         .select(`
