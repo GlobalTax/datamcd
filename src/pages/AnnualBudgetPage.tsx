@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AnnualBudgetGrid } from '@/components/budget/AnnualBudgetGrid';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useRestaurants } from '@/hooks/data/useRestaurants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,15 +13,27 @@ import { BalanceSheetStatement } from '@/components/profitloss/BalanceSheetState
 import { CashFlowStatement } from '@/components/profitloss/CashFlowStatement';
 
 export default function AnnualBudgetPage() {
-  const { restaurants, loading: restaurantsLoading } = useUnifiedAuth();
+  const { user, loading: authLoading } = useUnifiedAuth();
+  
+  // Para superadmin, necesitamos obtener todos los restaurantes base
+  const isAdmin = user?.role === 'superadmin' || user?.role === 'admin';
+  
+  // Si es admin, obtener todos los restaurantes; si no, usar los del franquiciado
+  const { restaurants: allRestaurants, loading: allRestaurantsLoading } = useRestaurants();
+  const { restaurants: userRestaurants, loading: userRestaurantsLoading } = useUnifiedAuth();
+  
+  // Datos de restaurantes y loading según el rol
+  const restaurants = isAdmin ? allRestaurants : userRestaurants;
+  const restaurantsLoading = isAdmin ? allRestaurantsLoading : userRestaurantsLoading;
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [activeTab, setActiveTab] = useState('budget');
 
+  const loading = authLoading || restaurantsLoading;
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
-  if (restaurantsLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -44,7 +57,9 @@ export default function AnnualBudgetPage() {
               <h1 className="text-lg font-semibold text-gray-900">Estados Financieros</h1>
               <p className="text-sm text-gray-500">
                 {selectedRestaurantData 
-                  ? `${selectedRestaurantData.base_restaurant?.restaurant_name} - #${selectedRestaurantData.base_restaurant?.site_number}`
+                  ? isAdmin 
+                    ? `${(selectedRestaurantData as any).restaurant_name || 'Sin nombre'} - #${(selectedRestaurantData as any).site_number || 'Sin número'}`
+                    : `${(selectedRestaurantData as any).base_restaurant?.restaurant_name || 'Sin nombre'} - #${(selectedRestaurantData as any).base_restaurant?.site_number || 'Sin número'}`
                   : 'Análisis completo de rentabilidad'
                 }
               </p>
@@ -98,10 +113,12 @@ export default function AnnualBudgetPage() {
                     <SelectValue placeholder="Seleccionar restaurante" />
                   </SelectTrigger>
                   <SelectContent>
-                    {restaurants?.map((restaurant) => (
+                    {restaurants?.map((restaurant: any) => (
                       <SelectItem key={restaurant.id} value={restaurant.id}>
-                        {restaurant.base_restaurant?.restaurant_name || 'Sin nombre'} - 
-                        {restaurant.base_restaurant?.site_number || 'Sin número'}
+                        {isAdmin 
+                          ? `${restaurant.restaurant_name || 'Sin nombre'} - ${restaurant.site_number || 'Sin número'}`
+                          : `${restaurant.base_restaurant?.restaurant_name || 'Sin nombre'} - ${restaurant.base_restaurant?.site_number || 'Sin número'}`
+                        }
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -6,6 +6,32 @@ import type { Restaurant, BaseRestaurant, FranchiseeRestaurant } from '@/types/c
 export class RestaurantService extends BaseService {
   async getRestaurants(): Promise<ServiceResponse<Restaurant[]>> {
     return this.executeQuery(async () => {
+      // Obtener información del usuario actual para determinar los permisos
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Si es admin/superadmin, obtener todos los restaurantes base
+      if (user?.user_metadata?.role === 'superadmin' || user?.user_metadata?.role === 'admin') {
+        const { data: baseRestaurants, error } = await supabase
+          .from('base_restaurants')
+          .select('*')
+          .order('restaurant_name');
+
+        if (error) return createResponse(null, error.message);
+        
+        // Convertir base_restaurants a formato Restaurant
+        const restaurants = (baseRestaurants || []).map((br: any) => ({
+          ...br,
+          franchisee_id: null, // No está asignado a ningún franquiciado específico
+          status: 'active',
+          franchise_start_date: null,
+          franchise_end_date: null,
+          monthly_rent: null
+        }));
+
+        return createResponse(restaurants);
+      }
+      
+      // Para usuarios normales, obtener solo restaurantes asignados a su franquiciado
       const { data, error } = await supabase
         .from('franchisee_restaurants')
         .select(`
