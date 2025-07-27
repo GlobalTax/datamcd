@@ -17,6 +17,7 @@ import { BiloopWorkersPanel } from '@/components/workers/BiloopWorkersPanel';
 import { BiloopCompanyManager } from '@/components/workers/BiloopCompanyManager';
 import { BiloopInvoicesTable } from '@/components/workers/BiloopInvoicesTable';
 import { BiloopCustomersTable } from '@/components/workers/BiloopCustomersTable';
+import { FranchiseeIntegrationsTable } from '@/components/FranchiseeIntegrationsTable';
 
 
 const BiloopPage = () => {
@@ -186,6 +187,7 @@ const BiloopPage = () => {
           <TabsTrigger value="workers">Trabajadores</TabsTrigger>
           <TabsTrigger value="invoices">Facturas</TabsTrigger>
           <TabsTrigger value="customers">Clientes</TabsTrigger>
+          <TabsTrigger value="integrations">Todas las Integraciones</TabsTrigger>
         </TabsList>
 
         <TabsContent value="companies" className="space-y-4">
@@ -230,6 +232,10 @@ const BiloopPage = () => {
             companyId={selectedCompanyId || null}
             companyName={getSelectedCompany()?.company_name}
           />
+        </TabsContent>
+
+        <TabsContent value="integrations" className="space-y-4">
+          <FranchiseeIntegrationsTable />
         </TabsContent>
 
       </Tabs>
