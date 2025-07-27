@@ -13,6 +13,7 @@ import { useFranchisees } from '@/hooks/data/useFranchisees';
 import { useIntegrationConfig } from '@/hooks/useIntegrationConfig';
 import { useToast } from '@/hooks/use-toast';
 import { BiloopWorkersPanel } from '@/components/workers/BiloopWorkersPanel';
+import { BiloopCompanyManager } from '@/components/workers/BiloopCompanyManager';
 
 const BiloopPage = () => {
   const [invoices, setInvoices] = useState<BiloopInvoice[]>([]);
@@ -181,15 +182,15 @@ const BiloopPage = () => {
           <main className="flex-1 p-6">
             <div className="space-y-6">
 
-      {/* Franchisee Configurations Table */}
+      {/* Franchisee Selection */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings2 className="h-5 w-5" />
-            Configuración de Franquiciados
+            Seleccionar Franquiciado
           </CardTitle>
           <CardDescription>
-            Configuración de Biloop por franquiciado. Cada franquiciado debe tener su company_id configurado.
+            Selecciona un franquiciado para gestionar sus empresas de Biloop
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -199,118 +200,37 @@ const BiloopPage = () => {
               <span className="ml-2">Cargando franquiciados...</span>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Franquiciado</TableHead>
-                  <TableHead>Company ID</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {franchisees.map((franchisee) => {
-                  const config = configs[franchisee.id];
-                  const status = getConfigStatus(config);
-                  const hasCompanyId = config?.biloop?.company_id;
-                  
-                  return (
-                    <TableRow 
-                      key={franchisee.id}
-                      className={selectedFranchiseeId === franchisee.id ? "bg-muted/50" : "cursor-pointer hover:bg-muted/25"}
-                      onClick={() => setSelectedFranchiseeId(franchisee.id)}
-                    >
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{franchisee.franchisee_name}</div>
-                          <div className="text-sm text-muted-foreground">{franchisee.company_name}</div>
-                        </div>
-                      </TableCell>
-                       <TableCell>
-                         {editingCompanyId === franchisee.id ? (
-                           <div className="flex items-center gap-2">
-                             <Input
-                               value={tempCompanyId}
-                               onChange={(e) => setTempCompanyId(e.target.value)}
-                               placeholder="Ingresa company ID"
-                               className="w-32"
-                               onClick={(e) => e.stopPropagation()}
-                             />
-                             <Button
-                               size="sm"
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 handleSaveCompanyId(franchisee.id);
-                               }}
-                             >
-                               <Save className="h-4 w-4" />
-                             </Button>
-                             <Button
-                               size="sm"
-                               variant="outline"
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 handleCancelEdit();
-                               }}
-                             >
-                               <X className="h-4 w-4" />
-                             </Button>
-                           </div>
-                         ) : (
-                           <div className="flex items-center gap-2">
-                             {hasCompanyId ? (
-                               <Badge variant="outline">{config.biloop.company_id}</Badge>
-                             ) : (
-                               <span className="text-muted-foreground">No configurado</span>
-                             )}
-                             <Button
-                               size="sm"
-                               variant="ghost"
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 handleEditCompanyId(franchisee.id, hasCompanyId ? config.biloop.company_id : '');
-                               }}
-                             >
-                               <Edit2 className="h-4 w-4" />
-                             </Button>
-                           </div>
-                         )}
-                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {hasCompanyId ? (
-                            <Check className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <X className="h-4 w-4 text-red-600" />
-                          )}
-                          <Badge variant={status.variant}>
-                            {hasCompanyId ? 'Configurado' : 'Pendiente'}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedFranchiseeId(franchisee.id);
-                            handleTestConnection();
-                          }}
-                          disabled={!hasCompanyId}
-                        >
-                          <TestTube className="h-4 w-4 mr-2" />
-                          Probar
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="grid gap-2">
+              {franchisees.map((franchisee) => (
+                <div
+                  key={franchisee.id}
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    selectedFranchiseeId === franchisee.id
+                      ? "bg-primary/10 border-primary"
+                      : "hover:bg-muted/50"
+                  }`}
+                  onClick={() => setSelectedFranchiseeId(franchisee.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{franchisee.franchisee_name}</div>
+                      <div className="text-sm text-muted-foreground">{franchisee.company_name}</div>
+                    </div>
+                    {selectedFranchiseeId === franchisee.id && (
+                      <Badge variant="default">Seleccionado</Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Companies Management */}
+      {selectedFranchiseeId && (
+        <BiloopCompanyManager franchiseeId={selectedFranchiseeId} />
+      )}
 
       <Tabs defaultValue="workers" className="space-y-4">
         <TabsList>

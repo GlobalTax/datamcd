@@ -987,6 +987,47 @@ export type Database = {
           },
         ]
       }
+      franchisee_biloop_companies: {
+        Row: {
+          biloop_company_id: string
+          company_name: string
+          created_at: string
+          franchisee_id: string
+          id: string
+          is_active: boolean
+          is_primary: boolean
+          updated_at: string
+        }
+        Insert: {
+          biloop_company_id: string
+          company_name: string
+          created_at?: string
+          franchisee_id: string
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          updated_at?: string
+        }
+        Update: {
+          biloop_company_id?: string
+          company_name?: string
+          created_at?: string
+          franchisee_id?: string
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchisee_biloop_companies_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       franchisee_invitations: {
         Row: {
           accepted_at: string | null
