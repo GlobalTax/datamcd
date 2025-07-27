@@ -19,6 +19,7 @@ import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BiloopCompanyManager } from '@/components/workers/BiloopCompanyManager';
+import { FranchiseeIntegrationConfig } from '@/components/workers/FranchiseeIntegrationConfig';
 
 export default function FranchiseeDetailPage() {
   const { franchiseeId } = useParams<{ franchiseeId: string }>();
@@ -223,6 +224,9 @@ export default function FranchiseeDetailPage() {
         franchiseeId={franchisee.id} 
         franchiseeName={franchisee.franchisee_name}
       />
+
+      {/* Configuración de APIs */}
+      <FranchiseeIntegrationConfig franchiseeId={franchisee.id} />
 
       {/* Gestión de empresas Biloop */}
       <BiloopCompanyManager franchiseeId={franchisee.id} />
