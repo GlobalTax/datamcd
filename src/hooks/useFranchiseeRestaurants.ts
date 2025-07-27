@@ -35,14 +35,77 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
         return;
       }
 
-      // Si es un franquiciado temporal, usar datos del contexto de autenticación
+      // Si es un franquiciado temporal, crear datos de prueba para desarrollo
       if (franchisee.id.startsWith('temp-')) {
-        console.log('useFranchiseeRestaurants - Temporary franchisee detected, skipping database query');
+        console.log('useFranchiseeRestaurants - Temporary franchisee detected, using mock data');
         
-        // Para franquiciados temporales, crear un array vacío ya que no tienen restaurantes reales
-        console.log('useFranchiseeRestaurants - No restaurants for temporary franchisee');
-        setRestaurants([]);
-        toast.info('No se encontraron restaurantes asignados');
+        // Crear datos de prueba para franquiciados temporales
+        const mockRestaurants: FranchiseeRestaurant[] = [
+          {
+            id: 'mock-1',
+            franchisee_id: franchisee.id,
+            base_restaurant_id: 'mock-base-1',
+            status: 'active',
+            assigned_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            base_restaurant: {
+              id: 'mock-base-1',
+              site_number: '001',
+              restaurant_name: 'McDonald\'s Test 1',
+              address: 'Calle Principal 123',
+              city: 'Madrid',
+              state: 'Madrid',
+              postal_code: '28001',
+              country: 'España',
+              restaurant_type: 'traditional',
+              square_meters: 200,
+              seating_capacity: 80,
+              franchisee_name: franchisee.franchisee_name,
+              franchisee_email: user?.email || '',
+              company_tax_id: 'B12345678',
+              opening_date: '2020-01-01',
+              property_type: 'owned',
+              autonomous_community: 'Madrid',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              created_by: user?.id || null
+            }
+          },
+          {
+            id: 'mock-2',
+            franchisee_id: franchisee.id,
+            base_restaurant_id: 'mock-base-2',
+            status: 'active',
+            assigned_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            base_restaurant: {
+              id: 'mock-base-2',
+              site_number: '002',
+              restaurant_name: 'McDonald\'s Test 2',
+              address: 'Avenida de la Paz 456',
+              city: 'Barcelona',
+              state: 'Cataluña',
+              postal_code: '08001',
+              country: 'España',
+              restaurant_type: 'traditional',
+              square_meters: 180,
+              seating_capacity: 75,
+              franchisee_name: franchisee.franchisee_name,
+              franchisee_email: user?.email || '',
+              company_tax_id: 'B12345678',
+              opening_date: '2021-03-15',
+              property_type: 'leased',
+              autonomous_community: 'Cataluña',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              created_by: user?.id || null
+            }
+          }
+        ];
+        
+        console.log('useFranchiseeRestaurants - Setting mock restaurants:', mockRestaurants.length);
+        setRestaurants(mockRestaurants);
+        toast.success(`Se cargaron ${mockRestaurants.length} restaurantes de prueba`);
         
         setError(null);
         setLoading(false);
