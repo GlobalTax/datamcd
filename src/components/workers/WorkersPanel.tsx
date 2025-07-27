@@ -11,7 +11,8 @@ import {
   Building2, 
   Database,
   FileText,
-  AlertCircle 
+  AlertCircle,
+  BarChart3
 } from 'lucide-react';
 import { useWorkersPanel } from '@/hooks/useWorkersPanel';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
@@ -19,6 +20,7 @@ import { WorkersTable } from './WorkersTable';
 import { WorkersStats } from './WorkersStats';
 import { BiloopEmployeeForm } from './BiloopEmployeeForm';
 import { A3TransformDialog } from './A3TransformDialog';
+import { OrquestMetricsPanel } from './OrquestMetricsPanel';
 
 export const WorkersPanel: React.FC = () => {
   const { franchisee } = useUnifiedAuth();
@@ -126,6 +128,10 @@ export const WorkersPanel: React.FC = () => {
             <Building2 className="h-4 w-4 mr-2" />
             Orquest
           </TabsTrigger>
+          <TabsTrigger value="orquest-metrics">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Métricas Orquest
+          </TabsTrigger>
           <TabsTrigger value="biloop">
             <Database className="h-4 w-4 mr-2" />
             Biloop
@@ -178,6 +184,14 @@ export const WorkersPanel: React.FC = () => {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Métricas Orquest */}
+        <TabsContent value="orquest-metrics" className="space-y-4">
+          <OrquestMetricsPanel 
+            employees={orquestEmployees} 
+            loading={loading}
+          />
         </TabsContent>
 
         {/* Vista Biloop */}

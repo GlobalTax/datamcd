@@ -32,6 +32,40 @@ interface OrquestEmployee {
   name?: string;
   fullName?: string;
   role?: string;
+  // Datos ricos de Orquest desde CSV/reportes
+  nif?: string;
+  'Id. externo'?: string;
+  'Nombre'?: string;
+  'Apellidos'?: string;
+  'Día Trabajado'?: number;
+  'Asistencia al Trabajo'?: number;
+  'Horas Netas Mensuales'?: number;
+  'Turnos de cierre'?: number;
+  'Horas Nocturnas Mensuales Tipo 2'?: number;
+  'Horas Nocturnas Mensuales Tipo 3'?: number;
+  'Horas por Vacaciones'?: number;
+  'Horas por Formación Fuera del Restaurante'?: number;
+  'Horas por Ausencia Justificada No Planificada/Retribuida/No Reasignable'?: number;
+  'Horas por Sanción'?: number;
+  'Horas por Compensación Festivos'?: number;
+  'Horas por Festivo No Trabajado'?: number;
+  'Horas por Ausencia Injustificada /No Retribuida / No reasignable'?: number;
+  'Horas por Ausencia Parcial Injustificada /No Retribuida /No Reasignable'?: number;
+  'Horas por Baja Incapacidad Temporal'?: number;
+  'Horas por Baja Accidente de Trabajo'?: number;
+  'Vacaciones'?: number;
+  'Formación Fuera del Restaurante'?: number;
+  'Ausencia Justificada No Planificada/Retribuida/No Reasignable'?: number;
+  'Sanción'?: number;
+  'Compensación Festivos'?: number;
+  'Festivo No Trabajado'?: number;
+  'Ausencia Injustificada /No Retribuida / No reasignable'?: number;
+  'Ausencia Parcial Injustificada /No Retribuida /No Reasignable'?: number;
+  'Baja Incapacidad Temporal'?: number;
+  'Baja Accidente de Trabajo'?: number;
+  'Otra incidencia'?: number;
+  'Inicio de contrato'?: string;
+  'Días cedido'?: number;
   [key: string]: any;
 }
 
@@ -283,12 +317,14 @@ serve(async (req) => {
                 try {
                   console.log(`Processing employee ${employee.id} with data:`, employee);
                   
-                  // Mapear datos con diferentes posibles estructuras
+                  // Mapear datos con diferentes posibles estructuras y datos ricos
                   const employeeData = {
                     id: employee.id,
                     service_id: service.id,
-                    nombre: employee.firstName || employee.name || employee.fullName?.split(' ')[0] || null,
-                    apellidos: employee.lastName || employee.fullName?.split(' ').slice(1).join(' ') || null,
+                    // Datos básicos
+                    nif: employee.nif || employee['Id. externo'] || null,
+                    nombre: employee.firstName || employee.name || employee['Nombre'] || employee.fullName?.split(' ')[0] || null,
+                    apellidos: employee.lastName || employee['Apellidos'] || employee.fullName?.split(' ').slice(1).join(' ') || null,
                     email: employee.email || null,
                     telefono: employee.phone || null,
                     puesto: employee.position || employee.role || null,
@@ -296,6 +332,42 @@ serve(async (req) => {
                     fecha_alta: employee.startDate ? new Date(employee.startDate).toISOString().split('T')[0] : null,
                     fecha_baja: employee.endDate ? new Date(employee.endDate).toISOString().split('T')[0] : null,
                     estado: employee.status || (employee.endDate ? 'inactive' : 'active'),
+                    // Datos ricos de asistencia y horas
+                    dia_trabajado: employee['Día Trabajado'] || 0,
+                    asistencia_trabajo: employee['Asistencia al Trabajo'] || 0,
+                    horas_netas_mensuales: employee['Horas Netas Mensuales'] || 0,
+                    turnos_cierre: employee['Turnos de cierre'] || 0,
+                    horas_nocturnas_tipo2: employee['Horas Nocturnas Mensuales Tipo 2'] || 0,
+                    horas_nocturnas_tipo3: employee['Horas Nocturnas Mensuales Tipo 3'] || 0,
+                    // Horas por conceptos
+                    horas_vacaciones: employee['Horas por Vacaciones'] || 0,
+                    horas_formacion_externa: employee['Horas por Formación Fuera del Restaurante'] || 0,
+                    horas_ausencia_justificada: employee['Horas por Ausencia Justificada No Planificada/Retribuida/No Reasignable'] || 0,
+                    horas_sancion: employee['Horas por Sanción'] || 0,
+                    horas_compensacion_festivos: employee['Horas por Compensación Festivos'] || 0,
+                    horas_festivo_no_trabajado: employee['Horas por Festivo No Trabajado'] || 0,
+                    horas_ausencia_injustificada: employee['Horas por Ausencia Injustificada /No Retribuida / No reasignable'] || 0,
+                    horas_ausencia_parcial: employee['Horas por Ausencia Parcial Injustificada /No Retribuida /No Reasignable'] || 0,
+                    horas_baja_it: employee['Horas por Baja Incapacidad Temporal'] || 0,
+                    horas_baja_accidente: employee['Horas por Baja Accidente de Trabajo'] || 0,
+                    // Días por conceptos
+                    dias_vacaciones: employee['Vacaciones'] || 0,
+                    dias_formacion_externa: employee['Formación Fuera del Restaurante'] || 0,
+                    dias_ausencia_justificada: employee['Ausencia Justificada No Planificada/Retribuida/No Reasignable'] || 0,
+                    dias_sancion: employee['Sanción'] || 0,
+                    dias_compensacion_festivos: employee['Compensación Festivos'] || 0,
+                    dias_festivo_no_trabajado: employee['Festivo No Trabajado'] || 0,
+                    dias_ausencia_injustificada: employee['Ausencia Injustificada /No Retribuida / No reasignable'] || 0,
+                    dias_ausencia_parcial: employee['Ausencia Parcial Injustificada /No Retribuida /No Reasignable'] || 0,
+                    dias_baja_it: employee['Baja Incapacidad Temporal'] || 0,
+                    dias_baja_accidente: employee['Baja Accidente de Trabajo'] || 0,
+                    dias_otra_incidencia: employee['Otra incidencia'] || 0,
+                    // Fechas importantes
+                    fecha_inicio_contrato: employee['Inicio de contrato'] ? new Date(employee['Inicio de contrato']).toISOString().split('T')[0] : null,
+                    dias_cedido: employee['Días cedido'] ? (employee['Días cedido'] === '-' ? 0 : parseInt(employee['Días cedido'])) : 0,
+                    // Metadatos
+                    mes_datos: new Date().getMonth() + 1,
+                    año_datos: new Date().getFullYear(),
                     datos_completos: employee,
                     franchisee_id: franchiseeId,
                     updated_at: new Date().toISOString(),
