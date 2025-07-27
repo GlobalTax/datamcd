@@ -288,7 +288,6 @@ export const FranchiseesManagement: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Gestión de Franquiciados</h2>
           <p className="text-sm text-gray-500 mt-1">
             Mostrando {filteredFranchisees.length} de {franchisees.length} franquiciados
           </p>
