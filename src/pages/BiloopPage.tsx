@@ -9,24 +9,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Loader2, Building2, FileText, Users, TestTube, UserCheck, Settings2, Check, X, Edit2, Save } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useBiloop, BiloopCompany, BiloopInvoice, BiloopCustomer } from '@/hooks/useBiloop';
+import { useBiloop } from '@/hooks/useBiloop';
 import { useFranchisees } from '@/hooks/data/useFranchisees';
 import { useBiloopCompanies } from '@/hooks/useBiloopCompanies';
 import { useToast } from '@/hooks/use-toast';
 import { BiloopWorkersPanel } from '@/components/workers/BiloopWorkersPanel';
 import { BiloopCompanyManager } from '@/components/workers/BiloopCompanyManager';
+import { BiloopInvoicesTable } from '@/components/workers/BiloopInvoicesTable';
+import { BiloopCustomersTable } from '@/components/workers/BiloopCustomersTable';
 
 
 const BiloopPage = () => {
-  const [invoices, setInvoices] = useState<BiloopInvoice[]>([]);
-  const [customers, setCustomers] = useState<BiloopCustomer[]>([]);
   const [selectedFranchiseeId, setSelectedFranchiseeId] = useState<string>('');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   
   const { 
     loading: biloopLoading, 
-    getInvoices, 
-    getCustomers, 
     testConnection 
   } = useBiloop();
   
@@ -40,45 +38,6 @@ const BiloopPage = () => {
     return companies.find(company => company.biloop_company_id === selectedCompanyId);
   };
 
-  const loadInvoices = async () => {
-    if (!selectedCompanyId) {
-      toast({
-        title: "Error",
-        description: "Selecciona una empresa de Biloop",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const data = await getInvoices(selectedCompanyId);
-      const invoicesArray = Array.isArray(data) ? data : [];
-      setInvoices(invoicesArray);
-    } catch (error) {
-      console.error('Error loading invoices:', error);
-      setInvoices([]);
-    }
-  };
-
-  const loadCustomers = async () => {
-    if (!selectedCompanyId) {
-      toast({
-        title: "Error",
-        description: "Selecciona una empresa de Biloop",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const data = await getCustomers(selectedCompanyId);
-      const customersArray = Array.isArray(data) ? data : [];
-      setCustomers(customersArray);
-    } catch (error) {
-      console.error('Error loading customers:', error);
-      setCustomers([]);
-    }
-  };
 
 
   const handleTestConnection = async () => {
@@ -260,97 +219,17 @@ const BiloopPage = () => {
         </TabsContent>
 
         <TabsContent value="invoices" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Facturas ({invoices.length})
-              </CardTitle>
-              <CardDescription>
-                Facturas de la empresa seleccionada
-              </CardDescription>
-              <Button onClick={loadInvoices} disabled={loading || !selectedCompanyId}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Cargar facturas
-              </Button>
-              {selectedFranchiseeId && !selectedCompanyId && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  Selecciona una empresa de Biloop para cargar datos
-                </p>
-              )}
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                {invoices.map((invoice) => (
-                  <div
-                    key={invoice.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div>
-                      <h3 className="font-semibold">Factura {invoice.number}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Fecha: {new Date(invoice.date).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Cliente: {invoice.companyName}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">{invoice.total}€</p>
-                      <Badge variant={invoice.status === 'paid' ? 'default' : 'secondary'}>
-                        {invoice.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <BiloopInvoicesTable 
+            companyId={selectedCompanyId || null}
+            companyName={getSelectedCompany()?.company_name}
+          />
         </TabsContent>
 
         <TabsContent value="customers" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Clientes ({customers.length})
-              </CardTitle>
-              <CardDescription>
-                Clientes de la empresa seleccionada
-              </CardDescription>
-              <Button onClick={loadCustomers} disabled={loading || !selectedCompanyId}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Cargar clientes
-              </Button>
-              {selectedFranchiseeId && !selectedCompanyId && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  Selecciona una empresa de Biloop para cargar datos
-                </p>
-              )}
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                {customers.map((customer) => (
-                  <div
-                    key={customer.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div>
-                      <h3 className="font-semibold">{customer.name}</h3>
-                      <p className="text-sm text-muted-foreground">CIF: {customer.taxId}</p>
-                      {customer.email && (
-                        <p className="text-sm text-muted-foreground">{customer.email}</p>
-                      )}
-                      {customer.phone && (
-                        <p className="text-sm text-muted-foreground">{customer.phone}</p>
-                      )}
-                    </div>
-                    <Badge variant="outline">{customer.id}</Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <BiloopCustomersTable 
+            companyId={selectedCompanyId || null}
+            companyName={getSelectedCompany()?.company_name}
+          />
         </TabsContent>
 
       </Tabs>
