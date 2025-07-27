@@ -28,7 +28,7 @@ import IncidentManagementPage from "./pages/IncidentManagementPage";
 import BiloopPage from "./pages/BiloopPage";
 import WorkersPage from "./pages/WorkersPage";
 
-import BudgetValuationPage from "./pages/BudgetValuationPage";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -201,14 +201,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <WorkersPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/budget-valuation"
-                element={
-                  <ProtectedRoute>
-                    <BudgetValuationPage />
                   </ProtectedRoute>
                 }
               />

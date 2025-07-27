@@ -395,16 +395,6 @@ const AdvisorPage = () => {
                                 <p className="text-sm">Flujos de caja descontados</p>
                               </div>
                             </Button>
-                            <Button 
-                              onClick={() => navigate('/budget-valuation')} 
-                              className="h-20 text-left p-6 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
-                              variant="outline"
-                            >
-                              <div>
-                                <h3 className="font-semibold">Presupuestos de Valoración</h3>
-                                <p className="text-sm">Proyecciones financieras</p>
-                              </div>
-                            </Button>
                           </div>
                         </CardContent>
                       </Card>
@@ -427,16 +417,6 @@ const AdvisorPage = () => {
                               <div>
                                 <h3 className="font-semibold">Presupuestos Anuales</h3>
                                 <p className="text-sm">Planificación mensual detallada</p>
-                              </div>
-                            </Button>
-                            <Button 
-                              onClick={() => navigate('/budget-valuation')} 
-                              className="h-20 text-left p-6 bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700"
-                              variant="outline"
-                            >
-                              <div>
-                                <h3 className="font-semibold">Presupuestos de Valoración</h3>
-                                <p className="text-sm">Proyecciones para valoración</p>
                               </div>
                             </Button>
                           </div>

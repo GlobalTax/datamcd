@@ -34,7 +34,6 @@ export const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({
     saveAnnualBudgets,
     reloadData
   } = useBudgets({ 
-    mode: 'annual', 
     restaurantId, 
     year,
     autoFetch: true 

@@ -68,11 +68,6 @@ const generalMenuItems: GeneralMenuItem[] = [
     icon: Calendar,
   },
   {
-    title: "Presupuestos de Valoración",
-    url: "/budget-valuation",
-    icon: Calculator,
-  },
-  {
     title: "Datos Históricos",
     url: "/historical-data",
     icon: Database,
