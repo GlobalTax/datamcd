@@ -13,7 +13,7 @@ import { useFranchisees } from '@/hooks/data/useFranchisees';
 import { useIntegrationConfig } from '@/hooks/useIntegrationConfig';
 import { useToast } from '@/hooks/use-toast';
 import { BiloopWorkersPanel } from '@/components/workers/BiloopWorkersPanel';
-import { BiloopCompanyManager } from '@/components/workers/BiloopCompanyManager';
+
 
 const BiloopPage = () => {
   const [invoices, setInvoices] = useState<BiloopInvoice[]>([]);
@@ -227,10 +227,6 @@ const BiloopPage = () => {
         </CardContent>
       </Card>
 
-      {/* Companies Management */}
-      {selectedFranchiseeId && (
-        <BiloopCompanyManager franchiseeId={selectedFranchiseeId} />
-      )}
 
       <Tabs defaultValue="workers" className="space-y-4">
         <TabsList>
