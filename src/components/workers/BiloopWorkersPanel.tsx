@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/auth/AuthProvider';
 import { useBiloop } from '@/hooks/useBiloop';
+import { useBiloopCompanies } from '@/hooks/useBiloopCompanies';
 import { BiloopWorkersTable } from './BiloopWorkersTable';
 import { BiloopPayrollManager } from './BiloopPayrollManager';
 import { BiloopContractManager } from './BiloopContractManager';
@@ -31,8 +32,10 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
     loading 
   } = useBiloop();
 
-  // Obtener el company_id del franquiciado
-  const companyId = franchisee?.biloop_company_id;
+  // Usar el nuevo sistema de empresas Biloop
+  const { companies, getPrimaryCompany } = useBiloopCompanies(franchisee?.id);
+  const primaryCompany = getPrimaryCompany();
+  const companyId = primaryCompany?.biloop_company_id;
 
   // Si no hay franquiciado autenticado
   if (!franchisee) {
@@ -49,20 +52,13 @@ export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefres
     );
   }
 
-  // Si no hay company_id configurado para el franquiciado
+  // Si no hay company_id configurado, mostrar mensaje simple
   if (!companyId) {
     return (
       <div className="p-6">
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Empresa BILOOP no configurada</AlertTitle>
-          <AlertDescription>
-            No se ha configurado un código de empresa BILOOP válido para el franquiciado <strong>{franchisee.franchisee_name}</strong>.
-            <br />
-            <br />
-            Por favor, contacte con su asesor para configurar el campo <code>biloop_company_id</code> en su perfil de franquiciado.
-          </AlertDescription>
-        </Alert>
+        <div className="text-center text-muted-foreground">
+          <p>Configure una empresa BILOOP en su perfil para acceder a los datos de trabajadores.</p>
+        </div>
       </div>
     );
   }
