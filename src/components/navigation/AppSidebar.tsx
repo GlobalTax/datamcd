@@ -215,7 +215,7 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="w-64">
+    <Sidebar>
       <SidebarHeader className="p-6 border-b">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
