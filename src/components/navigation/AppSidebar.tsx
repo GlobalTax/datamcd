@@ -155,6 +155,12 @@ const advisorMenuItems: AdvisorMenuItem[] = [
     hash: "orquest",
   },
   {
+    title: "Biloop",
+    url: "/advisor",
+    icon: Receipt,
+    hash: "biloop",
+  },
+  {
     title: "Gestión",
     url: "/advisor",
     icon: Users,

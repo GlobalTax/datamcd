@@ -17,7 +17,8 @@ import {
   Activity, 
   Monitor,
   Menu,
-  X
+  X,
+  Receipt
 } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import AdvisorManagement from '@/components/AdvisorManagement';
@@ -105,6 +106,7 @@ const AdvisorPage = () => {
     { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'orange' },
     { id: 'reports', label: 'Reportes', icon: FileText, color: 'yellow' },
     { id: 'notifications', label: 'Alertas', icon: Bell, color: 'red' },
+    { id: 'biloop', label: 'Biloop', icon: Receipt, color: 'cyan' },
     { id: 'management', label: 'Gestión', icon: Users, color: 'indigo' },
   ];
 
@@ -455,13 +457,37 @@ const AdvisorPage = () => {
                       </Card>
                     </ErrorBoundary>
                   )}
+
+                  {activeTab === 'biloop' && (
+                    <ErrorBoundary>
+                      <Card className="border-0 shadow-lg bg-card">
+                        <CardHeader>
+                          <CardTitle className="text-xl text-foreground">Accesos Rápidos - Biloop</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 gap-4">
+                            <Button 
+                              onClick={() => navigate('/biloop')} 
+                              className="h-20 text-left p-6 bg-cyan-50 hover:bg-cyan-100 border-cyan-200 text-cyan-700"
+                              variant="outline"
+                            >
+                              <div>
+                                <h3 className="font-semibold">Panel Biloop</h3>
+                                <p className="text-sm">Gestión de nóminas y trabajadores</p>
+                              </div>
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </ErrorBoundary>
+                  )}
                 </div>
               </div>
             </main>
           </div>
         </div>
       </div>
-    </ErrorBoundary>
+      </ErrorBoundary>
     </ProtectedRoute>
   );
 };
