@@ -186,7 +186,7 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
   useEffect(() => {
     console.log('useFranchiseeRestaurants - useEffect triggered');
     fetchRestaurants();
-  }, [user?.id, franchisee?.id]);
+  }, [user?.id, franchisee?.id, franchiseeId]);
 
   return {
     restaurants,
