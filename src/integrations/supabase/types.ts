@@ -407,7 +407,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "annual_budgets_restaurant_id_fkey"
+            foreignKeyName: "annual_budgets_new_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "franchisee_restaurants"
