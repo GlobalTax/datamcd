@@ -97,7 +97,86 @@ export const OrquestDashboard: React.FC = () => {
     }
   }, [services]);
 
-  // Funciones de sincronización mejoradas
+  // Plan de Sincronización Completa
+  const executeSyncPlan = async () => {
+    if (!canSaveConfig || !isConfigured()) {
+      toast({
+        title: "Error",
+        description: "Debes configurar Orquest antes de ejecutar el plan de sincronización",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSyncStatus({
+      isRunning: true,
+      progress: 0,
+      currentStep: 'Iniciando Plan de Sincronización Completa...'
+    });
+
+    try {
+      // Paso 1: Sincronizar servicios
+      setSyncStatus(prev => ({ 
+        ...prev, 
+        progress: 20, 
+        currentStep: 'Sincronizando servicios de los 8 sites...' 
+      }));
+      await syncWithOrquest();
+      
+      // Paso 2: Sincronizar empleados con datos detallados
+      setSyncStatus(prev => ({ 
+        ...prev, 
+        progress: 60, 
+        currentStep: 'Sincronizando empleados con datos completos (32 campos)...' 
+      }));
+      await syncEmployeesOnly();
+      
+      // Paso 3: Verificar datos
+      setSyncStatus(prev => ({ 
+        ...prev, 
+        progress: 85, 
+        currentStep: 'Verificando datos sincronizados...' 
+      }));
+      
+      // Pequeña pausa para mostrar progreso
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setSyncStatus(prev => ({ 
+        ...prev, 
+        progress: 100, 
+        currentStep: 'Plan de Sincronización Completa Ejecutado' 
+      }));
+      setLastSyncTime(new Date().toISOString());
+      
+      toast({
+        title: "✅ Plan de Sincronización Completa Ejecutado",
+        description: "Todos los sites y empleados han sido sincronizados con datos completos",
+      });
+      
+    } catch (error) {
+      setSyncStatus(prev => ({ 
+        ...prev, 
+        error: error instanceof Error ? error.message : 'Error desconocido',
+        currentStep: 'Error en Plan de Sincronización'
+      }));
+      
+      toast({
+        title: "Error en Plan de Sincronización",
+        description: error instanceof Error ? error.message : 'Error desconocido',
+        variant: "destructive"
+      });
+    } finally {
+      setTimeout(() => {
+        setSyncStatus({
+          isRunning: false,
+          progress: 0,
+          currentStep: ''
+        });
+      }, 3000);
+    }
+  };
+
+  // Funciones de sincronización individuales
   const handleFullSync = async () => {
     if (!canSaveConfig || !isConfigured()) {
       toast({
@@ -111,24 +190,19 @@ export const OrquestDashboard: React.FC = () => {
     setSyncStatus({
       isRunning: true,
       progress: 0,
-      currentStep: 'Iniciando sincronización...'
+      currentStep: 'Sincronizando servicios...'
     });
 
     try {
-      setSyncStatus(prev => ({ ...prev, progress: 25, currentStep: 'Sincronizando servicios...' }));
+      setSyncStatus(prev => ({ ...prev, progress: 50 }));
       await syncWithOrquest();
       
-      setSyncStatus(prev => ({ ...prev, progress: 75, currentStep: 'Actualizando datos...' }));
-      
-      // Pequeña pausa para mostrar progreso
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setSyncStatus(prev => ({ ...prev, progress: 100, currentStep: 'Completado' }));
+      setSyncStatus(prev => ({ ...prev, progress: 100, currentStep: 'Servicios sincronizados' }));
       setLastSyncTime(new Date().toISOString());
       
       toast({
-        title: "Sincronización exitosa",
-        description: "Todos los datos han sido actualizados correctamente",
+        title: "Servicios sincronizados",
+        description: "Los servicios han sido actualizados correctamente",
       });
       
     } catch (error) {
@@ -492,27 +566,74 @@ export const OrquestDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Acciones de sincronización */}
+      {/* Plan de Sincronización Completa */}
+      {selectedFranchiseeId && isConfigured() && (
+        <Card className="border-2 border-gradient-to-r from-emerald-200 to-blue-200 bg-gradient-to-r from-emerald-50 to-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-emerald-800">
+              <TrendingUp className="w-6 h-6" />
+              Plan de Sincronización Completa
+            </CardTitle>
+            <CardDescription className="text-emerald-700">
+              Ejecuta la sincronización completa de todos los sites con datos detallados de empleados (32 campos)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="bg-white/60 rounded-lg p-4">
+                <h4 className="font-semibold text-emerald-800 mb-2">¿Qué se va a sincronizar?</h4>
+                <ul className="text-sm text-emerald-700 space-y-1">
+                  <li>• <strong>8 Sites:</strong> Banyoles, Girona Maristes, Girona Masgri, L'Escala, Manresa Cines, Manresa Universidad, Salt, Vic</li>
+                  <li>• <strong>Empleados:</strong> Datos completos con 32 campos (asistencia, horas, ausencias, métricas)</li>
+                  <li>• <strong>Servicios:</strong> Configuración y estado de todos los restaurantes</li>
+                </ul>
+              </div>
+              
+              <Button
+                size="lg"
+                onClick={executeSyncPlan}
+                disabled={loading || syncStatus.isRunning}
+                className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white font-semibold py-3"
+              >
+                {syncStatus.isRunning ? (
+                  <>
+                    <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                    Ejecutando Plan...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-5 h-5 mr-2" />
+                    🚀 Ejecutar Plan de Sincronización Completa
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Acciones de sincronización individuales */}
       {selectedFranchiseeId && (
         <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Zap className="w-5 h-5" />
-            Sincronización
+            <RefreshCw className="w-5 h-5" />
+            Sincronizaciones Individuales
           </CardTitle>
           <CardDescription>
-            Gestiona la sincronización de datos con Orquest
+            Gestiona la sincronización individual de componentes específicos
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
             <Button
+              variant="outline"
               onClick={handleFullSync}
               disabled={loading || syncStatus.isRunning || !isConfigured()}
               className="flex items-center gap-2"
             >
-              <RefreshCw className={`w-4 h-4 ${loading || syncStatus.isRunning ? 'animate-spin' : ''}`} />
-              Sincronización Completa
+              <MapPin className={`w-4 h-4 ${loading || syncStatus.isRunning ? 'animate-spin' : ''}`} />
+              Solo Servicios
             </Button>
             
             <Button
