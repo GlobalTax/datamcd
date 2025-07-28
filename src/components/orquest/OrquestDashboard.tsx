@@ -9,6 +9,9 @@ import { OrquestServicesTable } from './OrquestServicesTable';
 import { OrquestEmployeesTable } from './OrquestEmployeesTable';
 import { OrquestMeasuresTable } from './OrquestMeasuresTable';
 import { OrquestConfigDialog } from './OrquestConfigDialog';
+import { OrquestGlobalConfig } from './OrquestGlobalConfig';
+import { FranchiseeSelector } from './FranchiseeSelector';
+import { OrquestSiteManager } from './OrquestSiteManager';
 import { useOrquest } from '@/hooks/useOrquest';
 import { useOrquestConfig } from '@/hooks/useOrquestConfig';
 import { useOrquestMeasuresExtended } from '@/hooks/useOrquestMeasuresExtended';
@@ -47,6 +50,7 @@ export const OrquestDashboard: React.FC = () => {
   
   // State for franchisee selection (for superadmins)
   const [selectedFranchiseeId, setSelectedFranchiseeId] = useState<string>('');
+  const [showGlobalConfig, setShowGlobalConfig] = useState(false);
   
   // Get all franchisees if superadmin
   const { franchisees, loading: franchiseesLoading } = useFranchisees();
@@ -332,55 +336,57 @@ export const OrquestDashboard: React.FC = () => {
   const configStatus = isConfigured() ? 'configurado' : 'pendiente';
   const connectionStatus = isInFallbackMode ? 'desconectado' : 'conectado';
 
+  // Funciones auxiliares para el selector
+  const getOrquestSitesCount = (franchiseeId: string) => {
+    return services.filter(s => s.datos_completos !== null).length;
+  };
+
+  const getLastSyncTime = (franchiseeId: string) => {
+    return lastSyncTime;
+  };
+
+  const isOrquestConfigured = (franchiseeId: string): boolean => {
+    return Boolean(isConfigured());
+  };
+
+  const handleSiteAssignment = async (siteIds: string[]) => {
+    // Aquí iría la lógica para asignar sites
+    console.log('Assigning sites:', siteIds);
+  };
+
+  const mockSites = services.map(service => ({
+    id: service.id,
+    nombre: service.nombre,
+    latitud: service.latitud,
+    longitud: service.longitud,
+    isAssigned: true,
+    lastSync: service.updated_at
+  }));
+
   return (
     <div className="space-y-6">
-      {/* Franchisee Selector for SuperAdmins */}
-      {isSuperAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Seleccionar Franquiciado
-            </CardTitle>
-            <CardDescription>
-              Selecciona el franquiciado para gestionar su integración con Orquest
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <Select value={selectedFranchiseeId} onValueChange={setSelectedFranchiseeId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar franquiciado..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {franchisees.map((franchisee) => (
-                      <SelectItem key={franchisee.id} value={franchisee.id}>
-                        {franchisee.franchisee_name} ({franchisee.total_restaurants || 0} restaurantes)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {selectedFranchisee && (
-                <Badge variant="outline" className="px-3 py-1">
-                  Gestionando: {selectedFranchisee.franchisee_name}
-                </Badge>
-              )}
-            </div>
-            {!selectedFranchiseeId && (
-              <Alert className="mt-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Selecciona un franquiciado para ver y gestionar su configuración de Orquest.
-                </AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
+      {/* Configuración Global (Solo para Admins) */}
+      {isSuperAdmin && showGlobalConfig && (
+        <OrquestGlobalConfig />
       )}
 
-      {/* Header */}
+      {/* Selector Mejorado de Franquiciado */}
+      {isSuperAdmin && (
+        <FranchiseeSelector
+          franchisees={franchisees.map(f => ({
+            ...f,
+            total_restaurants: f.total_restaurants || 0
+          }))}
+          selectedFranchiseeId={selectedFranchiseeId}
+          onFranchiseeChange={setSelectedFranchiseeId}
+          loading={franchiseesLoading}
+          getOrquestSitesCount={getOrquestSitesCount}
+          getLastSyncTime={getLastSyncTime}
+          isConfigured={isOrquestConfigured}
+        />
+      )}
+
+      {/* Header Mejorado */}
       <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl p-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div className="flex items-center space-x-4">
@@ -388,9 +394,9 @@ export const OrquestDashboard: React.FC = () => {
               <Database className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Orquest Integration</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Orquest Integration Hub</h1>
               <p className="text-gray-600">
-                Sincronización con API de McDonald's España
+                Plataforma unificada de sincronización con McDonald's España
                 {isSuperAdmin && selectedFranchisee && (
                   <span className="block text-sm font-medium text-blue-600 mt-1">
                     Franquiciado: {selectedFranchisee.franchisee_name}
@@ -401,6 +407,17 @@ export const OrquestDashboard: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-3">
+            {isSuperAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowGlobalConfig(!showGlobalConfig)}
+                className="gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                {showGlobalConfig ? 'Ocultar' : 'Config Global'}
+              </Button>
+            )}
             <Badge variant={configStatus === 'configurado' ? 'default' : 'secondary'}>
               {configStatus === 'configurado' ? (
                 <><CheckCircle className="w-3 h-3 mr-1" /> Configurado</>
@@ -443,17 +460,26 @@ export const OrquestDashboard: React.FC = () => {
         <Alert className="border-blue-200 bg-blue-50">
           <Settings className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-blue-800">
-            <strong>Configuración requerida:</strong> Configura las credenciales de Orquest 
-            antes de poder sincronizar datos.
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="ml-3"
-              onClick={() => setConfigOpen(true)}
-              disabled={!selectedFranchiseeId}
-            >
-              Configurar Ahora
-            </Button>
+            <strong>Configuración fácil:</strong> Orquest se puede configurar en 2 pasos simples.
+            <div className="flex gap-2 mt-2">
+              {isSuperAdmin && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowGlobalConfig(true)}
+                >
+                  1. Config Global
+                </Button>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setConfigOpen(true)}
+                disabled={!selectedFranchiseeId}
+              >
+                {isSuperAdmin ? '2. Config Individual' : 'Configurar Ahora'}
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       )}
@@ -481,6 +507,17 @@ export const OrquestDashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Gestor de Sites Unificado */}
+      {selectedFranchiseeId && isConfigured() && (
+        <OrquestSiteManager
+          franchiseeId={effectiveFranchiseeId || ''}
+          sites={mockSites}
+          onSyncAll={executeSyncPlan}
+          onAssignSites={handleSiteAssignment}
+          isConfigured={Boolean(isConfigured())}
+        />
       )}
 
       {/* Métricas principales */}
