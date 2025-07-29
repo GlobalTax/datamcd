@@ -1,12 +1,12 @@
 import React from 'react';
 import { Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useConnectionStatus } from './ConnectionStatusProvider';
 
 export const ConnectionStatus: React.FC = () => {
-  const { connectionStatus } = useUnifiedAuth();
+  const { status: connectionStatus, isStable } = useConnectionStatus();
 
-  if (!connectionStatus || connectionStatus === 'online') {
+  if (connectionStatus === 'online' && isStable) {
     return null;
   }
 

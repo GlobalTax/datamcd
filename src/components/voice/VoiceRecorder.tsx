@@ -1,7 +1,8 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, Square, Play, Pause, Trash2 } from 'lucide-react';
+import { Mic, Square, Play, Pause, Trash2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 interface VoiceRecorderProps {
   onRecordingComplete: (audioBlob: Blob) => void;
@@ -17,6 +18,8 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [isSupported, setIsSupported] = useState(true);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -24,10 +27,60 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  const startRecording = useCallback(async () => {
-    try {
-      console.log('Starting voice recording...');
+  // Check for browser support and permissions on mount
+  useEffect(() => {
+    const checkSupport = () => {
+      const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+      setIsSupported(supported);
       
+      if (!supported) {
+        logger.warn('Voice recording not supported', { 
+          component: 'VoiceRecorder',
+          hasMediaDevices: !!navigator.mediaDevices,
+          hasGetUserMedia: !!(navigator.mediaDevices?.getUserMedia),
+          hasMediaRecorder: !!window.MediaRecorder
+        });
+      }
+    };
+
+    checkSupport();
+  }, []);
+
+  // Cleanup function
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+      if (audioURL) {
+        URL.revokeObjectURL(audioURL);
+      }
+    };
+  }, [audioURL]);
+
+  const startRecording = useCallback(async () => {
+    if (!isSupported) {
+      toast({
+        title: "No Compatible",
+        description: "Tu navegador no soporta grabación de audio.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      logger.info('Starting voice recording', { component: 'VoiceRecorder' });
+      
+      // Check permissions first
+      const permissionResult = await navigator.permissions?.query({ name: 'microphone' as PermissionName });
+      if (permissionResult?.state === 'denied') {
+        setHasPermission(false);
+        throw new Error('Microphone permission denied');
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 44100,
@@ -38,13 +91,21 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         }
       });
 
+      setHasPermission(true);
       streamRef.current = stream;
       chunksRef.current = [];
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-
+      // Check for supported MIME types
+      const supportedTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/ogg;codecs=opus'
+      ];
+      
+      const mimeType = supportedTypes.find(type => MediaRecorder.isTypeSupported(type)) || 'audio/webm';
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
@@ -53,9 +114,23 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         }
       };
 
+      mediaRecorder.onerror = (event) => {
+        const error = (event as any).error || new Error('MediaRecorder error');
+        logger.error('MediaRecorder error', { 
+          component: 'VoiceRecorder',
+          error: error.message || 'Unknown error'
+        });
+        setIsRecording(false);
+        toast({
+          title: "Error de Grabación",
+          description: "Error durante la grabación de audio.",
+          variant: "destructive",
+        });
+      };
+
       mediaRecorder.onstop = () => {
-        console.log('Recording stopped, processing audio...');
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        logger.info('Recording stopped, processing audio', { component: 'VoiceRecorder' });
+        const audioBlob = new Blob(chunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
         onRecordingComplete(audioBlob);
@@ -76,17 +151,34 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         setRecordingTime(prev => prev + 1);
       }, 1000);
 
-      console.log('Recording started successfully');
+      logger.info('Recording started successfully', { component: 'VoiceRecorder', mimeType });
 
     } catch (error) {
-      console.error('Error starting recording:', error);
+      logger.error('Error starting recording', { 
+        component: 'VoiceRecorder',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, error instanceof Error ? error : undefined);
+      
+      setHasPermission(false);
+      
+      let errorMessage = "No se pudo acceder al micrófono.";
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = "Permiso de micrófono denegado. Habilite el micrófono en la configuración del navegador.";
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = "No se encontró ningún micrófono. Verifique que su dispositivo tenga un micrófono conectado.";
+        } else if (error.name === 'NotSupportedError') {
+          errorMessage = "Grabación de audio no soportada en este navegador.";
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: "No se pudo acceder al micrófono. Verifique los permisos.",
+        title: "Error de Grabación",
+        description: errorMessage,
         variant: "destructive",
       });
     }
-  }, [onRecordingComplete, toast]);
+  }, [onRecordingComplete, toast, isSupported]);
 
   const stopRecording = useCallback(() => {
     console.log('Stopping recording...');
@@ -144,6 +236,18 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Show unsupported browser message
+  if (!isSupported) {
+    return (
+      <div className="flex flex-col gap-4 p-4 border border-border rounded-lg bg-card">
+        <div className="flex items-center gap-2 text-destructive">
+          <AlertTriangle className="w-4 h-4" />
+          <span className="text-sm">Grabación de audio no disponible en este navegador</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 p-4 border border-border rounded-lg bg-card">
       <div className="flex items-center justify-between">
@@ -156,11 +260,17 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         )}
       </div>
 
+      {hasPermission === false && (
+        <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
+          Sin permisos de micrófono. Actualice la página y permita el acceso al micrófono.
+        </div>
+      )}
+
       <div className="flex items-center gap-2">
         {!isRecording && !audioURL && (
           <Button
             onClick={startRecording}
-            disabled={disabled}
+            disabled={disabled || hasPermission === false}
             size="sm"
             className="flex items-center gap-2"
           >

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { VoiceRecorder } from './VoiceRecorder';
+import { VoiceRecorderErrorBoundary } from './VoiceRecorderErrorBoundary';
 import { useVoiceNotes } from '@/hooks/useVoiceNotes';
+import { logger } from '@/lib/logger';
 import { 
   FileAudio, 
   Trash2, 
@@ -45,10 +47,13 @@ export const VoiceNotesManager: React.FC<VoiceNotesManagerProps> = ({
 
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
 
-  const handleRecordingComplete = (audioBlob: Blob) => {
-    console.log('Recording completed, uploading...');
+  const handleRecordingComplete = useCallback((audioBlob: Blob) => {
+    logger.info('Recording completed, uploading', { 
+      component: 'VoiceNotesManager',
+      blobSize: audioBlob.size 
+    });
     uploadVoiceNote(audioBlob);
-  };
+  }, [uploadVoiceNote]);
 
   const handleLinkToIncident = (voiceNoteId: string) => {
     if (selectedIncidentId) {
@@ -57,30 +62,51 @@ export const VoiceNotesManager: React.FC<VoiceNotesManagerProps> = ({
     }
   };
 
-  const toggleAudioPlayback = async (voiceNote: any) => {
+  const toggleAudioPlayback = useCallback(async (voiceNote: any) => {
     if (playingAudio === voiceNote.id) {
       setPlayingAudio(null);
       return;
     }
 
     try {
+      logger.info('Playing voice note', { 
+        component: 'VoiceNotesManager',
+        voiceNoteId: voiceNote.id 
+      });
+
       // Get the audio file URL from Supabase Storage
-      const { data } = await import('@/integrations/supabase/client').then(
+      const { data, error } = await import('@/integrations/supabase/client').then(
         module => module.supabase.storage
           .from('voice-notes')
           .createSignedUrl(voiceNote.file_url, 3600) // 1 hour expiry
       );
 
+      if (error) {
+        throw error;
+      }
+
       if (data?.signedUrl) {
         const audio = new Audio(data.signedUrl);
         audio.onended = () => setPlayingAudio(null);
-        audio.play();
+        audio.onerror = (error) => {
+          const audioError = new Error('Audio playback failed');
+          logger.error('Audio playback error', { 
+            component: 'VoiceNotesManager',
+            voiceNoteId: voiceNote.id 
+          }, audioError);
+          setPlayingAudio(null);
+        };
+        await audio.play();
         setPlayingAudio(voiceNote.id);
       }
     } catch (error) {
-      console.error('Error playing audio:', error);
+      logger.error('Error playing audio', { 
+        component: 'VoiceNotesManager',
+        voiceNoteId: voiceNote.id 
+      }, error instanceof Error ? error : new Error('Unknown audio error'));
+      setPlayingAudio(null);
     }
-  };
+  }, [playingAudio]);
 
   return (
     <div className="space-y-6">
@@ -93,10 +119,12 @@ export const VoiceNotesManager: React.FC<VoiceNotesManagerProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <VoiceRecorder
-            onRecordingComplete={handleRecordingComplete}
-            disabled={isUploading}
-          />
+          <VoiceRecorderErrorBoundary>
+            <VoiceRecorder
+              onRecordingComplete={handleRecordingComplete}
+              disabled={isUploading}
+            />
+          </VoiceRecorderErrorBoundary>
           
           {/* Upload Progress */}
           {Object.entries(uploadProgress).map(([fileId, progress]) => (

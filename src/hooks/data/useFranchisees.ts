@@ -41,6 +41,8 @@ export function useFranchisees(config: FranchiseeConfig = {}) {
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false, // Prevent excessive refetching
+    retry: 2, // Limit retries to reduce console noise
   });
 
   // Mutation for creating franchisees
