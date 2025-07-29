@@ -74,10 +74,10 @@ export const AuthDebugPanel: React.FC = () => {
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">Authentication</h4>
                     <div className="bg-gray-50 p-2 rounded text-xs font-mono">
-                      <div>User: {debugInfo.auth.user?.email || 'None'}</div>
-                      <div>Role: {debugInfo.auth.user?.role || 'None'}</div>
-                      <div>Session: {debugInfo.auth.session ? 'Active' : 'None'}</div>
-                      <div>Loading: {debugInfo.auth.loading ? 'Yes' : 'No'}</div>
+                      <div>User: {debugInfo.auth?.user?.email || 'None'}</div>
+                      <div>Role: {debugInfo.auth?.user?.role || 'None'}</div>
+                      <div>Session: {debugInfo.auth?.session ? 'Active' : 'None'}</div>
+                      <div>Loading: {debugInfo.auth?.loading ? 'Yes' : 'No'}</div>
                     </div>
                   </div>
 
@@ -85,10 +85,10 @@ export const AuthDebugPanel: React.FC = () => {
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">Impersonation</h4>
                     <div className="bg-gray-50 p-2 rounded text-xs font-mono">
-                      <div>Active: {debugInfo.franchisee.isImpersonating ? 'Yes' : 'No'}</div>
-                      <div>Original: {debugInfo.franchisee.original?.name || 'None'}</div>
-                      <div>Impersonated: {debugInfo.franchisee.impersonated?.name || 'None'}</div>
-                      <div>Effective: {debugInfo.franchisee.effective?.name || 'None'}</div>
+                      <div>Active: {debugInfo.franchisee?.isImpersonating ? 'Yes' : 'No'}</div>
+                      <div>Original: {debugInfo.franchisee?.original?.name || 'None'}</div>
+                      <div>Impersonated: {debugInfo.franchisee?.impersonated?.name || 'None'}</div>
+                      <div>Effective: {debugInfo.franchisee?.effective?.name || 'None'}</div>
                     </div>
                   </div>
 
@@ -96,9 +96,9 @@ export const AuthDebugPanel: React.FC = () => {
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">Restaurants</h4>
                     <div className="bg-gray-50 p-2 rounded text-xs font-mono">
-                      <div>Count: {debugInfo.restaurants.count}</div>
-                      <div>IDs: {debugInfo.restaurants.ids.slice(0, 3).join(', ')}
-                        {debugInfo.restaurants.ids.length > 3 && '...'}
+                      <div>Count: {debugInfo.restaurants?.count || 0}</div>
+                      <div>IDs: {debugInfo.restaurants?.ids?.slice(0, 3).join(', ') || 'None'}
+                        {debugInfo.restaurants?.ids?.length > 3 && '...'}
                       </div>
                     </div>
                   </div>
@@ -107,9 +107,9 @@ export const AuthDebugPanel: React.FC = () => {
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">System</h4>
                     <div className="bg-gray-50 p-2 rounded text-xs font-mono">
-                      <div>User ID: {debugInfo.system.currentUserId?.slice(0, 8) || 'None'}...</div>
-                      <div>Initialized: {debugInfo.system.authInitialized ? 'Yes' : 'No'}</div>
-                      <div>Updated: {new Date(debugInfo.system.timestamp).toLocaleTimeString()}</div>
+                      <div>User ID: {debugInfo.system?.currentUserId?.slice(0, 8) || 'None'}...</div>
+                      <div>Initialized: {debugInfo.system?.authInitialized ? 'Yes' : 'No'}</div>
+                      <div>Updated: {debugInfo.system?.timestamp ? new Date(debugInfo.system.timestamp).toLocaleTimeString() : 'Unknown'}</div>
                     </div>
                   </div>
                 </div>
