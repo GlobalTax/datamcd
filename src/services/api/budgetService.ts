@@ -51,37 +51,11 @@ export class BudgetService {
 
       const isAdmin = userProfile.role === 'superadmin' || userProfile.role === 'admin';
 
-      // For superadmins, allow direct access to base restaurants
-      if (isAdmin) {
-        // Check if restaurantId is a base_restaurant_id
-        const { data: baseRestaurant, error: baseRestaurantError } = await supabase
-          .from('base_restaurants')
-          .select('id')
-          .eq('id', restaurantId)
-          .single();
-
-        if (baseRestaurant) {
-          // For admin accessing base restaurant, use the base restaurant ID directly
-          const { data, error } = await supabase
-            .from('annual_budgets')
-            .select('*')
-            .eq('restaurant_id', restaurantId)
-            .eq('year', year)
-            .order('category', { ascending: true })
-            .order('subcategory', { ascending: true });
-
-          if (error) {
-            logger.error('Error fetching annual budgets for admin', { error });
-            throw new Error(`Error al cargar los presupuestos: ${error.message}`);
-          }
-
-          logger.info('Successfully fetched annual budgets for admin', { count: data?.length || 0 });
-          return data || [];
-        }
-      }
-
-      // For franchisees or if restaurant is not a base restaurant, verify access through franchisee_restaurants
-      const { data: restaurantCheck, error: restaurantError } = await supabase
+      // Always verify access through franchisee_restaurants table
+      // All budget operations now use franchisee_restaurants IDs
+      
+      // For admins, still check permission but access through franchisee_restaurants
+      let query = supabase
         .from('franchisee_restaurants')
         .select(`
           id,
@@ -90,9 +64,14 @@ export class BudgetService {
             user_id
           )
         `)
-        .eq('id', restaurantId)
-        .eq('franchisees.user_id', userId)
-        .single();
+        .eq('id', restaurantId);
+
+      // For non-admin users, also filter by user access
+      if (!isAdmin) {
+        query = query.eq('franchisees.user_id', userId);
+      }
+
+      const { data: restaurantCheck, error: restaurantError } = await query.single();
 
       if (restaurantError) {
         logger.error('Error checking restaurant access', { error: restaurantError });

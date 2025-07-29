@@ -18,9 +18,9 @@ export const useIncidents = (restaurantId?: string) => {
         .from("restaurant_incidents")
         .select(`
           *,
-          restaurant:restaurant_id(
+          restaurant:franchisee_restaurants!restaurant_id(
             id,
-            base_restaurant:base_restaurant_id(restaurant_name, site_number)
+            base_restaurant:base_restaurants!base_restaurant_id(restaurant_name, site_number)
           ),
           reported_user:profiles!restaurant_incidents_reported_by_fkey(full_name),
           assigned_user:profiles!restaurant_incidents_assigned_to_fkey(full_name)
