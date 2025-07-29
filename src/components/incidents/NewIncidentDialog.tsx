@@ -40,7 +40,7 @@ export const NewIncidentDialog = ({
     type: "general",
     priority: "medium",
     restaurant_id: "",
-    assigned_to: "",
+    assigned_to: null,
   });
 
   // Obtener restaurantes desde base_restaurants
@@ -80,7 +80,7 @@ export const NewIncidentDialog = ({
         type: "general",
         priority: "medium",
         restaurant_id: "",
-        assigned_to: "",
+        assigned_to: null,
       });
     }
   }, [open]);
@@ -195,14 +195,14 @@ export const NewIncidentDialog = ({
             <div>
               <Label htmlFor="assigned">Asignar a</Label>
               <Select
-                value={formData.assigned_to || ""}
-                onValueChange={(value) => setFormData({ ...formData, assigned_to: value })}
+                value={formData.assigned_to || "unassigned"}
+                onValueChange={(value) => setFormData({ ...formData, assigned_to: value === "unassigned" ? null : value })}
               >
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Sin asignar" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border border-border z-[100] shadow-lg max-h-[200px] overflow-y-auto">
-                  <SelectItem value="">Sin asignar</SelectItem>
+                  <SelectItem value="unassigned">Sin asignar</SelectItem>
                   {users?.length === 0 ? (
                     <div className="p-2 text-sm text-muted-foreground">No hay usuarios disponibles</div>
                   ) : (
