@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 import { 
   Incident, 
   CreateIncidentData, 
@@ -21,106 +22,143 @@ export const useNewIncidents = (filters?: IncidentFilters) => {
   } = useQuery({
     queryKey: ["new-incidents", filters],
     queryFn: async () => {
-      let query = supabase
-        .from("incidents")
-        .select(`
-          *,
-          restaurant:base_restaurants(
-            id,
-            restaurant_name,
-            site_number
-          ),
-          provider:providers(
-            id,
-            name,
-            provider_type
-          )
-        `)
-        .order("created_at", { ascending: false });
+      try {
+        logger.info("Fetching incidents", { filters, component: "useNewIncidents" });
+        
+        let query = supabase
+          .from("incidents")
+          .select(`
+            *,
+            restaurant:base_restaurants(
+              id,
+              restaurant_name,
+              site_number
+            ),
+            provider:providers(
+              id,
+              name,
+              provider_type
+            )
+          `)
+          .order("created_at", { ascending: false })
+          .limit(100); // Paginación básica
 
-      // Aplicar filtros
-      if (filters) {
-        if (filters.status?.length) {
-          query = query.in("status", filters.status);
+        // Aplicar filtros
+        if (filters) {
+          if (filters.status?.length) {
+            query = query.in("status", filters.status);
+          }
+          if (filters.priority?.length) {
+            query = query.in("priority", filters.priority);
+          }
+          if (filters.type?.length) {
+            query = query.in("type", filters.type);
+          }
+          if (filters.restaurant_id?.length) {
+            query = query.in("restaurant_id", filters.restaurant_id);
+          }
+          if (filters.provider_id?.length) {
+            query = query.in("provider_id", filters.provider_id);
+          }
+          if (filters.assigned_to?.length) {
+            query = query.in("assigned_to", filters.assigned_to);
+          }
+          if (filters.source?.length) {
+            query = query.in("source", filters.source);
+          }
+          if (filters.date_from) {
+            query = query.gte("created_at", filters.date_from);
+          }
+          if (filters.date_to) {
+            query = query.lte("created_at", filters.date_to);
+          }
+          if (filters.search) {
+            query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+          }
         }
-        if (filters.priority?.length) {
-          query = query.in("priority", filters.priority);
+
+        const { data, error } = await query;
+        
+        if (error) {
+          logger.error("Error fetching incidents", { error: error.message, filters }, error);
+          throw error;
         }
-        if (filters.type?.length) {
-          query = query.in("type", filters.type);
-        }
-        if (filters.restaurant_id?.length) {
-          query = query.in("restaurant_id", filters.restaurant_id);
-        }
-        if (filters.provider_id?.length) {
-          query = query.in("provider_id", filters.provider_id);
-        }
-        if (filters.assigned_to?.length) {
-          query = query.in("assigned_to", filters.assigned_to);
-        }
-        if (filters.source?.length) {
-          query = query.in("source", filters.source);
-        }
-        if (filters.date_from) {
-          query = query.gte("created_at", filters.date_from);
-        }
-        if (filters.date_to) {
-          query = query.lte("created_at", filters.date_to);
-        }
-        if (filters.search) {
-          query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-        }
+        
+        logger.info("Incidents fetched successfully", { count: data?.length || 0 });
+        
+        // Transformar los datos para que coincidan con IncidentWithRelations
+        const transformedData = data?.map(incident => ({
+          ...incident,
+          restaurant: incident.restaurant ? {
+            id: incident.restaurant.id,
+            name: incident.restaurant.restaurant_name,
+            site_number: incident.restaurant.site_number
+          } : undefined
+        })) || [];
+        
+        return transformedData as IncidentWithRelations[];
+      } catch (error) {
+        logger.error("Failed to fetch incidents", { filters }, error as Error);
+        throw error;
       }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      // Transformar los datos para que coincidan con IncidentWithRelations
-      const transformedData = data?.map(incident => ({
-        ...incident,
-        restaurant: incident.restaurant ? {
-          id: incident.restaurant.id,
-          name: incident.restaurant.restaurant_name,
-          site_number: incident.restaurant.site_number
-        } : undefined
-      })) || [];
-      
-      return transformedData as IncidentWithRelations[];
     },
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 30000, // Cache por 30 segundos
   });
 
   // Crear incidencia
   const createIncident = useMutation({
     mutationFn: async (incidentData: CreateIncidentData) => {
-      const { data, error } = await supabase
-        .from("incidents")
-        .insert({
-          ...incidentData,
-          reported_by: (await supabase.auth.getUser()).data.user?.id,
-          status: 'open'
-        })
-        .select()
-        .single();
+      try {
+        logger.info("Creating incident", { title: incidentData.title, component: "useNewIncidents" });
+        
+        const user = await supabase.auth.getUser();
+        if (!user.data.user) {
+          throw new Error("Usuario no autenticado");
+        }
 
-      if (error) throw error;
-      return data;
+        const { data, error } = await supabase
+          .from("incidents")
+          .insert({
+            ...incidentData,
+            reported_by: user.data.user.id,
+            status: 'open'
+          })
+          .select()
+          .single();
+
+        if (error) {
+          logger.error("Database error creating incident", { error: error.message }, error);
+          throw error;
+        }
+        
+        logger.info("Incident created successfully", { id: data.id });
+        return data;
+      } catch (error) {
+        logger.error("Failed to create incident", { incidentData }, error as Error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["new-incidents"] });
       queryClient.invalidateQueries({ queryKey: ["metrics"] });
+      logger.info("Incident creation successful", { id: data.id });
       toast({
         title: "Incidencia creada",
         description: "La incidencia se ha creado correctamente.",
       });
     },
     onError: (error) => {
-      console.error("Error creating incident:", error);
+      logger.error("Incident creation failed", {}, error as Error);
       toast({
         title: "Error",
-        description: "No se pudo crear la incidencia.",
+        description: "No se pudo crear la incidencia. Inténtalo de nuevo.",
         variant: "destructive",
       });
     },
+    retry: 2,
+    retryDelay: 1000,
   });
 
   // Actualizar incidencia
