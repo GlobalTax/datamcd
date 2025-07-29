@@ -8,13 +8,14 @@ import { useNewIncidents } from '@/hooks/useNewIncidents';
 import { IncidentFilters } from '@/types/newIncident';
 import { MetricsDashboard } from './MetricsDashboard';
 import { VoiceNotesManager } from '@/components/voice/VoiceNotesManager';
+import { NewIncidentDialog } from './NewIncidentDialog';
 
 export function NewIncidentManagement() {
   const [activeTab, setActiveTab] = useState('overview');
   const [filters, setFilters] = useState<IncidentFilters>({});
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   
-  const { incidents, isLoading } = useNewIncidents(filters);
+  const { incidents, isLoading, createIncident } = useNewIncidents(filters);
 
   // Calcular estadísticas rápidas
   const stats = {
@@ -192,6 +193,14 @@ export function NewIncidentManagement() {
           <VoiceNotesManager />
         </TabsContent>
       </Tabs>
+
+      {/* Dialog para crear incidencias */}
+      <NewIncidentDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSubmit={(data) => createIncident.mutate(data)}
+        isLoading={createIncident.isPending}
+      />
     </div>
   );
 }
