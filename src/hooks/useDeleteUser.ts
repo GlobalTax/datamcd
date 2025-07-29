@@ -15,26 +15,30 @@ export const useDeleteUser = () => {
       return false;
     }
 
-    // Security validation - only superadmin can delete users
-    const currentUserRole = (user as any).role;
-    if (currentUserRole !== 'superadmin') {
-      logger.warn('Unauthorized user deletion attempt', {
-        component: 'useDeleteUser',
-        attemptedBy: user.id,
-        targetUserId: userId,
-        userRole: currentUserRole
+    // Server-side validation using our new function
+    const { data: canDeleteUser, error: deletionValidationError } = await supabase
+      .rpc('validate_user_deletion', {
+        target_user_id: userId,
+        deleter_user_id: user.id
       });
-      toast.error('Solo los superadministradores pueden eliminar usuarios');
+
+    if (deletionValidationError) {
+      logger.error('Error validating user deletion', {
+        component: 'useDeleteUser',
+        error: deletionValidationError,
+        targetUserId: userId
+      });
+      toast.error('Error al validar permisos de eliminación');
       return false;
     }
 
-    // Prevent self-deletion
-    if (user.id === userId) {
-      logger.warn('User attempted to delete themselves', {
+    if (!canDeleteUser) {
+      logger.warn('Unauthorized user deletion attempt', {
         component: 'useDeleteUser',
-        userId: user.id
+        attemptedBy: user.id,
+        targetUserId: userId
       });
-      toast.error('No puedes eliminar tu propia cuenta');
+      toast.error('No tienes permisos para eliminar este usuario');
       return false;
     }
 

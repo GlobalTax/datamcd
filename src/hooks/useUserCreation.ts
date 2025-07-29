@@ -22,9 +22,21 @@ export const useUserCreation = () => {
       return false;
     }
 
-    // Verificar permisos
-    if (!['admin', 'superadmin'].includes(user.role)) {
-      toast.error('No tienes permisos de administrador');
+    // Server-side role validation using our new function
+    const { data: canAssignRole, error: roleValidationError } = await supabase
+      .rpc('validate_user_role_assignment', {
+        target_role: role,
+        assigner_role: user.role || 'user'
+      });
+
+    if (roleValidationError) {
+      console.error('Error validating role assignment:', roleValidationError);
+      toast.error('Error al validar permisos');
+      return false;
+    }
+
+    if (!canAssignRole) {
+      toast.error('No tienes permisos para asignar este rol');
       return false;
     }
 

@@ -4238,6 +4238,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      validate_user_deletion: {
+        Args: { target_user_id: string; deleter_user_id: string }
+        Returns: boolean
+      }
+      validate_user_role_assignment: {
+        Args: { target_role: string; assigner_role: string }
+        Returns: boolean
+      }
       views_are: {
         Args: { "": unknown[] }
         Returns: string
