@@ -93,7 +93,7 @@ export const NewIncidentDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background border border-border shadow-lg">
         <DialogHeader>
           <DialogTitle>Nueva Incidencia</DialogTitle>
           <DialogDescription>
@@ -135,12 +135,16 @@ export const NewIncidentDialog = ({
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Seleccionar restaurante" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
-                  {restaurants?.map((restaurant) => (
-                    <SelectItem key={restaurant.id} value={restaurant.id}>
-                      {restaurant.restaurant_name} (#{restaurant.site_number})
-                    </SelectItem>
-                  ))}
+                <SelectContent className="bg-popover border border-border z-[100] shadow-lg max-h-[200px] overflow-y-auto">
+                  {restaurants?.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground">No hay restaurantes disponibles</div>
+                  ) : (
+                    restaurants?.map((restaurant) => (
+                      <SelectItem key={restaurant.id} value={restaurant.id}>
+                        {restaurant.restaurant_name} (#{restaurant.site_number})
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -154,7 +158,7 @@ export const NewIncidentDialog = ({
                 <SelectTrigger className="bg-background">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
+                <SelectContent className="bg-popover border border-border z-[100] shadow-lg">
                   <SelectItem value="general">General</SelectItem>
                   <SelectItem value="equipment">Equipamiento</SelectItem>
                   <SelectItem value="maintenance">Mantenimiento</SelectItem>
@@ -179,7 +183,7 @@ export const NewIncidentDialog = ({
                 <SelectTrigger className="bg-background">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
+                <SelectContent className="bg-popover border border-border z-[100] shadow-lg">
                   <SelectItem value="low">Baja</SelectItem>
                   <SelectItem value="medium">Media</SelectItem>
                   <SelectItem value="high">Alta</SelectItem>
@@ -197,13 +201,17 @@ export const NewIncidentDialog = ({
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Sin asignar" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
+                <SelectContent className="bg-popover border border-border z-[100] shadow-lg max-h-[200px] overflow-y-auto">
                   <SelectItem value="">Sin asignar</SelectItem>
-                  {users?.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.full_name || user.email}
-                    </SelectItem>
-                  ))}
+                  {users?.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground">No hay usuarios disponibles</div>
+                  ) : (
+                    users?.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.full_name || user.email}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
