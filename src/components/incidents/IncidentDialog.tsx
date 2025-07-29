@@ -19,6 +19,7 @@ import {
 import { CreateIncidentData, UpdateIncidentData, IncidentType, IncidentPriority } from "@/types/incident";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useContacts } from "@/hooks/useContacts";
 
 interface IncidentDialogProps {
   open: boolean;
@@ -35,6 +36,10 @@ export const IncidentDialog = ({
   isLoading,
   incident,
 }: IncidentDialogProps) => {
+  const { contacts: allContacts } = useContacts();
+  
+  const engineerContacts = allContacts?.filter(c => c.contact_type === 'ingeniero') || [];
+  const providerContacts = allContacts?.filter(c => ['proveedor', 'tecnico', 'constructor'].includes(c.contact_type)) || [];
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -288,12 +293,22 @@ export const IncidentDialog = ({
 
             <div>
               <Label htmlFor="ingeniero">Ingeniero</Label>
-              <Input
-                id="ingeniero"
+              <Select
                 value={formData.ingeniero}
-                onChange={(e) => setFormData({ ...formData, ingeniero: e.target.value })}
-                placeholder="Ingeniero asignado"
-              />
+                onValueChange={(value) => setFormData({ ...formData, ingeniero: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar ingeniero" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sin asignar</SelectItem>
+                  {engineerContacts.map((contact) => (
+                    <SelectItem key={contact.id} value={contact.name}>
+                      {contact.name} {contact.company && `(${contact.company})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
@@ -308,12 +323,22 @@ export const IncidentDialog = ({
 
             <div>
               <Label htmlFor="participante">Participante</Label>
-              <Input
-                id="participante"
+              <Select
                 value={formData.participante}
-                onChange={(e) => setFormData({ ...formData, participante: e.target.value })}
-                placeholder="Empresa/Persona participante"
-              />
+                onValueChange={(value) => setFormData({ ...formData, participante: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar participante" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sin asignar</SelectItem>
+                  {providerContacts.map((contact) => (
+                    <SelectItem key={contact.id} value={contact.name}>
+                      {contact.name} {contact.company && `(${contact.company})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
