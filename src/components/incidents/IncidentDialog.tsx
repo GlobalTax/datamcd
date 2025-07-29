@@ -301,7 +301,7 @@ export const IncidentDialog = ({
                   <SelectValue placeholder="Seleccionar ingeniero" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin asignar</SelectItem>
+                  <SelectItem value="unassigned">Sin asignar</SelectItem>
                   {engineerContacts.map((contact) => (
                     <SelectItem key={contact.id} value={contact.name}>
                       {contact.name} {contact.company && `(${contact.company})`}
@@ -331,7 +331,7 @@ export const IncidentDialog = ({
                   <SelectValue placeholder="Seleccionar participante" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin asignar</SelectItem>
+                  <SelectItem value="unassigned">Sin asignar</SelectItem>
                   {providerContacts.map((contact) => (
                     <SelectItem key={contact.id} value={contact.name}>
                       {contact.name} {contact.company && `(${contact.company})`}
