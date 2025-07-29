@@ -1184,6 +1184,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "franchisee_restaurants_base_restaurant_id_fkey"
+            columns: ["base_restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "franchisee_restaurants_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
@@ -1331,6 +1338,115 @@ export type Database = {
           },
         ]
       }
+      incidents: {
+        Row: {
+          assigned_to: string | null
+          clasificacion: string | null
+          comentarios_cierre: string | null
+          created_at: string | null
+          description: string | null
+          documento_url: string | null
+          estimated_resolution: string | null
+          fecha_cierre: string | null
+          id: string
+          importe_carto: number | null
+          ingeniero: string | null
+          naves: string | null
+          nombre: string | null
+          participante: string | null
+          periodo: string | null
+          priority: string
+          provider_id: string | null
+          reported_by: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          restaurant_id: string | null
+          source: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          clasificacion?: string | null
+          comentarios_cierre?: string | null
+          created_at?: string | null
+          description?: string | null
+          documento_url?: string | null
+          estimated_resolution?: string | null
+          fecha_cierre?: string | null
+          id?: string
+          importe_carto?: number | null
+          ingeniero?: string | null
+          naves?: string | null
+          nombre?: string | null
+          participante?: string | null
+          periodo?: string | null
+          priority: string
+          provider_id?: string | null
+          reported_by?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          restaurant_id?: string | null
+          source?: string | null
+          status: string
+          title: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          clasificacion?: string | null
+          comentarios_cierre?: string | null
+          created_at?: string | null
+          description?: string | null
+          documento_url?: string | null
+          estimated_resolution?: string | null
+          fecha_cierre?: string | null
+          id?: string
+          importe_carto?: number | null
+          ingeniero?: string | null
+          naves?: string | null
+          nombre?: string | null
+          participante?: string | null
+          periodo?: string | null
+          priority?: string
+          provider_id?: string | null
+          reported_by?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          restaurant_id?: string | null
+          source?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incidents_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "base_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_configs: {
         Row: {
           access_log: Json | null
@@ -1392,6 +1508,103 @@ export type Database = {
             columns: ["franchisee_id"]
             isOneToOne: false
             referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      metric_definitions: {
+        Row: {
+          calc_sql: string | null
+          category: string | null
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          label: string
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          calc_sql?: string | null
+          category?: string | null
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          calc_sql?: string | null
+          category?: string | null
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      metric_snapshots: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          metric_id: string | null
+          period_end: string | null
+          period_start: string | null
+          restaurant_id: string | null
+          snapshot_date: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_id?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          restaurant_id?: string | null
+          snapshot_date?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_id?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          restaurant_id?: string | null
+          snapshot_date?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metric_snapshots_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "metric_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metric_snapshots_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "base_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metric_snapshots_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant"
             referencedColumns: ["id"]
           },
         ]
@@ -2163,6 +2376,48 @@ export type Database = {
         }
         Relationships: []
       }
+      providers: {
+        Row: {
+          address: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          provider_type: string | null
+          tax_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          provider_type?: string | null
+          tax_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          provider_type?: string | null
+          tax_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       quantum_account_mapping: {
         Row: {
           created_at: string
@@ -2378,6 +2633,89 @@ export type Database = {
           requests_count?: number
         }
         Relationships: []
+      }
+      report_definitions: {
+        Row: {
+          config: Json
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          report_type: string
+          schedule_cron: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          config: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          report_type: string
+          schedule_cron?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          report_type?: string
+          schedule_cron?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      report_snapshots: {
+        Row: {
+          error_message: string | null
+          file_size: number | null
+          file_url: string | null
+          generated_at: string | null
+          id: string
+          metadata: Json | null
+          recipients: Json | null
+          report_id: string | null
+          status: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          generated_at?: string | null
+          id?: string
+          metadata?: Json | null
+          recipients?: Json | null
+          report_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          generated_at?: string | null
+          id?: string
+          metadata?: Json | null
+          recipients?: Json | null
+          report_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_snapshots_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "report_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       restaurant_budgets: {
         Row: {
@@ -2865,6 +3203,124 @@ export type Database = {
           },
         ]
       }
+      voice_entity_links: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          created_by_ai: boolean | null
+          entity_id: string
+          entity_type: string
+          id: string
+          relationship_type: string | null
+          voice_note_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          created_by_ai?: boolean | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          relationship_type?: string | null
+          voice_note_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          created_by_ai?: boolean | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          relationship_type?: string | null
+          voice_note_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_entity_links_voice_note_id_fkey"
+            columns: ["voice_note_id"]
+            isOneToOne: false
+            referencedRelation: "voice_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_notes: {
+        Row: {
+          created_at: string | null
+          duration_seconds: number | null
+          file_size: number | null
+          file_url: string
+          id: string
+          language: string | null
+          quality: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          file_size?: number | null
+          file_url: string
+          id?: string
+          language?: string | null
+          quality?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          language?: string | null
+          quality?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      voice_transcripts: {
+        Row: {
+          ai_summary: string | null
+          confidence_score: number | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          processed_at: string | null
+          status: string | null
+          transcript: string | null
+          voice_note_id: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          status?: string | null
+          transcript?: string | null
+          voice_note_id: string
+        }
+        Update: {
+          ai_summary?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          status?: string | null
+          transcript?: string | null
+          voice_note_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_transcripts_voice_note_id_fkey"
+            columns: ["voice_note_id"]
+            isOneToOne: true
+            referencedRelation: "voice_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       pg_all_foreign_keys: {
@@ -2885,6 +3341,63 @@ export type Database = {
           pk_schema_name: unknown | null
           pk_table_name: unknown | null
           pk_table_oid: unknown | null
+        }
+        Relationships: []
+      }
+      restaurant: {
+        Row: {
+          address: string | null
+          city: string | null
+          company_tax_id: string | null
+          country: string | null
+          created_at: string | null
+          franchisee_email: string | null
+          franchisee_name: string | null
+          id: string | null
+          name: string | null
+          opening_date: string | null
+          postal_code: string | null
+          seating_capacity: number | null
+          site_number: string | null
+          square_meters: number | null
+          state: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          company_tax_id?: string | null
+          country?: string | null
+          created_at?: string | null
+          franchisee_email?: string | null
+          franchisee_name?: string | null
+          id?: string | null
+          name?: string | null
+          opening_date?: string | null
+          postal_code?: string | null
+          seating_capacity?: number | null
+          site_number?: string | null
+          square_meters?: number | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          company_tax_id?: string | null
+          country?: string | null
+          created_at?: string | null
+          franchisee_email?: string | null
+          franchisee_name?: string | null
+          id?: string | null
+          name?: string | null
+          opening_date?: string | null
+          postal_code?: string | null
+          seating_capacity?: number | null
+          site_number?: string | null
+          square_meters?: number | null
+          state?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

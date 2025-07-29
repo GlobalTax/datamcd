@@ -1,7 +1,7 @@
 import React from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
-import { IncidentManagement } from "@/components/incidents/IncidentManagement";
+import { NewIncidentManagement } from "@/components/incidents/NewIncidentManagement";
 
 export default function IncidentManagementPage() {
   return (
@@ -18,7 +18,7 @@ export default function IncidentManagementPage() {
           </header>
 
           <main className="flex-1 p-6">
-            <IncidentManagement />
+            <NewIncidentManagement />
           </main>
         </SidebarInset>
       </div>
