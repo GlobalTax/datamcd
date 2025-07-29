@@ -57,25 +57,25 @@ export function NewIncidentManagement() {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-red-600">{stats.open}</div>
+            <div className="text-2xl font-bold text-destructive">{stats.open}</div>
             <p className="text-sm text-muted-foreground">Abiertas</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-600">{stats.inProgress}</div>
+            <div className="text-2xl font-bold text-warning">{stats.inProgress}</div>
             <p className="text-sm text-muted-foreground">En Progreso</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">{stats.resolved}</div>
+            <div className="text-2xl font-bold text-success">{stats.resolved}</div>
             <p className="text-sm text-muted-foreground">Resueltas</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-orange-600">{stats.critical}</div>
+            <div className="text-2xl font-bold text-warning">{stats.critical}</div>
             <p className="text-sm text-muted-foreground">Críticas</p>
           </CardContent>
         </Card>
