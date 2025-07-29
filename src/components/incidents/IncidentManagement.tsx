@@ -7,6 +7,7 @@ import { useIncidents } from "@/hooks/useIncidents";
 import { IncidentDialog } from "./IncidentDialog";
 import { IncidentsTable } from "./IncidentsTable";
 import { IncidentFilters } from "./IncidentFilters";
+import { IncidentExcelManager } from "./IncidentExcelManager";
 import { IncidentType, IncidentPriority, IncidentStatus } from "@/types/incident";
 
 export const IncidentManagement = () => {
@@ -102,6 +103,15 @@ export const IncidentManagement = () => {
 
       {/* Filtros */}
       <IncidentFilters filters={filters} onFiltersChange={setFilters} />
+
+      {/* Gestión de Excel */}
+      <IncidentExcelManager 
+        incidents={filteredIncidents} 
+        onImport={(importedIncidents) => {
+          // Aquí se manejaría la importación masiva
+          console.log('Incidencias importadas:', importedIncidents);
+        }} 
+      />
 
       {/* Tabla de incidencias */}
       <Card>

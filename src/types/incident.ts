@@ -1,8 +1,10 @@
-export type IncidentType = 'general' | 'equipment' | 'staff' | 'customer' | 'safety' | 'hygiene';
+export type IncidentType = 'general' | 'equipment' | 'staff' | 'customer' | 'safety' | 'hygiene' | 
+  'climatizacion' | 'electricidad' | 'fontaneria' | 'mantenimiento' | 'equipamiento' | 
+  'obras' | 'limpieza' | 'seguridad' | 'varios';
 
 export type IncidentPriority = 'low' | 'medium' | 'high' | 'critical';
 
-export type IncidentStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+export type IncidentStatus = 'open' | 'in_progress' | 'resolved' | 'closed' | 'pending' | 'cancelled';
 
 export interface RestaurantIncident {
   id: string;
@@ -19,6 +21,17 @@ export interface RestaurantIncident {
   resolved_at?: string;
   created_at: string;
   updated_at: string;
+  // Nuevos campos del Excel
+  nombre?: string;
+  naves?: string;
+  ingeniero?: string;
+  clasificacion?: string;
+  participante?: string;
+  periodo?: string;
+  importe_carto?: number;
+  documento_url?: string;
+  fecha_cierre?: string;
+  comentarios_cierre?: string;
 }
 
 export interface IncidentComment {
@@ -38,6 +51,15 @@ export interface CreateIncidentData {
   restaurant_id: string;
   assigned_to?: string;
   estimated_resolution?: string;
+  // Nuevos campos del Excel
+  nombre?: string;
+  naves?: string;
+  ingeniero?: string;
+  clasificacion?: string;
+  participante?: string;
+  periodo?: string;
+  importe_carto?: number;
+  documento_url?: string;
 }
 
 export interface UpdateIncidentData {
@@ -49,4 +71,15 @@ export interface UpdateIncidentData {
   assigned_to?: string;
   resolution_notes?: string;
   estimated_resolution?: string;
+  // Nuevos campos del Excel
+  nombre?: string;
+  naves?: string;
+  ingeniero?: string;
+  clasificacion?: string;
+  participante?: string;
+  periodo?: string;
+  importe_carto?: number;
+  documento_url?: string;
+  fecha_cierre?: string;
+  comentarios_cierre?: string;
 }

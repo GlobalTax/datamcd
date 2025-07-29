@@ -137,10 +137,11 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
           <TableRow>
             <TableHead>Título</TableHead>
             <TableHead>Restaurante</TableHead>
-            <TableHead>Tipo</TableHead>
+            <TableHead>Ingeniero</TableHead>
+            <TableHead>Clasificación</TableHead>
             <TableHead>Prioridad</TableHead>
             <TableHead>Estado</TableHead>
-            <TableHead>Reportado por</TableHead>
+            <TableHead>Importe</TableHead>
             <TableHead>Fecha</TableHead>
             <TableHead className="w-[70px]">Acciones</TableHead>
           </TableRow>
@@ -156,7 +157,8 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
                   #{incident.restaurant?.base_restaurant?.site_number}
                 </span>
               </TableCell>
-              <TableCell className="capitalize">{incident.incident_type}</TableCell>
+              <TableCell>{incident.ingeniero || 'N/A'}</TableCell>
+              <TableCell>{incident.clasificacion || incident.incident_type}</TableCell>
               <TableCell>
                 <Badge variant={getPriorityColor(incident.priority)}>
                   {getPriorityLabel(incident.priority)}
@@ -167,7 +169,9 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
                   {getStatusLabel(incident.status)}
                 </Badge>
               </TableCell>
-              <TableCell>{incident.reported_user?.full_name || 'N/A'}</TableCell>
+              <TableCell>
+                {incident.importe_carto ? `€${incident.importe_carto.toFixed(2)}` : 'N/A'}
+              </TableCell>
               <TableCell>
                 {format(new Date(incident.created_at), 'dd/MM/yyyy', { locale: es })}
               </TableCell>

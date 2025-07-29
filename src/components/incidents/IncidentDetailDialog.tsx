@@ -202,6 +202,75 @@ export const IncidentDetailDialog = ({
             </Card>
           )}
 
+          {/* Información adicional del Excel */}
+          {(incident.nombre || incident.naves || incident.ingeniero || incident.clasificacion || 
+            incident.participante || incident.periodo || incident.importe_carto || incident.documento_url) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Información adicional</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  {incident.nombre && (
+                    <div>
+                      <p className="text-sm font-medium">Nombre</p>
+                      <p className="text-sm text-muted-foreground">{incident.nombre}</p>
+                    </div>
+                  )}
+                  {incident.naves && (
+                    <div>
+                      <p className="text-sm font-medium">Naves</p>
+                      <p className="text-sm text-muted-foreground">{incident.naves}</p>
+                    </div>
+                  )}
+                  {incident.ingeniero && (
+                    <div>
+                      <p className="text-sm font-medium">Ingeniero</p>
+                      <p className="text-sm text-muted-foreground">{incident.ingeniero}</p>
+                    </div>
+                  )}
+                  {incident.clasificacion && (
+                    <div>
+                      <p className="text-sm font-medium">Clasificación</p>
+                      <p className="text-sm text-muted-foreground">{incident.clasificacion}</p>
+                    </div>
+                  )}
+                  {incident.participante && (
+                    <div>
+                      <p className="text-sm font-medium">Participante</p>
+                      <p className="text-sm text-muted-foreground">{incident.participante}</p>
+                    </div>
+                  )}
+                  {incident.periodo && (
+                    <div>
+                      <p className="text-sm font-medium">Periodo</p>
+                      <p className="text-sm text-muted-foreground">{incident.periodo}</p>
+                    </div>
+                  )}
+                  {incident.importe_carto && (
+                    <div>
+                      <p className="text-sm font-medium">Importe Carto</p>
+                      <p className="text-sm text-muted-foreground">€{incident.importe_carto.toFixed(2)}</p>
+                    </div>
+                  )}
+                  {incident.documento_url && (
+                    <div className="col-span-2">
+                      <p className="text-sm font-medium">Documento</p>
+                      <a 
+                        href={incident.documento_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary underline hover:no-underline"
+                      >
+                        Ver documento
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Notas de resolución */}
           {incident.resolution_notes && (
             <Card>

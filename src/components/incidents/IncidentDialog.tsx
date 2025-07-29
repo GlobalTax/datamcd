@@ -43,6 +43,15 @@ export const IncidentDialog = ({
     restaurant_id: "",
     assigned_to: "",
     estimated_resolution: "",
+    // Nuevos campos del Excel
+    nombre: "",
+    naves: "",
+    ingeniero: "",
+    clasificacion: "",
+    participante: "",
+    periodo: "",
+    importe_carto: 0,
+    documento_url: "",
   });
 
   // Obtener restaurantes
@@ -90,6 +99,15 @@ export const IncidentDialog = ({
         restaurant_id: incident.restaurant_id || "",
         assigned_to: incident.assigned_to || "",
         estimated_resolution: incident.estimated_resolution || "",
+        // Nuevos campos del Excel
+        nombre: incident.nombre || "",
+        naves: incident.naves || "",
+        ingeniero: incident.ingeniero || "",
+        clasificacion: incident.clasificacion || "",
+        participante: incident.participante || "",
+        periodo: incident.periodo || "",
+        importe_carto: incident.importe_carto || 0,
+        documento_url: incident.documento_url || "",
       });
     } else if (!incident && open) {
       // Limpiar formulario para nueva incidencia
@@ -101,6 +119,15 @@ export const IncidentDialog = ({
         restaurant_id: "",
         assigned_to: "",
         estimated_resolution: "",
+        // Nuevos campos del Excel
+        nombre: "",
+        naves: "",
+        ingeniero: "",
+        clasificacion: "",
+        participante: "",
+        periodo: "",
+        importe_carto: 0,
+        documento_url: "",
       });
     }
   }, [incident, open]);
@@ -179,6 +206,13 @@ export const IncidentDialog = ({
                   <SelectItem value="customer">Cliente</SelectItem>
                   <SelectItem value="safety">Seguridad</SelectItem>
                   <SelectItem value="hygiene">Higiene</SelectItem>
+                  <SelectItem value="climatizacion">Climatización</SelectItem>
+                  <SelectItem value="electricidad">Electricidad</SelectItem>
+                  <SelectItem value="fontaneria">Fontanería</SelectItem>
+                  <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
+                  <SelectItem value="obras">Obras</SelectItem>
+                  <SelectItem value="limpieza">Limpieza</SelectItem>
+                  <SelectItem value="varios">Varios</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -228,6 +262,88 @@ export const IncidentDialog = ({
                 type="date"
                 value={formData.estimated_resolution}
                 onChange={(e) => setFormData({ ...formData, estimated_resolution: e.target.value })}
+              />
+            </div>
+
+            {/* Nuevos campos del Excel */}
+            <div>
+              <Label htmlFor="nombre">Nombre</Label>
+              <Input
+                id="nombre"
+                value={formData.nombre}
+                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                placeholder="Nombre específico"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="naves">Naves</Label>
+              <Input
+                id="naves"
+                value={formData.naves}
+                onChange={(e) => setFormData({ ...formData, naves: e.target.value })}
+                placeholder="Ubicación/Naves"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="ingeniero">Ingeniero</Label>
+              <Input
+                id="ingeniero"
+                value={formData.ingeniero}
+                onChange={(e) => setFormData({ ...formData, ingeniero: e.target.value })}
+                placeholder="Ingeniero asignado"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="clasificacion">Clasificación</Label>
+              <Input
+                id="clasificacion"
+                value={formData.clasificacion}
+                onChange={(e) => setFormData({ ...formData, clasificacion: e.target.value })}
+                placeholder="Clasificación específica"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="participante">Participante</Label>
+              <Input
+                id="participante"
+                value={formData.participante}
+                onChange={(e) => setFormData({ ...formData, participante: e.target.value })}
+                placeholder="Empresa/Persona participante"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="periodo">Periodo</Label>
+              <Input
+                id="periodo"
+                value={formData.periodo}
+                onChange={(e) => setFormData({ ...formData, periodo: e.target.value })}
+                placeholder="Periodo relacionado"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="importe_carto">Importe Carto</Label>
+              <Input
+                id="importe_carto"
+                type="number"
+                value={formData.importe_carto}
+                onChange={(e) => setFormData({ ...formData, importe_carto: parseFloat(e.target.value) || 0 })}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="documento_url">Documento URL</Label>
+              <Input
+                id="documento_url"
+                value={formData.documento_url}
+                onChange={(e) => setFormData({ ...formData, documento_url: e.target.value })}
+                placeholder="https://..."
               />
             </div>
           </div>

@@ -2396,11 +2396,21 @@ export type Database = {
       restaurant_incidents: {
         Row: {
           assigned_to: string | null
+          clasificacion: string | null
+          comentarios_cierre: string | null
           created_at: string
           description: string | null
+          documento_url: string | null
           estimated_resolution: string | null
+          fecha_cierre: string | null
           id: string
+          importe_carto: number | null
           incident_type: string
+          ingeniero: string | null
+          naves: string | null
+          nombre: string | null
+          participante: string | null
+          periodo: string | null
           priority: string
           reported_by: string
           resolution_notes: string | null
@@ -2412,11 +2422,21 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          clasificacion?: string | null
+          comentarios_cierre?: string | null
           created_at?: string
           description?: string | null
+          documento_url?: string | null
           estimated_resolution?: string | null
+          fecha_cierre?: string | null
           id?: string
+          importe_carto?: number | null
           incident_type?: string
+          ingeniero?: string | null
+          naves?: string | null
+          nombre?: string | null
+          participante?: string | null
+          periodo?: string | null
           priority?: string
           reported_by: string
           resolution_notes?: string | null
@@ -2428,11 +2448,21 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          clasificacion?: string | null
+          comentarios_cierre?: string | null
           created_at?: string
           description?: string | null
+          documento_url?: string | null
           estimated_resolution?: string | null
+          fecha_cierre?: string | null
           id?: string
+          importe_carto?: number | null
           incident_type?: string
+          ingeniero?: string | null
+          naves?: string | null
+          nombre?: string | null
+          participante?: string | null
+          periodo?: string | null
           priority?: string
           reported_by?: string
           resolution_notes?: string | null

@@ -134,6 +134,13 @@ export const IncidentFilters = ({ filters, onFiltersChange }: IncidentFiltersPro
                 <SelectItem value="customer">Cliente</SelectItem>
                 <SelectItem value="safety">Seguridad</SelectItem>
                 <SelectItem value="hygiene">Higiene</SelectItem>
+                <SelectItem value="climatizacion">Climatización</SelectItem>
+                <SelectItem value="electricidad">Electricidad</SelectItem>
+                <SelectItem value="fontaneria">Fontanería</SelectItem>
+                <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
+                <SelectItem value="obras">Obras</SelectItem>
+                <SelectItem value="limpieza">Limpieza</SelectItem>
+                <SelectItem value="varios">Varios</SelectItem>
               </SelectContent>
             </Select>
           </div>
