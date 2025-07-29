@@ -7,6 +7,7 @@ import { Plus, BarChart3, FileText, Mic } from 'lucide-react';
 import { useNewIncidents } from '@/hooks/useNewIncidents';
 import { IncidentFilters } from '@/types/newIncident';
 import { MetricsDashboard } from './MetricsDashboard';
+import { VoiceNotesManager } from '@/components/voice/VoiceNotesManager';
 
 export function NewIncidentManagement() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -188,24 +189,7 @@ export function NewIncidentManagement() {
         </TabsContent>
 
         <TabsContent value="voice" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notas de Voz con IA</CardTitle>
-              <CardDescription>
-                Graba notas de voz que se transcriben automáticamente
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center py-12">
-              <Mic className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Transcripción Inteligente</h3>
-              <p className="text-muted-foreground mb-4">
-                Esta funcionalidad estará disponible en la siguiente fase
-              </p>
-              <Button variant="outline" disabled>
-                Próximamente
-              </Button>
-            </CardContent>
-          </Card>
+          <VoiceNotesManager />
         </TabsContent>
       </Tabs>
     </div>
