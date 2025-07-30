@@ -20,7 +20,7 @@ export const QuickFilters: React.FC<QuickFiltersProps> = ({
     return Object.entries(option.filters).every(([key, value]) => {
       const currentValue = currentFilters[key as keyof AdvancedIncidentFilters];
       if (Array.isArray(value) && Array.isArray(currentValue)) {
-        return value.every(v => currentValue.includes(v as string));
+        return value.every(v => (currentValue as any[]).includes(v));
       }
       return currentValue === value;
     });

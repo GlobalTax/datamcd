@@ -43,7 +43,7 @@ interface AdvancedIncidentFiltersComponentProps {
   onFiltersChange: (filters: AdvancedIncidentFilters) => void;
 }
 
-export const AdvancedIncidentFilters: React.FC<AdvancedIncidentFiltersComponentProps> = ({
+export const AdvancedIncidentFiltersComponent: React.FC<AdvancedIncidentFiltersComponentProps> = ({
   filters,
   onFiltersChange
 }) => {
@@ -66,9 +66,9 @@ export const AdvancedIncidentFilters: React.FC<AdvancedIncidentFiltersComponentP
       search: filters.search || '',
       restaurantName: filters.restaurantName || '',
       providerName: filters.providerName || '',
-      status: filters.status || [],
-      priority: filters.priority || [],
-      type: filters.type || [],
+      status: (filters.status || []) as string[],
+      priority: (filters.priority || []) as string[],
+      type: (filters.type || []) as string[],
       datePreset: filters.datePreset || 'custom',
       dateFrom: filters.date_from || '',
       dateTo: filters.date_to || '',
@@ -108,6 +108,9 @@ export const AdvancedIncidentFilters: React.FC<AdvancedIncidentFiltersComponentP
     const newFilters: AdvancedIncidentFilters = {
       ...filters,
       ...data,
+      status: data.status as IncidentStatus[],
+      priority: data.priority as IncidentPriority[],
+      type: data.type as IncidentType[],
     };
     onFiltersChange(newFilters);
   };
@@ -122,7 +125,13 @@ export const AdvancedIncidentFilters: React.FC<AdvancedIncidentFiltersComponentP
   const handleSavePreset = () => {
     if (presetName.trim()) {
       const currentFilters = form.getValues();
-      savePreset(presetName, { ...filters, ...currentFilters });
+      savePreset(presetName, { 
+        ...filters, 
+        ...currentFilters,
+        status: currentFilters.status as IncidentStatus[],
+        priority: currentFilters.priority as IncidentPriority[],
+        type: currentFilters.type as IncidentType[],
+      });
       setPresetName('');
       setShowSaveDialog(false);
     }
@@ -253,7 +262,7 @@ export const AdvancedIncidentFilters: React.FC<AdvancedIncidentFiltersComponentP
                 <div>
                   <Label>Estado</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {(['open', 'in_progress', 'resolved'] as IncidentStatus[]).map((status) => (
+                    {(['open', 'in_progress', 'resolved', 'closed'] as IncidentStatus[]).map((status) => (
                       <Button
                         key={status}
                         type="button"
@@ -266,10 +275,11 @@ export const AdvancedIncidentFilters: React.FC<AdvancedIncidentFiltersComponentP
                             : [...current, status];
                           form.setValue('status', updated);
                         }}
-                      >
-                        {status === 'open' ? 'Abierto' : 
-                         status === 'in_progress' ? 'En progreso' : 'Resuelto'}
-                      </Button>
+                       >
+                         {status === 'open' ? 'Abierto' : 
+                          status === 'in_progress' ? 'En progreso' :
+                          status === 'resolved' ? 'Resuelto' : 'Cerrado'}
+                       </Button>
                     ))}
                   </div>
                 </div>
@@ -302,7 +312,7 @@ export const AdvancedIncidentFilters: React.FC<AdvancedIncidentFiltersComponentP
                 <div>
                   <Label>Tipo</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {(['general', 'equipment', 'staff', 'customer', 'safety'] as IncidentType[]).map((type) => (
+                    {(['general', 'equipment', 'staff', 'customer', 'safety', 'hygiene'] as IncidentType[]).map((type) => (
                       <Button
                         key={type}
                         type="button"
@@ -315,12 +325,13 @@ export const AdvancedIncidentFilters: React.FC<AdvancedIncidentFiltersComponentP
                             : [...current, type];
                           form.setValue('type', updated);
                         }}
-                      >
-                        {type === 'general' ? 'General' : 
-                         type === 'safety' ? 'Seguridad' : 
-                         type === 'equipment' ? 'Equipamiento' : 
-                         type === 'staff' ? 'Personal' : 'Cliente'}
-                      </Button>
+                       >
+                         {type === 'general' ? 'General' : 
+                          type === 'safety' ? 'Seguridad' : 
+                          type === 'equipment' ? 'Equipamiento' : 
+                          type === 'staff' ? 'Personal' : 
+                          type === 'customer' ? 'Cliente' : 'Higiene'}
+                       </Button>
                     ))}
                   </div>
                 </div>
@@ -332,7 +343,7 @@ export const AdvancedIncidentFilters: React.FC<AdvancedIncidentFiltersComponentP
                   <Label>Rango de fechas</Label>
                   <Select
                     value={form.watch('datePreset') || 'custom'}
-                    onValueChange={(value) => form.setValue('datePreset', value)}
+                    onValueChange={(value) => form.setValue('datePreset', value as any)}
                   >
                     <SelectTrigger>
                       <SelectValue />
