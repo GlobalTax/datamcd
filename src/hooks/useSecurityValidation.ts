@@ -80,12 +80,54 @@ export const useSecurityValidation = () => {
     return hasRole(['superadmin']);
   };
 
+  const canManageUsers = (): boolean => {
+    return hasRole(['admin', 'superadmin']);
+  };
+
+  const canDeleteUser = (targetRole?: string): boolean => {
+    if (!user?.role || !targetRole) return false;
+    
+    // Superadmin can delete anyone except other superadmins
+    if (user.role === 'superadmin') {
+      return targetRole !== 'superadmin';
+    }
+    
+    // Admin can delete franchisee and staff
+    if (user.role === 'admin') {
+      return ['franchisee', 'staff'].includes(targetRole);
+    }
+    
+    return false;
+  };
+
+  const canAccessSensitiveData = (): boolean => {
+    return hasRole(['admin', 'superadmin']);
+  };
+
+  const validateDataAccess = async (tableName: string, recordId?: string): Promise<boolean> => {
+    if (!user) return false;
+
+    // Check for sensitive tables that require admin access
+    const sensitiveDataTables = ['audit_logs', 'profiles', 'franchisee_access_log', 'franchisee_activity_log'];
+    
+    if (sensitiveDataTables.includes(tableName) && !canAccessSensitiveData()) {
+      console.warn(`Access denied to sensitive table: ${tableName}`);
+      return false;
+    }
+
+    return true;
+  };
+
   return {
     validateRoleAssignment,
     validateUserDeletion,
     getCurrentUserRole,
     hasRole,
     isAdmin,
-    isSuperAdmin
+    isSuperAdmin,
+    canManageUsers,
+    canDeleteUser,
+    canAccessSensitiveData,
+    validateDataAccess
   };
 };
