@@ -74,37 +74,60 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
-  // Safely generate CSS without using dangerouslySetInnerHTML
-  const cssContent = Object.entries(THEMES)
-    .map(([theme, prefix]) => {
-      const rules = colorConfig
-        .map(([key, itemConfig]) => {
-          const color =
-            itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-            itemConfig.color;
-          
-          // Sanitize CSS values to prevent injection
-          const sanitizedKey = key.replace(/[^a-zA-Z0-9-_]/g, '');
-          const sanitizedColor = color?.replace(/[^a-zA-Z0-9#%().,\s-]/g, '') || '';
-          
-          return `  --color-${sanitizedKey}: ${sanitizedColor};`;
-        })
-        .join('\n');
-      
-      // Sanitize chart ID to prevent injection
-      const sanitizedId = id.replace(/[^a-zA-Z0-9-_]/g, '');
-      
-      return `${prefix} [data-chart="${sanitizedId}"] {\n${rules}\n}`;
-    })
-    .join('\n');
+  // Safely generate CSS using React.useEffect and document.createElement
+  React.useEffect(() => {
+    // Sanitize chart ID to prevent injection
+    const sanitizedId = id.replace(/[^a-zA-Z0-9-_]/g, '');
+    const styleId = `chart-style-${sanitizedId}`;
+    
+    // Remove existing style if it exists
+    const existingStyle = document.getElementById(styleId);
+    if (existingStyle) {
+      existingStyle.remove();
+    }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: cssContent
-      }}
-    />
-  )
+    const cssContent = Object.entries(THEMES)
+      .map(([theme, prefix]) => {
+        const rules = colorConfig
+          .map(([key, itemConfig]) => {
+            const color =
+              itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
+              itemConfig.color;
+            
+            // Sanitize CSS values to prevent injection
+            if (!color || typeof color !== 'string') return '';
+            const sanitizedColor = color.replace(/[^a-zA-Z0-9#%().,\s-]/g, '');
+            const sanitizedKey = key.replace(/[^a-zA-Z0-9-_]/g, '');
+            
+            return `  --color-${sanitizedKey}: ${sanitizedColor};`;
+          })
+          .filter(Boolean)
+          .join('\n');
+
+        if (!rules) return '';
+        
+        return `${prefix} [data-chart="${sanitizedId}"] {\n${rules}\n}`;
+      })
+      .filter(Boolean)
+      .join('\n');
+
+    if (cssContent) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = cssContent;
+      document.head.appendChild(style);
+    }
+
+    // Cleanup function
+    return () => {
+      const styleElement = document.getElementById(styleId);
+      if (styleElement) {
+        styleElement.remove();
+      }
+    };
+  }, [id, colorConfig]);
+
+  return null;
 }
 
 const ChartTooltip = RechartsPrimitive.Tooltip
