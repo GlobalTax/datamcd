@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useRestaurantData } from '@/hooks/useRestaurantData';
 import { RestaurantKPICards } from './RestaurantKPICards';
 import { RestaurantGeneralTab } from './RestaurantGeneralTab';
@@ -10,13 +11,16 @@ import { RestaurantIncidentsTab } from './RestaurantIncidentsTab';
 import { RestaurantPersonnelTab } from './RestaurantPersonnelTab';
 import { RestaurantAnalyticsTab } from './RestaurantAnalyticsTab';
 import { RestaurantOperationsTab } from './RestaurantOperationsTab';
+import { useNavigate } from 'react-router-dom';
 import { 
   Building2, 
   Euro, 
   AlertTriangle, 
   Users, 
   BarChart3, 
-  Settings 
+  Settings,
+  ArrowLeft,
+  Home
 } from 'lucide-react';
 
 interface RestaurantPanelProps {
@@ -25,6 +29,7 @@ interface RestaurantPanelProps {
 
 export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }) => {
   const { restaurant, loading, error } = useRestaurantData(restaurantId);
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -40,13 +45,34 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
   if (error || !restaurant) {
     return (
       <Card>
-        <CardContent className="p-6">
-          <div className="text-center">
-            <AlertTriangle className="mx-auto h-12 w-12 text-destructive mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Error al cargar datos</h3>
-            <p className="text-muted-foreground">
-              {error || 'No se pudieron cargar los datos del restaurante'}
+        <CardContent className="p-8">
+          <div className="text-center max-w-md mx-auto">
+            <AlertTriangle className="mx-auto h-16 w-16 text-destructive mb-6" />
+            <h3 className="text-xl font-semibold mb-3">Restaurante no encontrado</h3>
+            <p className="text-muted-foreground mb-6">
+              {error?.includes('no encontrado') || error?.includes('no tienes acceso') 
+                ? 'Este restaurante no existe o no tienes permisos para acceder a él.'
+                : error || 'No se pudieron cargar los datos del restaurante'
+              }
             </p>
+            
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button 
+                onClick={() => navigate(-1)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Volver
+              </Button>
+              <Button 
+                onClick={() => navigate('/advisor')}
+                className="flex items-center gap-2"
+              >
+                <Home className="h-4 w-4" />
+                Ir al Dashboard
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

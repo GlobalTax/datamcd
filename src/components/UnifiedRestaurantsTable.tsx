@@ -420,15 +420,27 @@ export const UnifiedRestaurantsTable: React.FC<UnifiedRestaurantsTableProps> = (
                       </TableCell>
                       
                       <TableCell>
-                        <Button
-                          onClick={() => navigate(`/restaurant/${restaurant.id}/panel`)}
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                        >
-                          <BarChart3 className="w-4 h-4" />
-                          Panel
-                        </Button>
+                        {restaurant.id && restaurant.status === 'assigned' ? (
+                          <Button
+                            onClick={() => navigate(`/restaurant/${restaurant.id}/panel`)}
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                          >
+                            <BarChart3 className="w-4 h-4" />
+                            Panel
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled
+                            className="gap-2 text-muted-foreground"
+                          >
+                            <BarChart3 className="w-4 h-4" />
+                            No disponible
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   );

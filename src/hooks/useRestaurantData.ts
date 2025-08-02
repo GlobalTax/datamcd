@@ -74,14 +74,14 @@ export const useRestaurantData = (restaurantId: string) => {
           `)
           .eq('id', restaurantId)
           .eq('franchisee_id', effectiveFranchisee.id)
-          .single();
+          .maybeSingle();
 
         if (fetchError) {
           throw new Error(fetchError.message);
         }
 
         if (!data) {
-          throw new Error('Restaurante no encontrado');
+          throw new Error('Restaurante no encontrado o no tienes acceso a él');
         }
 
         setRestaurant(data as any);
@@ -132,7 +132,7 @@ export const useRestaurantData = (restaurantId: string) => {
             `)
             .eq('id', restaurantId)
             .eq('franchisee_id', effectiveFranchisee.id)
-            .single();
+            .maybeSingle();
 
           if (fetchError) {
             throw new Error(fetchError.message);
