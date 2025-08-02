@@ -3622,7 +3622,9 @@ export type Database = {
         Returns: string
       }
       check_session_security: {
-        Args: { max_idle_minutes?: number; max_session_minutes?: number }
+        Args:
+          | Record<PropertyKey, never>
+          | { max_idle_minutes?: number; max_session_minutes?: number }
         Returns: boolean
       }
       cleanup_local_storage_data: {
@@ -4084,14 +4086,20 @@ export type Database = {
         Returns: undefined
       }
       log_security_event_enhanced: {
-        Args: {
-          event_type: string
-          event_description: string
-          user_id_param?: string
-          ip_address_param?: unknown
-          user_agent_param?: string
-          additional_data?: Json
-        }
+        Args:
+          | {
+              event_type: string
+              event_description: string
+              additional_data?: Json
+            }
+          | {
+              event_type: string
+              event_description: string
+              user_id_param?: string
+              ip_address_param?: unknown
+              user_agent_param?: string
+              additional_data?: Json
+            }
         Returns: undefined
       }
       manually_assign_restaurants_to_existing_franchisees: {
@@ -4254,6 +4262,10 @@ export type Database = {
         Returns: boolean
       }
       validate_password_strength: {
+        Args: { password_input: string }
+        Returns: Json
+      }
+      validate_password_strength_secure: {
         Args: { password_input: string }
         Returns: Json
       }

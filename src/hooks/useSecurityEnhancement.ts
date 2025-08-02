@@ -115,53 +115,33 @@ export const useSecurityEnhancement = () => {
     };
   };
 
-  const checkPasswordStrength = (password: string): { 
+  const checkPasswordStrength = async (password: string): Promise<{ 
     strength: 'weak' | 'medium' | 'strong'; 
     score: number; 
     suggestions: string[] 
-  } => {
-    let score = 0;
-    const suggestions: string[] = [];
+  }> => {
+    try {
+      const { data, error } = await supabase.rpc('validate_password_strength_secure', {
+        password_input: password
+      });
 
-    if (password.length < 8) {
-      suggestions.push('Usa al menos 8 caracteres');
-    } else if (password.length >= 8) {
-      score += 1;
+      if (error) {
+        console.error('Error checking password strength:', error);
+        return { strength: 'weak', score: 0, suggestions: ['Error validating password'] };
+      }
+
+      // Type the response data properly
+      const result = data as { strength: 'weak' | 'medium' | 'strong'; score: number; suggestions: string[] };
+
+      return {
+        strength: result.strength,
+        score: result.score,
+        suggestions: result.suggestions
+      };
+    } catch (error) {
+      console.error('Error in password strength check:', error);
+      return { strength: 'weak', score: 0, suggestions: ['Error validating password'] };
     }
-
-    if (password.length >= 12) {
-      score += 1;
-    } else {
-      suggestions.push('Considera usar 12 o más caracteres');
-    }
-
-    if (!/[A-Z]/.test(password)) {
-      suggestions.push('Incluye al menos una letra mayúscula');
-    } else {
-      score += 1;
-    }
-
-    if (!/[a-z]/.test(password)) {
-      suggestions.push('Incluye al menos una letra minúscula');
-    } else {
-      score += 1;
-    }
-
-    if (!/[0-9]/.test(password)) {
-      suggestions.push('Incluye al menos un número');
-    } else {
-      score += 1;
-    }
-
-    if (!/[^A-Za-z0-9]/.test(password)) {
-      suggestions.push('Incluye al menos un carácter especial');
-    } else {
-      score += 1;
-    }
-
-    const strength = score < 3 ? 'weak' : score < 5 ? 'medium' : 'strong';
-
-    return { strength, score, suggestions };
   };
 
   const validateAdminAction = async (action: string, targetId?: string): Promise<boolean> => {
