@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFranchisees } from '@/hooks/data/useFranchisees';
+import { useFranchiseeData } from '@/hooks/data/useFranchiseeData';
 import { useIntegrationConfig } from '@/hooks/useIntegrationConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,14 +10,14 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
 export const FranchiseeIntegrationsTable = () => {
-  const { franchisees, loading } = useFranchisees();
+  const { franchisees, isLoading } = useFranchiseeData();
   const navigate = useNavigate();
 
   const handleViewDetails = (franchiseeId: string) => {
     navigate(`/franchisee/${franchiseeId}`);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>

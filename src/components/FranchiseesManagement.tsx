@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Franchisee } from '@/types/auth';
-import { useFranchisees } from '@/hooks/useFranchisees';
+import { useFranchiseeData } from '@/hooks/data/useFranchiseeData';
+import { useFranchiseeOperations } from '@/hooks/data/useFranchiseeOperations';
 import { toast } from 'sonner';
 import { FranchiseeCard } from './FranchiseeCard';
 import { RestaurantAssignmentDialog } from './RestaurantAssignmentDialog';
@@ -32,7 +33,8 @@ import { errorService } from '@/services/base/ErrorService';
 const ITEMS_PER_PAGE = 40;
 
 export const FranchiseesManagement: React.FC = () => {
-  const { franchisees, loading, error, refetch: onRefresh } = useFranchisees();
+  const { franchisees, isLoading: loading, error, refetch: onRefresh, stats } = useFranchiseeData({ includeStats: true });
+  const { create, isCreating: creating, update, isUpdating: updating } = useFranchiseeOperations();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -40,15 +42,13 @@ export const FranchiseesManagement: React.FC = () => {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isMassCreateModalOpen, setIsMassCreateModalOpen] = useState(false);
   const [selectedFranchisee, setSelectedFranchisee] = useState<Franchisee | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [updating, setUpdating] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   // Usar el hook de filtros
   const { filters, setFilters, filteredFranchisees, clearFilters } = useFranchiseeFilters(franchisees);
   
-  // Contar franquiciados sin cuenta
-  const franchiseesWithoutAccount = franchisees.filter(f => !f.user_id).length;
+  // Contar franquiciados sin cuenta usando stats
+  const franchiseesWithoutAccount = stats?.withoutAccounts || 0;
 
   const [formData, setFormData] = useState({
     franchisee_name: '',
@@ -98,7 +98,6 @@ export const FranchiseesManagement: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCreating(true);
 
     try {
       // Validar datos antes de crear
@@ -155,8 +154,8 @@ export const FranchiseesManagement: React.FC = () => {
           });
         }
 
-        // Crear franquiciado usando el servicio
-        const createResponse = await franchiseeManagementService.createFranchisee({
+        // Crear franquiciado usando el servicio a través del hook
+        create({
           user_id: authData.user.id,
           franchisee_name: formData.franchisee_name,
           company_name: formData.company_name,
@@ -167,12 +166,6 @@ export const FranchiseesManagement: React.FC = () => {
           postal_code: formData.postal_code
         });
 
-        if (!createResponse.success) {
-          toast.error('Error al crear el franquiciado');
-          return;
-        }
-
-        toast.success('Franquiciado creado exitosamente');
         setIsCreateModalOpen(false);
         resetForm();
         onRefresh();
@@ -183,16 +176,12 @@ export const FranchiseesManagement: React.FC = () => {
         component: 'FranchiseesManagement' 
       });
       toast.error('Error al crear el franquiciado');
-    } finally {
-      setCreating(false);
     }
   };
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFranchisee) return;
-
-    setUpdating(true);
 
     try {
       // Validar datos antes de actualizar
@@ -211,7 +200,8 @@ export const FranchiseesManagement: React.FC = () => {
         return;
       }
 
-      const updateResponse = await franchiseeManagementService.updateFranchisee({
+      // Usar el hook de operaciones
+      update({
         id: selectedFranchisee.id,
         franchisee_name: formData.franchisee_name,
         company_name: formData.company_name,
@@ -222,12 +212,6 @@ export const FranchiseesManagement: React.FC = () => {
         postal_code: formData.postal_code
       });
 
-      if (!updateResponse.success) {
-        toast.error('Error al actualizar el franquiciado');
-        return;
-      }
-
-      toast.success('Franquiciado actualizado exitosamente');
       setIsEditModalOpen(false);
       setSelectedFranchisee(null);
       resetForm();
@@ -238,8 +222,6 @@ export const FranchiseesManagement: React.FC = () => {
         component: 'FranchiseesManagement' 
       });
       toast.error('Error al actualizar el franquiciado');
-    } finally {
-      setUpdating(false);
     }
   };
 
@@ -311,11 +293,11 @@ export const FranchiseesManagement: React.FC = () => {
         <Alert className="max-w-2xl">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Error al cargar franquiciados:</strong> {error}
+            <strong>Error al cargar franquiciados:</strong> {error?.message || 'Error desconocido'}
           </AlertDescription>
         </Alert>
         <div className="flex space-x-2">
-          <Button onClick={onRefresh} variant="outline" className="flex items-center gap-2">
+          <Button onClick={() => onRefresh()} variant="outline" className="flex items-center gap-2">
             <RefreshCw className="w-4 h-4" />
             Intentar de nuevo
           </Button>
@@ -681,7 +663,7 @@ export const FranchiseesManagement: React.FC = () => {
               <RefreshCw className="w-4 h-4" />
               Limpiar filtros
             </Button>
-            <Button onClick={onRefresh} variant="outline" className="flex items-center gap-2">
+            <Button onClick={() => onRefresh()} variant="outline" className="flex items-center gap-2">
               <RefreshCw className="w-4 h-4" />
               Recargar datos
             </Button>

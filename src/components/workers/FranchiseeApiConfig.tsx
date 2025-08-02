@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useIntegrationConfig, IntegrationConfig } from '@/hooks/useIntegrationConfig';
-import { useFranchisees } from '@/hooks/useFranchisees';
+import { useFranchiseeData } from '@/hooks/data/useFranchiseeData';
 import { useToast } from '@/hooks/use-toast';
 import { Building2, Database, Key, CheckCircle, XCircle, Settings, Wifi, AlertCircle } from 'lucide-react';
 
@@ -19,7 +19,7 @@ export const FranchiseeApiConfig: React.FC = () => {
   const [currentConfig, setCurrentConfig] = useState<IntegrationConfig>({});
   const [connectionStatus, setConnectionStatus] = useState<Record<string, 'testing' | 'success' | 'error'>>({});
   
-  const { franchisees, loading: franchiseesLoading } = useFranchisees();
+  const { franchisees, isLoading: franchiseesLoading } = useFranchiseeData();
   const { toast } = useToast();
   const { 
     configs, 

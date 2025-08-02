@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useRestaurantData } from '@/hooks/useRestaurantData';
+import { useRestaurantDataLegacy } from '@/hooks/data/useRestaurantData';
 import { RestaurantKPICards } from './RestaurantKPICards';
 import { RestaurantGeneralTab } from './RestaurantGeneralTab';
 import { RestaurantFinanceTab } from './RestaurantFinanceTab';
@@ -29,7 +29,7 @@ interface RestaurantPanelProps {
 }
 
 export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }) => {
-  const { restaurant, loading, error } = useRestaurantData(restaurantId);
+  const { restaurant, loading, error, refetch } = useRestaurantDataLegacy(restaurantId);
   const navigate = useNavigate();
 
   if (loading) {

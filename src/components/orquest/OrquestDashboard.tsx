@@ -16,7 +16,7 @@ import { useOrquest } from '@/hooks/useOrquest';
 import { useOrquestConfig } from '@/hooks/useOrquestConfig';
 import { useOrquestMeasuresExtended } from '@/hooks/useOrquestMeasuresExtended';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
-import { useFranchisees } from '@/hooks/data/useFranchisees';
+import { useFranchiseeData } from '@/hooks/data/useFranchiseeData';
 import { 
   RefreshCw, 
   Settings, 
@@ -53,7 +53,7 @@ export const OrquestDashboard: React.FC = () => {
   const [showGlobalConfig, setShowGlobalConfig] = useState(false);
   
   // Get all franchisees if superadmin
-  const { franchisees, loading: franchiseesLoading } = useFranchisees();
+  const { franchisees, isLoading: franchiseesLoading } = useFranchiseeData();
   
   // Use selected franchisee ID or current user's franchisee ID
   const effectiveFranchiseeId = isSuperAdmin ? selectedFranchiseeId : franchisee?.id;
