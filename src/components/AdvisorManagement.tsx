@@ -1,16 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/auth/AuthProvider';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { logger } from '@/lib/logger';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Shield, RefreshCw } from 'lucide-react';
 import { UserCreationPanel } from '@/components/admin/UserCreationPanel';
 import { toast } from 'sonner';
-import { User } from '@/types/auth';
+import { advisorService } from '@/services/advisor/AdvisorService';
+import type { User } from '@/types/domains/auth';
 
 const AdvisorManagement = () => {
   const { user } = useAuth();
@@ -24,27 +23,15 @@ const AdvisorManagement = () => {
   const fetchAdvisors = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('role', ['admin', 'superadmin'])
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        logger.error('Error fetching advisors', { error });
-        toast.error('Error al cargar administradores');
+      const response = await advisorService.getAdvisors();
+      
+      if (!response.success || !response.data) {
+        toast.error(response.error || 'Error al cargar administradores');
         return;
       }
 
-      // Mantener los roles como están en la base de datos
-      const typedAdvisors = (data || []).map(advisorData => ({
-        ...advisorData,
-        role: advisorData.role as 'admin' | 'superadmin'
-      }));
-
-      setAdvisors(typedAdvisors);
+      setAdvisors(response.data);
     } catch (error) {
-      logger.error('Error in fetchAdvisors', { error });
       toast.error('Error al cargar administradores');
     } finally {
       setLoading(false);
@@ -57,50 +44,23 @@ const AdvisorManagement = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', advisorId);
-
-      if (error) {
-        logger.error('Error deleting advisor', { error, advisorId });
-        toast.error('Error al eliminar administrador');
+      const response = await advisorService.deleteAdvisor(advisorId, advisorName);
+      
+      if (!response.success) {
+        toast.error(response.error || 'Error al eliminar administrador');
         return;
       }
 
       toast.success('Administrador eliminado exitosamente');
       fetchAdvisors();
     } catch (error) {
-      logger.error('Error in handleDeleteAdvisor', { error, advisorId, advisorName });
       toast.error('Error al eliminar administrador');
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'superadmin':
-        return 'bg-red-100 text-red-800';
-      case 'admin':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'superadmin':
-        return 'Super Admin';
-      case 'admin':
-        return 'Admin';
-      default:
-        return role;
-    }
-  };
-
-  // Simplificado: todos los usuarios autenticados pueden acceder
+  // Simplificado: usar lógica de permisos del servicio
   const canDeleteAdvisor = (advisorRole: string) => {
-    return true; // Superadmin mode
+    return advisorService.canDeleteAdvisor(user?.role || 'franchisee', advisorRole);
   };
 
   if (!user) {
@@ -162,8 +122,8 @@ const AdvisorManagement = () => {
                     </TableCell>
                     <TableCell>{advisor.email}</TableCell>
                     <TableCell>
-                      <Badge className={getRoleBadgeColor(advisor.role)}>
-                        {getRoleLabel(advisor.role)}
+                      <Badge variant={advisorService.getRoleBadgeVariant(advisor.role)}>
+                        {advisorService.getRoleLabel(advisor.role)}
                       </Badge>
                     </TableCell>
                     <TableCell>
