@@ -81,7 +81,7 @@ export class FranchiseeManagementService extends BaseService {
     }, 'getFranchisees');
   }
 
-  async createFranchisee(franchiseeData: CreateFranchiseeData): Promise<ServiceResponse<Franchisee>> {
+  async createFranchisee(franchiseeData: CreateFranchiseeData & { user_id?: string }): Promise<ServiceResponse<Franchisee>> {
     return this.executeQuery(async () => {
       logger.info('Creating franchisee', { 
         component: 'FranchiseeManagementService',

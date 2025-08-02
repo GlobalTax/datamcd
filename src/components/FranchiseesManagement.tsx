@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { logger } from '@/lib/logger';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +17,6 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Franchisee } from '@/types/auth';
 import { useFranchisees } from '@/hooks/useFranchisees';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { FranchiseeCard } from './FranchiseeCard';
 import { RestaurantAssignmentDialog } from './RestaurantAssignmentDialog';
@@ -26,6 +24,10 @@ import { useNavigate } from 'react-router-dom';
 import { FranchiseeFiltersComponent } from './FranchiseeFilters';
 import { useFranchiseeFilters } from '@/hooks/useFranchiseeFilters';
 import { MassUserCreationDialog } from './MassUserCreationDialog';
+import { franchiseeManagementService } from '@/services/franchisee/FranchiseeManagementService';
+import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/services/base/LoggerService';
+import { errorService } from '@/services/base/ErrorService';
 
 const ITEMS_PER_PAGE = 40;
 
@@ -99,6 +101,23 @@ export const FranchiseesManagement: React.FC = () => {
     setCreating(true);
 
     try {
+      // Validar datos antes de crear
+      const validation = franchiseeManagementService.validateFranchiseeData({
+        franchisee_name: formData.franchisee_name,
+        company_name: formData.company_name,
+        tax_id: formData.tax_id,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        postal_code: formData.postal_code
+      });
+
+      if (!validation.isValid) {
+        toast.error(validation.errors.join(', '));
+        return;
+      }
+
+      // Crear usuario de autenticación
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: formData.email,
         password: formData.password,
@@ -109,11 +128,16 @@ export const FranchiseesManagement: React.FC = () => {
       });
 
       if (authError) {
+        logger.error('Error creating auth user', { 
+          error: authError.message, 
+          component: 'FranchiseesManagement' 
+        });
         toast.error('Error al crear usuario: ' + authError.message);
         return;
       }
 
       if (authData.user) {
+        // Actualizar perfil
         const { error: profileError } = await supabase
           .from('profiles')
           .update({ 
@@ -124,24 +148,26 @@ export const FranchiseesManagement: React.FC = () => {
           .eq('id', authData.user.id);
 
         if (profileError) {
-          logger.error('Failed to update profile', { error: profileError.message, action: 'update_profile' });
+          logger.error('Failed to update profile', { 
+            error: profileError.message, 
+            userId: authData.user.id,
+            component: 'FranchiseesManagement' 
+          });
         }
 
-        const { error: franchiseeError } = await supabase
-          .from('franchisees')
-          .insert({
-            user_id: authData.user.id,
-            franchisee_name: formData.franchisee_name,
-            company_name: formData.company_name,
-            tax_id: formData.tax_id,
-            address: formData.address,
-            city: formData.city,
-            state: formData.state,
-            postal_code: formData.postal_code
-          });
+        // Crear franquiciado usando el servicio
+        const createResponse = await franchiseeManagementService.createFranchisee({
+          user_id: authData.user.id,
+          franchisee_name: formData.franchisee_name,
+          company_name: formData.company_name,
+          tax_id: formData.tax_id,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          postal_code: formData.postal_code
+        });
 
-        if (franchiseeError) {
-          logger.error('Failed to create franchisee', { error: franchiseeError.message, action: 'create_franchisee' });
+        if (!createResponse.success) {
           toast.error('Error al crear el franquiciado');
           return;
         }
@@ -152,7 +178,10 @@ export const FranchiseesManagement: React.FC = () => {
         onRefresh();
       }
     } catch (error) {
-      logger.error('Error in handleCreate', { error: error.message, action: 'create_franchisee' });
+      logger.error('Error in handleCreate', { 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        component: 'FranchiseesManagement' 
+      });
       toast.error('Error al crear el franquiciado');
     } finally {
       setCreating(false);
@@ -166,20 +195,34 @@ export const FranchiseesManagement: React.FC = () => {
     setUpdating(true);
 
     try {
-      const { error } = await supabase
-        .from('franchisees')
-        .update({
-          franchisee_name: formData.franchisee_name,
-          company_name: formData.company_name,
-          tax_id: formData.tax_id,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          postal_code: formData.postal_code
-        })
-        .eq('id', selectedFranchisee.id);
+      // Validar datos antes de actualizar
+      const validation = franchiseeManagementService.validateFranchiseeData({
+        franchisee_name: formData.franchisee_name,
+        company_name: formData.company_name,
+        tax_id: formData.tax_id,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        postal_code: formData.postal_code
+      });
 
-      if (error) {
+      if (!validation.isValid) {
+        toast.error(validation.errors.join(', '));
+        return;
+      }
+
+      const updateResponse = await franchiseeManagementService.updateFranchisee({
+        id: selectedFranchisee.id,
+        franchisee_name: formData.franchisee_name,
+        company_name: formData.company_name,
+        tax_id: formData.tax_id,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        postal_code: formData.postal_code
+      });
+
+      if (!updateResponse.success) {
         toast.error('Error al actualizar el franquiciado');
         return;
       }
@@ -190,7 +233,10 @@ export const FranchiseesManagement: React.FC = () => {
       resetForm();
       onRefresh();
     } catch (error) {
-      logger.error('Error in handleEdit', { error: error.message, action: 'edit_franchisee' });
+      logger.error('Error in handleEdit', { 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        component: 'FranchiseesManagement' 
+      });
       toast.error('Error al actualizar el franquiciado');
     } finally {
       setUpdating(false);
@@ -203,12 +249,9 @@ export const FranchiseesManagement: React.FC = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('franchisees')
-        .delete()
-        .eq('id', franchisee.id);
+      const deleteResponse = await franchiseeManagementService.deleteFranchisee(franchisee.id);
 
-      if (error) {
+      if (!deleteResponse.success) {
         toast.error('Error al eliminar el franquiciado');
         return;
       }
@@ -216,7 +259,10 @@ export const FranchiseesManagement: React.FC = () => {
       toast.success('Franquiciado eliminado exitosamente');
       onRefresh();
     } catch (error) {
-      logger.error('Error in handleDelete', { error: error.message, action: 'delete_franchisee' });
+      logger.error('Error in handleDelete', { 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        component: 'FranchiseesManagement' 
+      });
       toast.error('Error al eliminar el franquiciado');
     }
   };

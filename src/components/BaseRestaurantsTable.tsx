@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,8 +24,9 @@ import {
 } from "@/components/ui/pagination";
 import { Building, Edit, Trash2, Plus, Search, MapPin, Hash, ExternalLink, Settings2, Calendar, User, FileText } from 'lucide-react';
 import { BaseRestaurant } from '@/types/franchiseeRestaurant';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { restaurantTableService, ColumnSettings } from '@/services/restaurant/RestaurantTableService';
+import { logger } from '@/services/base/LoggerService';
 
 interface BaseRestaurantsTableProps {
   restaurants: BaseRestaurant[];
@@ -34,13 +34,6 @@ interface BaseRestaurantsTableProps {
 }
 
 const ITEMS_PER_PAGE = 40;
-
-interface ColumnSettings {
-  franchiseeInfo: boolean;
-  propertyDetails: boolean;
-  dates: boolean;
-  location: boolean;
-}
 
 export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
   restaurants,
@@ -79,23 +72,20 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
   });
 
   const filteredRestaurants = useMemo(() => {
-    return restaurants.filter(restaurant =>
-      restaurant.restaurant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      restaurant.site_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (restaurant.city && restaurant.city.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (restaurant.address && restaurant.address.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    return restaurantTableService.filterRestaurants(restaurants, { search: searchTerm });
   }, [restaurants, searchTerm]);
 
-  // Cálculos de paginación
-  const totalPages = Math.ceil(filteredRestaurants.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentRestaurants = filteredRestaurants.slice(startIndex, endIndex);
+  // Cálculos de paginación usando el servicio
+  const pagination = useMemo(() => {
+    return restaurantTableService.calculatePagination(filteredRestaurants.length, currentPage, ITEMS_PER_PAGE);
+  }, [filteredRestaurants.length, currentPage]);
+
+  const currentRestaurants = useMemo(() => {
+    return restaurantTableService.paginateRestaurants(filteredRestaurants, currentPage, ITEMS_PER_PAGE);
+  }, [filteredRestaurants, currentPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll suave hacia arriba
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -104,18 +94,8 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const createGoogleMapsLink = (address?: string, city?: string) => {
-    if (!address && !city) return null;
-    
-    const fullAddress = [address, city].filter(Boolean).join(', ');
-    const encodedAddress = encodeURIComponent(fullAddress);
-    return `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('es-ES');
-  };
+  const createGoogleMapsLink = restaurantTableService.createGoogleMapsLink;
+  const formatDate = restaurantTableService.formatDate;
 
   const resetForm = () => {
     setFormData({
@@ -140,25 +120,23 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
     setCreating(true);
 
     try {
-      const { error } = await supabase
-        .from('base_restaurants')
-        .insert({
-          site_number: formData.site_number,
-          restaurant_name: formData.restaurant_name,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state || null,
-          postal_code: formData.postal_code || null,
-          country: formData.country,
-          restaurant_type: formData.restaurant_type,
-          property_type: formData.property_type || null,
-          autonomous_community: formData.autonomous_community || null,
-          square_meters: formData.square_meters ? parseInt(formData.square_meters) : null,
-          seating_capacity: formData.seating_capacity ? parseInt(formData.seating_capacity) : null,
-          opening_date: formData.opening_date || null
-        });
+      const createResponse = await restaurantTableService.createRestaurant({
+        site_number: formData.site_number,
+        restaurant_name: formData.restaurant_name,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state || undefined,
+        postal_code: formData.postal_code || undefined,
+        country: formData.country || 'España',
+        restaurant_type: formData.restaurant_type as any,
+        property_type: formData.property_type || undefined,
+        autonomous_community: formData.autonomous_community || undefined,
+        square_meters: formData.square_meters ? parseInt(formData.square_meters) : undefined,
+        seating_capacity: formData.seating_capacity ? parseInt(formData.seating_capacity) : undefined,
+        opening_date: formData.opening_date || undefined
+      });
 
-      if (error) {
+      if (!createResponse.success) {
         toast.error('Error al crear el restaurante');
         return;
       }
@@ -168,7 +146,10 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
       resetForm();
       onRefresh();
     } catch (error) {
-      logger.error('Failed to create restaurant', { error: error.message, action: 'create_restaurant' });
+      logger.error('Failed to create restaurant', { 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        component: 'BaseRestaurantsTable' 
+      });
       toast.error('Error al crear el restaurante');
     } finally {
       setCreating(false);
@@ -182,26 +163,23 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
     setUpdating(true);
 
     try {
-      const { error } = await supabase
-        .from('base_restaurants')
-        .update({
-          site_number: formData.site_number,
-          restaurant_name: formData.restaurant_name,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state || null,
-          postal_code: formData.postal_code || null,
-          country: formData.country,
-          restaurant_type: formData.restaurant_type,
-          property_type: formData.property_type || null,
-          autonomous_community: formData.autonomous_community || null,
-          square_meters: formData.square_meters ? parseInt(formData.square_meters) : null,
-          seating_capacity: formData.seating_capacity ? parseInt(formData.seating_capacity) : null,
-          opening_date: formData.opening_date || null
-        })
-        .eq('id', selectedRestaurant.id);
+      const updateResponse = await restaurantTableService.updateRestaurant(selectedRestaurant.id, {
+        site_number: formData.site_number,
+        restaurant_name: formData.restaurant_name,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state || undefined,
+        postal_code: formData.postal_code || undefined,
+        country: formData.country,
+        restaurant_type: formData.restaurant_type as any,
+        property_type: formData.property_type || undefined,
+        autonomous_community: formData.autonomous_community || undefined,
+        square_meters: formData.square_meters ? parseInt(formData.square_meters) : undefined,
+        seating_capacity: formData.seating_capacity ? parseInt(formData.seating_capacity) : undefined,
+        opening_date: formData.opening_date || undefined
+      });
 
-      if (error) {
+      if (!updateResponse.success) {
         toast.error('Error al actualizar el restaurante');
         return;
       }
@@ -212,7 +190,10 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
       resetForm();
       onRefresh();
     } catch (error) {
-      logger.error('Failed to edit restaurant', { error: error.message, action: 'edit_restaurant' });
+      logger.error('Failed to edit restaurant', { 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        component: 'BaseRestaurantsTable' 
+      });
       toast.error('Error al actualizar el restaurante');
     } finally {
       setUpdating(false);
@@ -225,12 +206,9 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
     }
 
     try {
-      const { error } = await supabase
-        .from('base_restaurants')
-        .delete()
-        .eq('id', restaurant.id);
+      const deleteResponse = await restaurantTableService.deleteRestaurant(restaurant.id);
 
-      if (error) {
+      if (!deleteResponse.success) {
         toast.error('Error al eliminar el restaurante');
         return;
       }
@@ -238,7 +216,10 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
       toast.success('Restaurante eliminado exitosamente');
       onRefresh();
     } catch (error) {
-      logger.error('Failed to delete restaurant', { error: error.message, action: 'delete_restaurant' });
+      logger.error('Failed to delete restaurant', { 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        component: 'BaseRestaurantsTable' 
+      });
       toast.error('Error al eliminar el restaurante');
     }
   };
@@ -495,9 +476,9 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
       {filteredRestaurants.length > 0 && (
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-500">
-            Mostrando {startIndex + 1}-{Math.min(endIndex, filteredRestaurants.length)} de {filteredRestaurants.length} restaurantes
+            Mostrando {pagination.startIndex + 1}-{Math.min(pagination.endIndex, filteredRestaurants.length)} de {filteredRestaurants.length} restaurantes
           </div>
-          {totalPages > 1 && (
+          {pagination.totalPages > 1 && (
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
@@ -507,7 +488,7 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
                   />
                 </PaginationItem>
                 
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
                   <PaginationItem key={page}>
                     <PaginationLink
                       onClick={() => handlePageChange(page)}
@@ -521,8 +502,8 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
                 
                 <PaginationItem>
                   <PaginationNext 
-                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    onClick={() => handlePageChange(Math.min(pagination.totalPages, currentPage + 1))}
+                    className={currentPage === pagination.totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                   />
                 </PaginationItem>
               </PaginationContent>
@@ -674,7 +655,7 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
       </div>
 
       {/* Paginación inferior */}
-      {totalPages > 1 && (
+      {pagination.totalPages > 1 && (
         <div className="flex justify-center">
           <Pagination>
             <PaginationContent>
@@ -685,7 +666,7 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
                 />
               </PaginationItem>
               
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
                 <PaginationItem key={page}>
                   <PaginationLink
                     onClick={() => handlePageChange(page)}
@@ -699,8 +680,8 @@ export const BaseRestaurantsTable: React.FC<BaseRestaurantsTableProps> = ({
               
               <PaginationItem>
                 <PaginationNext 
-                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  onClick={() => handlePageChange(Math.min(pagination.totalPages, currentPage + 1))}
+                  className={currentPage === pagination.totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                 />
               </PaginationItem>
             </PaginationContent>
