@@ -1,0 +1,196 @@
+// === DOMINIO: RESTAURANTES ===
+// Tipos relacionados con restaurantes, asignaciones y gestión
+
+export interface Restaurant {
+  id: string;
+  franchisee_id: string;
+  site_number: string;
+  restaurant_name: string;
+  address: string;
+  city: string;
+  state?: string;
+  postal_code?: string;
+  country: string;
+  opening_date?: string;
+  restaurant_type: 'traditional' | 'mccafe' | 'drive_thru' | 'express';
+  status: 'active' | 'inactive' | 'pending' | 'closed';
+  square_meters?: number;
+  seating_capacity?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BaseRestaurant {
+  id: string;
+  site_number: string;
+  restaurant_name: string;
+  address: string;
+  city: string;
+  state?: string;
+  postal_code?: string;
+  country: string;
+  opening_date?: string;
+  restaurant_type: 'traditional' | 'mccafe' | 'drive_thru' | 'express';
+  square_meters?: number;
+  seating_capacity?: number;
+  franchisee_name?: string;
+  franchisee_email?: string;
+  company_tax_id?: string;
+  autonomous_community?: string;
+  property_type?: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+}
+
+export interface FranchiseeRestaurant {
+  id: string;
+  franchisee_id: string;
+  base_restaurant_id?: string;
+  franchise_start_date?: string;
+  franchise_end_date?: string;
+  lease_start_date?: string;
+  lease_end_date?: string;
+  monthly_rent?: number;
+  franchise_fee_percentage?: number;
+  advertising_fee_percentage?: number;
+  last_year_revenue?: number;
+  average_monthly_sales?: number;
+  status: 'active' | 'inactive' | 'pending' | 'closed' | 'assigned';
+  assigned_at: string;
+  updated_at: string;
+  notes?: string;
+}
+
+// Tipos unificados para vistas complejas
+export interface UnifiedRestaurant {
+  id: string;
+  base_restaurant: BaseRestaurant;
+  isAssigned: boolean;
+  assignment?: FranchiseeRestaurant;
+  franchisee?: {
+    id: string;
+    franchisee_name: string;
+    company_name?: string;
+  };
+  status: string;
+  lastActivity?: string;
+  kpis?: {
+    revenue?: number;
+    profitMargin?: number;
+    customerSatisfaction?: number;
+  };
+}
+
+// Tipos de filtros
+export interface BaseRestaurantFilters {
+  search?: string;
+  restaurantType?: string[];
+  autonomousCommunity?: string[];
+  propertyType?: string[];
+  isAssigned?: boolean;
+  sortBy?: 'name' | 'site_number' | 'city' | 'opening_date';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface RestaurantFilters {
+  status?: string;
+  type?: string;
+  franchisee?: string;
+}
+
+// Tipos de asignaciones
+export interface RestaurantAssignment {
+  id: string;
+  base_restaurant_id: string;
+  franchisee_id: string;
+  assigned_at: string;
+  status: 'pending' | 'active' | 'inactive';
+  notes?: string;
+}
+
+// Tipos de métricas
+export interface RestaurantMetrics {
+  totalRevenue: number;
+  avgMonthlyRevenue: number;
+  profitMargin: number;
+  lastUpdated: string;
+}
+
+export interface RestaurantValuationSummary {
+  id: string;
+  restaurantId: string;
+  valuationDate: string;
+  initialSales: number;
+  currentValuation: number;
+  projectedYears: number;
+}
+
+export interface ValuationFormData {
+  valuationDate: string;
+  initialSales: number;
+  salesGrowthRate: number;
+  inflationRate: number;
+  discountRate: number;
+  yearsRemaining: number;
+  pacPercentage: number;
+  rentPercentage: number;
+  serviceFeesPercentage: number;
+  depreciation: number;
+  interest: number;
+  loanPayment: number;
+  rentIndex: number;
+  miscellaneous: number;
+}
+
+// Tipos de props para componentes
+export interface BaseRestaurantFiltersProps {
+  filters: BaseRestaurantFilters;
+  onFiltersChange: (filters: BaseRestaurantFilters) => void;
+  onReset: () => void;
+}
+
+export interface RestaurantDataManagerProps {
+  restaurantId: string;
+  onDataUpdate?: () => void;
+}
+
+export interface RestaurantManagerProps {
+  onRestaurantCreated?: (restaurant: BaseRestaurant) => void;
+}
+
+export interface RestaurantAssignmentDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  restaurantId?: string;
+  onAssignmentComplete?: () => void;
+}
+
+// Configuración de columnas para tablas
+export interface ColumnSettings {
+  [key: string]: {
+    visible: boolean;
+    width?: number;
+    order: number;
+  };
+}
+
+export interface BaseRestaurantsTableProps {
+  onRestaurantSelect?: (restaurant: BaseRestaurant) => void;
+  showAssignmentControls?: boolean;
+  selectionMode?: 'single' | 'multiple' | 'none';
+}
+
+export interface UnifiedRestaurantsTableProps {
+  restaurants: UnifiedRestaurant[];
+  loading?: boolean;
+  onRestaurantClick?: (restaurant: UnifiedRestaurant) => void;
+  showFilters?: boolean;
+  showActions?: boolean;
+}
+
+export interface FranchiseeRestaurantsTableProps {
+  franchiseeId: string;
+  showActions?: boolean;
+  onRestaurantClick?: (restaurant: FranchiseeRestaurant) => void;
+}
