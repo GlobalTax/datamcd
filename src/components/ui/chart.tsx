@@ -74,25 +74,34 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
+  // Safely generate CSS without using dangerouslySetInnerHTML
+  const cssContent = Object.entries(THEMES)
+    .map(([theme, prefix]) => {
+      const rules = colorConfig
+        .map(([key, itemConfig]) => {
+          const color =
+            itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
+            itemConfig.color;
+          
+          // Sanitize CSS values to prevent injection
+          const sanitizedKey = key.replace(/[^a-zA-Z0-9-_]/g, '');
+          const sanitizedColor = color?.replace(/[^a-zA-Z0-9#%().,\s-]/g, '') || '';
+          
+          return `  --color-${sanitizedKey}: ${sanitizedColor};`;
+        })
+        .join('\n');
+      
+      // Sanitize chart ID to prevent injection
+      const sanitizedId = id.replace(/[^a-zA-Z0-9-_]/g, '');
+      
+      return `${prefix} [data-chart="${sanitizedId}"] {\n${rules}\n}`;
+    })
+    .join('\n');
+
   return (
     <style
       dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
-  })
-  .join("\n")}
-}
-`
-          )
-          .join("\n"),
+        __html: cssContent
       }}
     />
   )

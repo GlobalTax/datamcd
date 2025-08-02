@@ -3621,6 +3621,10 @@ export type Database = {
         Args: { "": string[] }
         Returns: string
       }
+      check_session_security: {
+        Args: { max_idle_minutes?: number; max_session_minutes?: number }
+        Returns: boolean
+      }
       cleanup_local_storage_data: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -4079,6 +4083,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_security_event_enhanced: {
+        Args: {
+          event_type: string
+          event_description: string
+          user_id_param?: string
+          ip_address_param?: unknown
+          user_agent_param?: string
+          additional_data?: Json
+        }
+        Returns: undefined
+      }
       manually_assign_restaurants_to_existing_franchisees: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -4229,6 +4244,18 @@ export type Database = {
       users_are: {
         Args: { "": unknown[] }
         Returns: string
+      }
+      validate_admin_action_enhanced: {
+        Args: {
+          action_type: string
+          target_user_id?: string
+          action_data?: Json
+        }
+        Returns: boolean
+      }
+      validate_password_strength: {
+        Args: { password_input: string }
+        Returns: Json
       }
       validate_role_change: {
         Args: { new_role: string; user_id: string }

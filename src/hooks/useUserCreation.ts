@@ -22,21 +22,43 @@ export const useUserCreation = () => {
       return false;
     }
 
-    // Server-side role validation using our new function
+    // Enhanced input validation and sanitization
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email) || email.length > 254) {
+      toast.error('Email inválido');
+      return false;
+    }
+
+    const sanitizedEmail = email.trim().toLowerCase();
+    const sanitizedFullName = fullName.trim().replace(/[<>]/g, '');
+    
+    if (sanitizedFullName.length < 2 || sanitizedFullName.length > 100) {
+      toast.error('Nombre debe tener entre 2 y 100 caracteres');
+      return false;
+    }
+
+    // Enhanced password validation
+    if (password.length < 8 || password.length > 128) {
+      toast.error('Contraseña debe tener entre 8 y 128 caracteres');
+      return false;
+    }
+
+    // Server-side role validation using our enhanced function
     const { data: canAssignRole, error: roleValidationError } = await supabase
-      .rpc('validate_user_role_assignment', {
-        target_role: role,
-        assigner_role: user.role || 'user'
+      .rpc('validate_admin_action_enhanced', {
+        action_type: 'user_creation',
+        target_user_id: null,
+        action_data: { role, email: sanitizedEmail }
       });
 
     if (roleValidationError) {
-      console.error('Error validating role assignment:', roleValidationError);
+      console.error('Error validating user creation:', roleValidationError);
       toast.error('Error al validar permisos');
       return false;
     }
 
     if (!canAssignRole) {
-      toast.error('No tienes permisos para asignar este rol');
+      toast.error('No tienes permisos para crear este usuario');
       return false;
     }
 
