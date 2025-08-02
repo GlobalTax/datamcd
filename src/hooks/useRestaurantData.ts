@@ -81,7 +81,7 @@ export const useRestaurantData = (restaurantId: string) => {
         }
 
         if (!data) {
-          throw new Error('Restaurante no encontrado o no tienes acceso a él');
+          throw new Error(`Restaurante ${restaurantId} no encontrado para el franchisee actual. Puede que no tengas acceso o que el restaurante no exista.`);
         }
 
         setRestaurant(data as any);

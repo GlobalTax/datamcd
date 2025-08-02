@@ -20,7 +20,8 @@ import {
   BarChart3, 
   Settings,
   ArrowLeft,
-  Home
+  Home,
+  Building
 } from 'lucide-react';
 
 interface RestaurantPanelProps {
@@ -46,15 +47,22 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
     return (
       <Card>
         <CardContent className="p-8">
-          <div className="text-center max-w-md mx-auto">
+          <div className="text-center max-w-lg mx-auto">
             <AlertTriangle className="mx-auto h-16 w-16 text-destructive mb-6" />
-            <h3 className="text-xl font-semibold mb-3">Restaurante no encontrado</h3>
-            <p className="text-muted-foreground mb-6">
-              {error?.includes('no encontrado') || error?.includes('no tienes acceso') 
-                ? 'Este restaurante no existe o no tienes permisos para acceder a él.'
-                : error || 'No se pudieron cargar los datos del restaurante'
-              }
+            <h3 className="text-xl font-semibold mb-3">Restaurante no disponible</h3>
+            <p className="text-muted-foreground mb-4">
+              {error || 'No se pudieron cargar los datos del restaurante'}
             </p>
+            
+            <div className="bg-muted/50 p-4 rounded-lg mb-6 text-left">
+              <h4 className="font-medium text-foreground mb-2">Posibles causas:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• El restaurante no está asignado a tu franquicia</li>
+                <li>• El ID del restaurante no es válido</li>
+                <li>• No tienes permisos para acceder a este restaurante</li>
+                <li>• El restaurante ha sido eliminado o desactivado</li>
+              </ul>
+            </div>
             
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button 
@@ -66,11 +74,19 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
                 Volver
               </Button>
               <Button 
-                onClick={() => navigate('/advisor')}
+                onClick={() => navigate('/dashboard')}
+                variant="outline"
                 className="flex items-center gap-2"
               >
                 <Home className="h-4 w-4" />
-                Ir al Dashboard
+                Dashboard
+              </Button>
+              <Button 
+                onClick={() => navigate('/restaurants')}
+                className="flex items-center gap-2"
+              >
+                <Building className="h-4 w-4" />
+                Ver Restaurantes
               </Button>
             </div>
           </div>
