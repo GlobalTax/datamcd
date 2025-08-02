@@ -78,13 +78,22 @@ export default function RestaurantDetailPage() {
                 </div>
               </div>
             </div>
-            <Button 
-              onClick={() => navigate('/valuation')}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6"
-            >
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Valorar Restaurante
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => navigate(`/restaurant/${restaurantId}/panel`)}
+                className="bg-green-600 hover:bg-green-700 text-white font-medium px-6"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Panel Integral
+              </Button>
+              <Button 
+                onClick={() => navigate('/valuation')}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6"
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Valorar Restaurante
+              </Button>
+            </div>
           </div>
           
           {/* Breadcrumb */}

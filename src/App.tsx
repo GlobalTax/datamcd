@@ -15,6 +15,7 @@ import DashboardPage from "./pages/DashboardPage";
 import OptimizedDashboardPage from "./pages/OptimizedDashboardPage";
 import RestaurantManagementPage from "./pages/RestaurantManagementPage";
 import RestaurantDetailPage from "./pages/RestaurantDetailPage";
+import RestaurantPanelPage from "./pages/RestaurantPanelPage";
 import ProfitLossPage from "./pages/ProfitLossPage";
 import HistoricalDataPage from "./pages/HistoricalDataPage";
 import AnalysisPage from "./pages/AnalysisPage";
@@ -95,6 +96,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <RestaurantDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/restaurant/:restaurantId/panel"
+                element={
+                  <ProtectedRoute>
+                    <RestaurantPanelPage />
                   </ProtectedRoute>
                 }
               />
