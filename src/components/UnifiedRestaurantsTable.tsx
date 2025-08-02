@@ -31,8 +31,10 @@ import {
   Euro,
   User,
   CheckCircle,
-  Clock
+  Clock,
+  BarChart3
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 // Define UnifiedRestaurant interface locally - will be moved to types later
 export interface UnifiedRestaurant {
   id: string;
@@ -87,6 +89,7 @@ export const UnifiedRestaurantsTable: React.FC<UnifiedRestaurantsTableProps> = (
   onRefresh,
   stats
 }) => {
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'assigned' | 'available'>('all');
@@ -278,6 +281,7 @@ export const UnifiedRestaurantsTable: React.FC<UnifiedRestaurantsTableProps> = (
                   <TableHead>Franquiciado</TableHead>
                   <TableHead>Financiero</TableHead>
                   <TableHead>Fechas</TableHead>
+                  <TableHead>Panel</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -413,6 +417,18 @@ export const UnifiedRestaurantsTable: React.FC<UnifiedRestaurantsTableProps> = (
                             )}
                           </div>
                         )}
+                      </TableCell>
+                      
+                      <TableCell>
+                        <Button
+                          onClick={() => navigate(`/restaurant/${restaurant.id}/panel`)}
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                        >
+                          <BarChart3 className="w-4 h-4" />
+                          Panel
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );
