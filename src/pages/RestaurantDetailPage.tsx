@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/AuthProvider';
 import { useFranchiseeRestaurants } from '@/hooks/useFranchiseeRestaurants';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MapPin, Calendar, Euro, Building2, Hash, Shield, TrendingUp } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Euro, Building2, Hash, Shield, TrendingUp, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function RestaurantDetailPage() {
