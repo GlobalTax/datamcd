@@ -4,6 +4,9 @@ import { BaseService, ServiceResponse, createResponse } from '../base/BaseServic
 import type { Restaurant, BaseRestaurant, FranchiseeRestaurant } from '@/types/core';
 
 export class RestaurantService extends BaseService {
+  constructor() {
+    super('RestaurantService');
+  }
   async getRestaurants(): Promise<ServiceResponse<Restaurant[]>> {
     return this.executeQuery(async () => {
       // Obtener información del usuario actual para determinar los permisos

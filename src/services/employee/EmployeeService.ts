@@ -4,6 +4,9 @@ import { BaseService, ServiceResponse, createResponse } from '../base/BaseServic
 import type { Employee } from '@/types/core';
 
 export class EmployeeService extends BaseService {
+  constructor() {
+    super('EmployeeService');
+  }
   async getEmployees(restaurantId?: string): Promise<ServiceResponse<Employee[]>> {
     return this.executeQuery(async () => {
       let query = supabase

@@ -4,6 +4,9 @@ import { BaseService, ServiceResponse, createResponse } from '../base/BaseServic
 import type { User, Franchisee } from '@/types/core';
 
 export class AuthService extends BaseService {
+  constructor() {
+    super('AuthService');
+  }
   async signIn(email: string, password: string): Promise<ServiceResponse<{ user: User; session: any }>> {
     return this.executeQuery(async () => {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
