@@ -93,55 +93,128 @@ export function useRestaurantData(restaurantId: string) {
             square_meters,
             property_type
           )
-        `)
-        .eq('id', restaurantId);
+        `);
 
-      // Para superadmins: acceso a cualquier restaurante
-      // Para franquiciados: solo sus restaurantes asignados
-      if (!isSuperAdmin) {
-        if (!effectiveFranchisee?.id) {
-          throw new Error('Franchisee ID is required for non-admin users');
-        }
-        query = query.eq('franchisee_id', effectiveFranchisee.id);
-      }
-
-      const { data, error } = await query.maybeSingle();
-
-      if (error) {
-        logger.error('Error fetching restaurant data', {
-          error: error.message,
-          restaurantId,
-          userRole,
-          franchiseeId: effectiveFranchisee?.id,
-          component: 'useRestaurantData'
-        });
-        throw new Error(`Error fetching restaurant data: ${error.message}`);
-      }
-
-      if (!data) {
-        const errorMsg = isSuperAdmin 
-          ? `Restaurant ${restaurantId} not found in the system.`
-          : `Restaurant ${restaurantId} not found for current franchisee. Access denied or restaurant doesn't exist.`;
+      // Para superadmins: intentar buscar por base_restaurant_id primero, luego por id
+      if (isSuperAdmin) {
+        // Primero intentar como base_restaurant_id
+        const { data: dataByBaseId, error: errorByBaseId } = await query
+          .eq('base_restaurant_id', restaurantId)
+          .maybeSingle();
         
-        logger.warn('Restaurant not found', {
+        if (!errorByBaseId && dataByBaseId) {
+          logger.info('Successfully fetched restaurant data by base_restaurant_id', {
+            component: 'useRestaurantData',
+            restaurantId: dataByBaseId.id,
+            baseRestaurantId: restaurantId,
+            restaurantName: dataByBaseId.base_restaurant?.restaurant_name,
+            userRole,
+            isSuperAdmin
+          });
+          return dataByBaseId as RestaurantData;
+        }
+        
+        // Si no se encuentra por base_restaurant_id, intentar por id
+        const { data: dataById, error: errorById } = await query
+          .eq('id', restaurantId)
+          .maybeSingle();
+          
+        if (!errorById && dataById) {
+          logger.info('Successfully fetched restaurant data by id', {
+            component: 'useRestaurantData',
+            restaurantId: dataById.id,
+            restaurantName: dataById.base_restaurant?.restaurant_name,
+            userRole,
+            isSuperAdmin
+          });
+          return dataById as RestaurantData;
+        }
+        
+        // Si ninguna funciona, buscar directamente en base_restaurants
+        const { data: baseRestaurantData, error: baseRestaurantError } = await supabase
+          .from('base_restaurants')
+          .select('*')
+          .eq('id', restaurantId)
+          .maybeSingle();
+        
+        if (!baseRestaurantError && baseRestaurantData) {
+          // Crear un objeto compatible para superadmins
+          const syntheticData = {
+            id: baseRestaurantData.id,
+            status: 'active',
+            franchise_start_date: null,
+            franchise_end_date: null,
+            monthly_rent: 0,
+            last_year_revenue: 0,
+            franchise_fee_percentage: 4.0,
+            advertising_fee_percentage: 4.0,
+            notes: '',
+            base_restaurant: baseRestaurantData
+          };
+          
+          logger.info('Successfully fetched base restaurant data for superadmin', {
+            component: 'useRestaurantData',
+            restaurantId: baseRestaurantData.id,
+            restaurantName: baseRestaurantData.restaurant_name,
+            userRole,
+            isSuperAdmin
+          });
+          
+          return syntheticData as RestaurantData;
+        }
+        
+        // Si llegamos aquí, el restaurante no existe
+        const errorMsg = `Restaurant ${restaurantId} not found in the system.`;
+        logger.warn('Restaurant not found (superadmin)', {
           restaurantId,
           userRole,
           isSuperAdmin,
-          franchiseeId: effectiveFranchisee?.id,
           component: 'useRestaurantData'
         });
         throw new Error(errorMsg);
+      } else {
+        // Para franquiciados: solo sus restaurantes asignados
+        if (!effectiveFranchisee?.id) {
+          throw new Error('Franchisee ID is required for non-admin users');
+        }
+        
+        query = query.eq('franchisee_id', effectiveFranchisee.id).eq('id', restaurantId);
+        const { data, error } = await query.maybeSingle();
+        
+        if (error) {
+          logger.error('Error fetching restaurant data', {
+            error: error.message,
+            restaurantId,
+            userRole,
+            franchiseeId: effectiveFranchisee?.id,
+            component: 'useRestaurantData'
+          });
+          throw new Error(`Error fetching restaurant data: ${error.message}`);
+        }
+        
+        if (!data) {
+          const errorMsg = `Restaurant ${restaurantId} not found for current franchisee. Access denied or restaurant doesn't exist.`;
+          logger.warn('Restaurant not found (franchisee)', {
+            restaurantId,
+            userRole,
+            isSuperAdmin,
+            franchiseeId: effectiveFranchisee?.id,
+            component: 'useRestaurantData'
+          });
+          throw new Error(errorMsg);
+        }
+        
+        logger.info('Successfully fetched restaurant data for franchisee', {
+          component: 'useRestaurantData',
+          restaurantId: data.id,
+          restaurantName: data.base_restaurant?.restaurant_name,
+          userRole,
+          franchiseeId: effectiveFranchisee?.id
+        });
+        
+        return data as RestaurantData;
       }
 
-      logger.info('Successfully fetched restaurant data', {
-        component: 'useRestaurantData',
-        restaurantId: data.id,
-        restaurantName: data.base_restaurant?.restaurant_name,
-        userRole,
-        isSuperAdmin
-      });
-
-      return data as RestaurantData;
     },
     enabled: !!restaurantId && !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
