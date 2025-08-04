@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { AuthDebugPanel } from '@/components/debug/AuthDebugPanel';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
+import { SuperadminDashboard } from '@/components/dashboard/SuperadminDashboard';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,13 @@ const OptimizedDashboardPage = () => {
     loading,
     connectionStatus,
     isImpersonating
+  });
+
+  console.log('🚨 CRITICAL DEBUG - Role check:', {
+    userRole: user?.role,
+    isSuperadmin: user?.role === 'superadmin',
+    isAdmin: user?.role === 'admin',
+    shouldShowSuperadminDashboard: user?.role === 'superadmin' || user?.role === 'admin'
   });
 
   // Transformar datos para el componente
@@ -213,125 +221,155 @@ const OptimizedDashboardPage = () => {
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
-              {/* Estado de la cuenta y franquiciado */}
-              {user && franchisee && (
-                <Card className="border-blue-200 bg-blue-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      <Users className="h-8 w-8 text-blue-600" />
-                      <div>
-                        <h3 className="font-semibold text-blue-900">
-                          {franchisee.franchisee_name}
-                        </h3>
-                        <p className="text-sm text-blue-700">
-                          Usuario: {user.full_name} ({user.email}) • Rol: {user.role}
-                        </p>
-                        <p className="text-xs text-blue-600">
-                          ID Franquiciado: {franchisee.id} • Restaurantes: {restaurants.length}
-                        </p>
+              {/* Mostrar dashboard específico basado en el rol */}
+              {user?.role === 'superadmin' || user?.role === 'admin' ? (
+                <>
+                  {/* Header específico para superadmin */}
+                  <Card className="border-emerald-200 bg-emerald-50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-4">
+                        <Database className="h-8 w-8 text-emerald-600" />
+                        <div>
+                          <h3 className="font-semibold text-emerald-900">
+                            Panel de Administración Global
+                          </h3>
+                          <p className="text-sm text-emerald-700">
+                            Usuario: {user.full_name} ({user.email}) • Rol: {user.role}
+                          </p>
+                          <p className="text-xs text-emerald-600">
+                            Acceso completo al sistema - Gestión de franquiciados y restaurantes
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Dashboard de superadmin */}
+                  <SuperadminDashboard />
+                </>
+              ) : (
+                <>
+                  {/* Estado de la cuenta y franquiciado */}
+                  {user && franchisee && (
+                    <Card className="border-blue-200 bg-blue-50">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                          <Users className="h-8 w-8 text-blue-600" />
+                          <div>
+                            <h3 className="font-semibold text-blue-900">
+                              {franchisee.franchisee_name}
+                            </h3>
+                            <p className="text-sm text-blue-700">
+                              Usuario: {user.full_name} ({user.email}) • Rol: {user.role}
+                            </p>
+                            <p className="text-xs text-blue-600">
+                              ID Franquiciado: {franchisee.id} • Restaurantes: {restaurants.length}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Alerta si no hay franquiciado pero sí usuario */}
+                  {user && !franchisee && connectionStatus === 'online' && (
+                    <Alert className="border-amber-200 bg-amber-50">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      <AlertDescription className="text-amber-800">
+                        Tu usuario ({user.email}) existe pero no tiene un franquiciado asignado. 
+                        Contacta con tu asesor para que te asigne un franquiciado.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Alerta de estado de conexión */}
+                  {connectionStatus === 'offline' && (
+                    <Alert className="border-red-200 bg-red-50">
+                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                      <AlertDescription className="text-red-800">
+                        Sin conexión con la base de datos. Algunos datos pueden no estar actualizados.
+                        <Button 
+                          onClick={() => window.location.reload()} 
+                          variant="link" 
+                          className="p-0 h-auto ml-2 text-red-800 underline"
+                        >
+                          Intentar reconectar
+                        </Button>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Debug info para desarrollo */}
+                  {restaurants.length === 0 && user && (
+                    <Alert className="border-blue-200 bg-blue-50">
+                      <AlertTriangle className="h-4 w-4 text-blue-600" />
+                      <AlertDescription className="text-blue-800">
+                        No se encontraron restaurantes. Estado actual:
+                        <br />• Usuario: {user.email} (ID: {user.id})
+                        <br />• Franquiciado: {franchisee ? `${franchisee.franchisee_name} (ID: ${franchisee.id})` : 'No encontrado'}
+                        <br />• Conexión: {connectionStatus}
+                        <br />• Restaurantes: {restaurants.length}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Métricas principales */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Restaurantes</CardTitle>
+                        <Building className="h-4 w-4 text-blue-600" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{metrics.totalRestaurants}</div>
+                        <p className="text-xs text-muted-foreground">
+                          {connectionStatus === 'online' ? 'En línea' : 'Sin conexión'}
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-green-600" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{formatCurrency(metrics.totalRevenue)}</div>
+                        <p className="text-xs text-muted-foreground">Último año</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Margen Operativo</CardTitle>
+                        <BarChart3 className="h-4 w-4 text-purple-600" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{metrics.operatingMargin.toFixed(1)}%</div>
+                        <p className="text-xs text-muted-foreground">Estimado</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">ROI Promedio</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-emerald-600" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{metrics.averageROI.toFixed(1)}%</div>
+                        <p className="text-xs text-muted-foreground">Retorno anual</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Dashboard principal */}
+                  <DashboardSummary 
+                    totalRestaurants={metrics.totalRestaurants} 
+                    displayRestaurants={displayRestaurants}
+                    isTemporaryData={connectionStatus === 'offline'}
+                  />
+                </>
               )}
-
-              {/* Alerta si no hay franquiciado pero sí usuario */}
-              {user && !franchisee && connectionStatus === 'online' && (
-                <Alert className="border-amber-200 bg-amber-50">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-800">
-                    Tu usuario ({user.email}) existe pero no tiene un franquiciado asignado. 
-                    Contacta con tu asesor para que te asigne un franquiciado.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Alerta de estado de conexión */}
-              {connectionStatus === 'offline' && (
-                <Alert className="border-red-200 bg-red-50">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-800">
-                    Sin conexión con la base de datos. Algunos datos pueden no estar actualizados.
-                    <Button 
-                      onClick={() => window.location.reload()} 
-                      variant="link" 
-                      className="p-0 h-auto ml-2 text-red-800 underline"
-                    >
-                      Intentar reconectar
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Debug info para desarrollo */}
-              {restaurants.length === 0 && user && (
-                <Alert className="border-blue-200 bg-blue-50">
-                  <AlertTriangle className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-blue-800">
-                    No se encontraron restaurantes. Estado actual:
-                    <br />• Usuario: {user.email} (ID: {user.id})
-                    <br />• Franquiciado: {franchisee ? `${franchisee.franchisee_name} (ID: ${franchisee.id})` : 'No encontrado'}
-                    <br />• Conexión: {connectionStatus}
-                    <br />• Restaurantes: {restaurants.length}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Métricas principales */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Restaurantes</CardTitle>
-                    <Building className="h-4 w-4 text-blue-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{metrics.totalRestaurants}</div>
-                    <p className="text-xs text-muted-foreground">
-                      {connectionStatus === 'online' ? 'En línea' : 'Sin conexión'}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{formatCurrency(metrics.totalRevenue)}</div>
-                    <p className="text-xs text-muted-foreground">Último año</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Margen Operativo</CardTitle>
-                    <BarChart3 className="h-4 w-4 text-purple-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{metrics.operatingMargin.toFixed(1)}%</div>
-                    <p className="text-xs text-muted-foreground">Estimado</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">ROI Promedio</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-emerald-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{metrics.averageROI.toFixed(1)}%</div>
-                    <p className="text-xs text-muted-foreground">Retorno anual</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Dashboard principal */}
-              <DashboardSummary 
-                totalRestaurants={metrics.totalRestaurants} 
-                displayRestaurants={displayRestaurants}
-                isTemporaryData={connectionStatus === 'offline'}
-              />
             </div>
           </main>
         </SidebarInset>
