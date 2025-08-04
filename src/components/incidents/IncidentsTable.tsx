@@ -348,6 +348,14 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
             </div>
             <div className="flex gap-2">
               <Button
+                onClick={() => setViewMode(viewMode === 'compact' ? 'full' : 'compact')}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                {viewMode === 'compact' ? 'Vista Completa' : 'Vista Compacta'}
+              </Button>
+              <Button
                 onClick={handleExportToExcel}
                 variant="outline"
                 size="sm"
@@ -359,7 +367,8 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
             </div>
           </div>
           <div className="text-sm text-muted-foreground">
-            Mostrando {filteredAndSortedIncidents.length} de {incidents.length} incidencias
+            Mostrando {filteredAndSortedIncidents.length} de {incidents.length} incidencias • 
+            {viewMode === 'compact' ? ' Vista Compacta' : ' Vista Completa'}
           </div>
         </CardContent>
       </Card>
@@ -377,25 +386,43 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
               <TableHead className="w-[120px]">
                 <SortButton field="status">Estado</SortButton>
               </TableHead>
-              <TableHead className="min-w-[150px]">Participante</TableHead>
-              <TableHead className="w-[100px]">F. Cierre</TableHead>
+              {viewMode === 'full' && (
+                <TableHead className="min-w-[150px]">Participante</TableHead>
+              )}
+              {viewMode === 'full' && (
+                <TableHead className="w-[100px]">F. Cierre</TableHead>
+              )}
               <TableHead className="min-w-[200px]">Comentarios</TableHead>
-              <TableHead className="w-[100px]">Núm. Pedido</TableHead>
+              {viewMode === 'full' && (
+                <TableHead className="w-[100px]">Núm. Pedido</TableHead>
+              )}
               <TableHead className="w-[120px]">
                 <SortButton field="importe_carto">Importe CAP</SortButton>
               </TableHead>
-              <TableHead className="min-w-[120px]">Documento</TableHead>
-              <TableHead className="min-w-[120px]">Ingeniero</TableHead>
-              <TableHead className="min-w-[120px]">Clasificación</TableHead>
-              <TableHead className="w-[100px]">Periodo</TableHead>
+              {viewMode === 'full' && (
+                <TableHead className="min-w-[120px]">Documento</TableHead>
+              )}
+              {viewMode === 'full' && (
+                <TableHead className="min-w-[120px]">Ingeniero</TableHead>
+              )}
+              {viewMode === 'full' && (
+                <TableHead className="min-w-[120px]">Clasificación</TableHead>
+              )}
+              {viewMode === 'full' && (
+                <TableHead className="w-[100px]">Periodo</TableHead>
+              )}
               <TableHead className="w-[100px]">
                 <SortButton field="priority">Prioridad</SortButton>
               </TableHead>
-              <TableHead className="w-[120px]">Tipo</TableHead>
+              {viewMode === 'full' && (
+                <TableHead className="w-[120px]">Tipo</TableHead>
+              )}
               <TableHead className="w-[130px]">
                 <SortButton field="created_at">F. Creación</SortButton>
               </TableHead>
-              <TableHead className="min-w-[120px]">Asignado a</TableHead>
+              {viewMode === 'full' && (
+                <TableHead className="min-w-[120px]">Asignado a</TableHead>
+              )}
               <TableHead className="w-[100px]">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -424,18 +451,22 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
                     {getStatusLabel(incident.status)}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  <span className="text-sm">{incident.participante || 'N/A'}</span>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm">
-                    {incident.fecha_cierre ? (
-                      format(new Date(incident.fecha_cierre), 'dd/MM/yy', { locale: es })
-                    ) : (
-                      '-'
-                    )}
-                  </span>
-                </TableCell>
+                {viewMode === 'full' && (
+                  <TableCell>
+                    <span className="text-sm">{incident.participante || 'N/A'}</span>
+                  </TableCell>
+                )}
+                {viewMode === 'full' && (
+                  <TableCell>
+                    <span className="text-sm">
+                      {incident.fecha_cierre ? (
+                        format(new Date(incident.fecha_cierre), 'dd/MM/yy', { locale: es })
+                      ) : (
+                        '-'
+                      )}
+                    </span>
+                  </TableCell>
+                )}
                 <TableCell className="max-w-[200px]">
                   <div className="flex items-center gap-2">
                     <ExpandableCell text={incident.comentarios_cierre} maxLength={40} />
@@ -451,9 +482,11 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
                     )}
                   </div>
                 </TableCell>
-                <TableCell>
-                  <span className="text-sm font-mono">{incident.numero_pedido || '-'}</span>
-                </TableCell>
+                {viewMode === 'full' && (
+                  <TableCell>
+                    <span className="text-sm font-mono">{incident.numero_pedido || '-'}</span>
+                  </TableCell>
+                )}
                 <TableCell>
                   {incident.importe_carto ? (
                     <span className="font-medium text-sm">
@@ -463,47 +496,59 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
                     '-'
                   )}
                 </TableCell>
-                <TableCell>
-                  {incident.documento_url ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => window.open(incident.documento_url, '_blank')}
-                      className="h-auto p-1"
-                    >
-                      <FileText className="h-3 w-3" />
-                    </Button>
-                  ) : (
-                    '-'
-                  )}
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm">{incident.ingeniero || 'N/A'}</span>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm">{incident.clasificacion || 'N/A'}</span>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm">{incident.periodo || 'N/A'}</span>
-                </TableCell>
+                {viewMode === 'full' && (
+                  <TableCell>
+                    {incident.documento_url ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.open(incident.documento_url, '_blank')}
+                        className="h-auto p-1"
+                      >
+                        <FileText className="h-3 w-3" />
+                      </Button>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                )}
+                {viewMode === 'full' && (
+                  <TableCell>
+                    <span className="text-sm">{incident.ingeniero || 'N/A'}</span>
+                  </TableCell>
+                )}
+                {viewMode === 'full' && (
+                  <TableCell>
+                    <span className="text-sm">{incident.clasificacion || 'N/A'}</span>
+                  </TableCell>
+                )}
+                {viewMode === 'full' && (
+                  <TableCell>
+                    <span className="text-sm">{incident.periodo || 'N/A'}</span>
+                  </TableCell>
+                )}
                 <TableCell>
                   <Badge variant={getPriorityColor(incident.priority)} className="text-xs">
                     {getPriorityLabel(incident.priority)}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="text-xs">
-                    {incident.type}
-                  </Badge>
-                </TableCell>
+                {viewMode === 'full' && (
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {incident.type}
+                    </Badge>
+                  </TableCell>
+                )}
                 <TableCell>
                   <span className="text-sm">
                     {format(new Date(incident.created_at), 'dd/MM/yy HH:mm', { locale: es })}
                   </span>
                 </TableCell>
-                <TableCell>
-                  <span className="text-sm">{incident.assigned_to || 'No asignado'}</span>
-                </TableCell>
+                {viewMode === 'full' && (
+                  <TableCell>
+                    <span className="text-sm">{incident.assigned_to || 'No asignado'}</span>
+                  </TableCell>
+                )}
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
