@@ -1343,6 +1343,7 @@ export type Database = {
           assigned_to: string | null
           clasificacion: string | null
           comentarios_cierre: string | null
+          comentarios_historial: Json | null
           created_at: string | null
           description: string | null
           documento_url: string | null
@@ -1353,6 +1354,8 @@ export type Database = {
           ingeniero: string | null
           naves: string | null
           nombre: string | null
+          numero_pedido: string | null
+          numero_secuencial: number | null
           participante: string | null
           periodo: string | null
           priority: string
@@ -1371,6 +1374,7 @@ export type Database = {
           assigned_to?: string | null
           clasificacion?: string | null
           comentarios_cierre?: string | null
+          comentarios_historial?: Json | null
           created_at?: string | null
           description?: string | null
           documento_url?: string | null
@@ -1381,6 +1385,8 @@ export type Database = {
           ingeniero?: string | null
           naves?: string | null
           nombre?: string | null
+          numero_pedido?: string | null
+          numero_secuencial?: number | null
           participante?: string | null
           periodo?: string | null
           priority: string
@@ -1399,6 +1405,7 @@ export type Database = {
           assigned_to?: string | null
           clasificacion?: string | null
           comentarios_cierre?: string | null
+          comentarios_historial?: Json | null
           created_at?: string | null
           description?: string | null
           documento_url?: string | null
@@ -1409,6 +1416,8 @@ export type Database = {
           ingeniero?: string | null
           naves?: string | null
           nombre?: string | null
+          numero_pedido?: string | null
+          numero_secuencial?: number | null
           participante?: string | null
           periodo?: string | null
           priority?: string

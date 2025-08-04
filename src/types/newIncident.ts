@@ -39,6 +39,13 @@ export interface Incident {
   documento_url?: string;
   fecha_cierre?: string;
   comentarios_cierre?: string;
+  numero_secuencial?: number;
+  numero_pedido?: string;
+  comentarios_historial?: Array<{
+    fecha: string;
+    comentario: string;
+    usuario_id?: string;
+  }>;
 }
 
 export interface CreateIncidentData {
@@ -60,6 +67,7 @@ export interface CreateIncidentData {
   periodo?: string;
   importe_carto?: number;
   documento_url?: string;
+  numero_pedido?: string;
 }
 
 export interface UpdateIncidentData {
@@ -84,6 +92,7 @@ export interface UpdateIncidentData {
   documento_url?: string;
   fecha_cierre?: string;
   comentarios_cierre?: string;
+  numero_pedido?: string;
 }
 
 // Proveedores
@@ -211,7 +220,14 @@ export interface IncidentWithRelations extends Incident {
     name: string;
     site_number: string;
   };
-  provider?: Provider;
+  provider?: {
+    id: string;
+    name: string;
+    provider_type?: string;
+    is_active?: boolean;
+    created_at?: string;
+    updated_at?: string;
+  };
   reported_user?: {
     full_name: string;
   };
@@ -219,6 +235,13 @@ export interface IncidentWithRelations extends Incident {
     full_name: string;
   };
   voice_links?: VoiceEntityLink[];
+  numero_secuencial?: number;
+  numero_pedido?: string;
+  comentarios_historial?: Array<{
+    fecha: string;
+    comentario: string;
+    usuario_id?: string;
+  }>;
 }
 
 export interface MetricDashboardData {

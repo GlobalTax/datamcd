@@ -32,6 +32,14 @@ export interface RestaurantIncident {
   documento_url?: string;
   fecha_cierre?: string;
   comentarios_cierre?: string;
+  // Nuevos campos agregados
+  numero_secuencial?: number;
+  numero_pedido?: string;
+  comentarios_historial?: Array<{
+    fecha: string;
+    comentario: string;
+    usuario_id?: string;
+  }>;
 }
 
 export interface IncidentComment {
@@ -60,6 +68,7 @@ export interface CreateIncidentData {
   periodo?: string;
   importe_carto?: number;
   documento_url?: string;
+  numero_pedido?: string;
 }
 
 export interface UpdateIncidentData {
@@ -82,4 +91,5 @@ export interface UpdateIncidentData {
   documento_url?: string;
   fecha_cierre?: string;
   comentarios_cierre?: string;
+  numero_pedido?: string;
 }
