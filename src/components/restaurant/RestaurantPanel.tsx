@@ -10,7 +10,7 @@ import { RestaurantFinanceTab } from './RestaurantFinanceTab';
 import { RestaurantIncidentsTab } from './RestaurantIncidentsTab';
 import { RestaurantPersonnelTab } from './RestaurantPersonnelTab';
 import { RestaurantAnalyticsTab } from './RestaurantAnalyticsTab';
-import { RestaurantOperationsTab } from './RestaurantOperationsTab';
+
 import { useNavigate } from 'react-router-dom';
 import { 
   Building2, 
@@ -126,7 +126,7 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             General
@@ -146,10 +146,6 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Analytics
-          </TabsTrigger>
-          <TabsTrigger value="operations" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Operaciones
           </TabsTrigger>
         </TabsList>
 
@@ -173,9 +169,6 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
           <RestaurantAnalyticsTab restaurantId={restaurantId} />
         </TabsContent>
 
-        <TabsContent value="operations" className="mt-6">
-          <RestaurantOperationsTab restaurantId={restaurantId} />
-        </TabsContent>
       </Tabs>
     </div>
   );
