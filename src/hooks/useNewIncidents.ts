@@ -23,6 +23,7 @@ export const useNewIncidents = (filters?: IncidentFilters) => {
     queryKey: ["new-incidents", filters],
     queryFn: async () => {
       try {
+        console.log("useNewIncidents - Fetching incidents", { filters });
         logger.info("Fetching incidents", { filters, component: "useNewIncidents" });
         
         let query = supabase
@@ -79,7 +80,10 @@ export const useNewIncidents = (filters?: IncidentFilters) => {
 
         const { data, error } = await query;
         
+        console.log("useNewIncidents - Query result:", { data, error, count: data?.length });
+        
         if (error) {
+          console.error("useNewIncidents - Database error:", error);
           logger.error("Error fetching incidents", { error: error.message, filters }, error);
           throw error;
         }
@@ -95,6 +99,8 @@ export const useNewIncidents = (filters?: IncidentFilters) => {
             site_number: incident.restaurant.site_number
           } : undefined
         })) || [];
+        
+        console.log("useNewIncidents - Transformed data:", transformedData);
         
         return transformedData as IncidentWithRelations[];
       } catch (error) {

@@ -1,21 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, BarChart3, FileText, Mic } from 'lucide-react';
+import { Plus, BarChart3, FileText, Mic, AlertCircle } from 'lucide-react';
 import { useNewIncidents } from '@/hooks/useNewIncidents';
 import { IncidentFilters } from '@/types/newIncident';
 import { MetricsDashboard } from './MetricsDashboard';
 import { VoiceNotesManager } from '@/components/voice/VoiceNotesManager';
 import { NewIncidentDialog } from './NewIncidentDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function NewIncidentManagement() {
   const [activeTab, setActiveTab] = useState('overview');
   const [filters, setFilters] = useState<IncidentFilters>({});
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   
-  const { incidents, isLoading, createIncident } = useNewIncidents(filters);
+  const { incidents, isLoading, error, createIncident } = useNewIncidents(filters);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('NewIncidentManagement - Component loaded');
+    console.log('NewIncidentManagement - Incidents:', incidents);
+    console.log('NewIncidentManagement - Loading:', isLoading);
+    console.log('NewIncidentManagement - Error:', error);
+  }, [incidents, isLoading, error]);
 
   // Calcular estadísticas rápidas
   const stats = {
@@ -28,6 +37,16 @@ export function NewIncidentManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Debug info */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Error cargando incidencias: {error.message}
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
