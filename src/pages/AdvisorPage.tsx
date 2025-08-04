@@ -205,14 +205,7 @@ const AdvisorPage = () => {
             <NavigationMenu />
             
             <div className="absolute bottom-0 w-80 p-6 border-t bg-card">
-              <Button
-                onClick={handleSignOut}
-                variant="outline"
-                className="w-full justify-start gap-3 border-destructive/20 text-destructive hover:bg-destructive/10"
-              >
-                <LogOut className="w-5 h-5" />
-                Cerrar Sesión
-              </Button>
+              {/* Botón de cerrar sesión eliminado - se mantiene solo el del header */}
             </div>
           </div>
 
