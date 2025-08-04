@@ -129,6 +129,7 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('numero_secuencial');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [viewMode, setViewMode] = useState<'compact' | 'full'>('compact');
 
   const { updateIncident, deleteIncident } = useIncidents();
 
