@@ -135,30 +135,54 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>ID</TableHead>
             <TableHead>Título</TableHead>
+            <TableHead>Descripción</TableHead>
             <TableHead>Restaurante</TableHead>
-            <TableHead>Ingeniero</TableHead>
-            <TableHead>Clasificación</TableHead>
+            <TableHead>Tipo</TableHead>
             <TableHead>Prioridad</TableHead>
             <TableHead>Estado</TableHead>
+            <TableHead>Ingeniero</TableHead>
+            <TableHead>Clasificación</TableHead>
+            <TableHead>Participante</TableHead>
+            <TableHead>Periodo</TableHead>
             <TableHead>Importe</TableHead>
-            <TableHead>Fecha</TableHead>
+            <TableHead>Origen</TableHead>
+            <TableHead>Asignado a</TableHead>
+            <TableHead>Reportado por</TableHead>
+            <TableHead>Fecha Creación</TableHead>
+            <TableHead>Fecha Resolución</TableHead>
+            <TableHead>Fecha Cierre</TableHead>
             <TableHead className="w-[70px]">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {incidents.map((incident) => (
             <TableRow key={incident.id}>
-              <TableCell className="font-medium">{incident.title}</TableCell>
-              <TableCell>
-                {incident.restaurant?.base_restaurant?.restaurant_name || 'N/A'} 
-                <br />
-                <span className="text-sm text-muted-foreground">
-                  #{incident.restaurant?.base_restaurant?.site_number}
-                </span>
+              <TableCell className="font-mono text-xs">
+                {incident.id.slice(0, 8)}...
               </TableCell>
-              <TableCell>{incident.ingeniero || 'N/A'}</TableCell>
-              <TableCell>{incident.clasificacion || incident.incident_type}</TableCell>
+              <TableCell className="font-medium max-w-xs">
+                <div className="truncate">{incident.title}</div>
+              </TableCell>
+              <TableCell className="max-w-xs">
+                <div className="truncate text-sm text-muted-foreground">
+                  {incident.description || 'Sin descripción'}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="font-medium">
+                  {incident.restaurant?.name || 'N/A'}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  #{incident.restaurant?.site_number}
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge variant="outline" className="text-xs">
+                  {incident.type}
+                </Badge>
+              </TableCell>
               <TableCell>
                 <Badge variant={getPriorityColor(incident.priority)}>
                   {getPriorityLabel(incident.priority)}
@@ -169,11 +193,42 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
                   {getStatusLabel(incident.status)}
                 </Badge>
               </TableCell>
+              <TableCell>{incident.ingeniero || 'N/A'}</TableCell>
+              <TableCell>{incident.clasificacion || 'N/A'}</TableCell>
+              <TableCell>{incident.participante || 'N/A'}</TableCell>
+              <TableCell>{incident.periodo || 'N/A'}</TableCell>
               <TableCell>
-                {incident.importe_carto ? `€${incident.importe_carto.toFixed(2)}` : 'N/A'}
+                {incident.importe_carto ? (
+                  <span className="font-medium">
+                    €{incident.importe_carto.toFixed(2)}
+                  </span>
+                ) : (
+                  'N/A'
+                )}
               </TableCell>
               <TableCell>
-                {format(new Date(incident.created_at), 'dd/MM/yyyy', { locale: es })}
+                <Badge variant="secondary" className="text-xs">
+                  {incident.source}
+                </Badge>
+              </TableCell>
+              <TableCell>{incident.assigned_to || 'No asignado'}</TableCell>
+              <TableCell>{incident.reported_by || 'N/A'}</TableCell>
+              <TableCell>
+                {format(new Date(incident.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+              </TableCell>
+              <TableCell>
+                {incident.resolved_at ? (
+                  format(new Date(incident.resolved_at), 'dd/MM/yyyy HH:mm', { locale: es })
+                ) : (
+                  'Pendiente'
+                )}
+              </TableCell>
+              <TableCell>
+                {incident.fecha_cierre ? (
+                  format(new Date(incident.fecha_cierre), 'dd/MM/yyyy HH:mm', { locale: es })
+                ) : (
+                  'Abierta'
+                )}
               </TableCell>
               <TableCell>
                 <DropdownMenu>
