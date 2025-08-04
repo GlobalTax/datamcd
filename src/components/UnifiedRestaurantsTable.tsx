@@ -420,16 +420,16 @@ export const UnifiedRestaurantsTable: React.FC<UnifiedRestaurantsTableProps> = (
                       </TableCell>
                       
                       <TableCell>
-                        {restaurant.isAssigned && restaurant.assignment?.status === 'assigned' ? (
+                        {restaurant.isAssigned && restaurant.assignment?.id ? (
                           <Button
                             onClick={() => navigate(`/restaurant/${restaurant.assignment.id}/panel`)}
-                            variant="outline"
+                            variant="default"
                             size="sm"
-                            className="gap-2"
+                            className="gap-2 bg-blue-600 hover:bg-blue-700"
                             title="Ver panel integral del restaurante"
                           >
                             <BarChart3 className="w-4 h-4" />
-                            Panel
+                            Panel Integral
                           </Button>
                         ) : (
                           <Button
@@ -437,11 +437,7 @@ export const UnifiedRestaurantsTable: React.FC<UnifiedRestaurantsTableProps> = (
                             size="sm"
                             disabled
                             className="gap-2 text-muted-foreground"
-                            title={
-                              !restaurant.isAssigned 
-                                ? 'Restaurante no asignado a ninguna franquicia'
-                                : 'Panel no disponible para este restaurante'
-                            }
+                            title="Restaurante debe estar asignado para acceder al panel"
                           >
                             <BarChart3 className="w-4 h-4" />
                             No disponible
