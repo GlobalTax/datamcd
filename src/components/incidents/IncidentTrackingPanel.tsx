@@ -25,9 +25,13 @@ import {
   Plus,
   Eye,
   Edit,
-  ArrowRight
+  ArrowRight,
+  List,
+  Grid
 } from 'lucide-react';
 import { useNewIncidents } from '@/hooks/useNewIncidents';
+import { IncidentsTable } from './IncidentsTable';
+import { NewIncidentDialog } from './NewIncidentDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -90,7 +94,8 @@ const PRIORITY_CONFIG = {
 };
 
 export function IncidentTrackingPanel() {
-  const { incidents, isLoading, error } = useNewIncidents();
+  const { incidents, isLoading, error, createIncident } = useNewIncidents();
+  const [activeView, setActiveView] = useState('table'); // 'cards' | 'table'
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [priorityFilter, setPriorityFilter] = useState<string>('todos');
@@ -100,6 +105,7 @@ export function IncidentTrackingPanel() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [incidentComments, setIncidentComments] = useState<IncidentComment[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Filtrar incidencias
   const filteredIncidents = useMemo(() => {
@@ -329,137 +335,185 @@ export function IncidentTrackingPanel() {
         </Card>
       </div>
 
-      {/* Filtros */}
+      {/* Filtros y Controles */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Buscar incidencias..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-col md:flex-row gap-4 flex-1">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Buscar incidencias..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
-            </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los Estados</SelectItem>
-                <SelectItem value="open">Abierta</SelectItem>
-                <SelectItem value="in_progress">En Progreso</SelectItem>
-                <SelectItem value="pending">Pendiente</SelectItem>
-                <SelectItem value="resolved">Resuelta</SelectItem>
-                <SelectItem value="closed">Cerrada</SelectItem>
-              </SelectContent>
-            </Select>
+              
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos los Estados</SelectItem>
+                  <SelectItem value="open">Abierta</SelectItem>
+                  <SelectItem value="in_progress">En Progreso</SelectItem>
+                  <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem value="resolved">Resuelta</SelectItem>
+                  <SelectItem value="closed">Cerrada</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Prioridad" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todas las Prioridades</SelectItem>
-                <SelectItem value="low">Baja</SelectItem>
-                <SelectItem value="medium">Media</SelectItem>
-                <SelectItem value="high">Alta</SelectItem>
-                <SelectItem value="critical">Crítica</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Prioridad" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas las Prioridades</SelectItem>
+                  <SelectItem value="low">Baja</SelectItem>
+                  <SelectItem value="medium">Media</SelectItem>
+                  <SelectItem value="high">Alta</SelectItem>
+                  <SelectItem value="critical">Crítica</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex items-center border rounded-lg p-1">
+                <Button
+                  variant={activeView === 'cards' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveView('cards')}
+                >
+                  <Grid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={activeView === 'table' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveView('table')}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nueva Incidencia
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Lista de Incidencias */}
-      <div className="grid gap-4">
-        {filteredIncidents.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No hay incidencias</h3>
-              <p className="text-muted-foreground">
-                No se encontraron incidencias que coincidan con los filtros aplicados.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredIncidents.map((incident) => {
-            const StatusIcon = STATUS_CONFIG[incident.status as keyof typeof STATUS_CONFIG]?.icon || AlertTriangle;
-            const statusConfig = STATUS_CONFIG[incident.status as keyof typeof STATUS_CONFIG];
-            const priorityConfig = PRIORITY_CONFIG[incident.priority as keyof typeof PRIORITY_CONFIG];
+      {/* Vista de Incidencias */}
+      {activeView === 'table' ? (
+        <IncidentsTable 
+          incidents={filteredIncidents || []} 
+          isLoading={isLoading} 
+        />
+      ) : (
+        <div className="grid gap-4">
+          {filteredIncidents.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No hay incidencias</h3>
+                <p className="text-muted-foreground mb-4">
+                  No se encontraron incidencias que coincidan con los filtros aplicados.
+                </p>
+                <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Crear Primera Incidencia
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredIncidents.map((incident) => {
+              const StatusIcon = STATUS_CONFIG[incident.status as keyof typeof STATUS_CONFIG]?.icon || AlertTriangle;
+              const statusConfig = STATUS_CONFIG[incident.status as keyof typeof STATUS_CONFIG];
+              const priorityConfig = PRIORITY_CONFIG[incident.priority as keyof typeof PRIORITY_CONFIG];
 
-            return (
-              <Card key={incident.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center gap-3">
-                        <StatusIcon className="h-5 w-5 text-muted-foreground" />
-                        <h3 className="font-semibold text-lg">{incident.title}</h3>
-                        <Badge className={statusConfig?.color || 'bg-gray-100 text-gray-800'}>
-                          {statusConfig?.label || incident.status}
-                        </Badge>
-                        <Badge className={priorityConfig?.color || 'bg-gray-100 text-gray-800'}>
-                          {priorityConfig?.label || incident.priority}
-                        </Badge>
-                      </div>
-
-                      <p className="text-muted-foreground line-clamp-2">
-                        {incident.description || 'Sin descripción'}
-                      </p>
-
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          <span>Creada: {format(new Date(incident.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}</span>
+              return (
+                <Card key={incident.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <StatusIcon className="h-5 w-5 text-muted-foreground" />
+                          <h3 className="font-semibold text-lg">{incident.title}</h3>
+                          {incident.numero_secuencial && (
+                            <Badge variant="outline">
+                              SI: {incident.numero_secuencial}
+                            </Badge>
+                          )}
+                          <Badge className={statusConfig?.color || 'bg-gray-100 text-gray-800'}>
+                            {statusConfig?.label || incident.status}
+                          </Badge>
+                          <Badge className={priorityConfig?.color || 'bg-gray-100 text-gray-800'}>
+                            {priorityConfig?.label || incident.priority}
+                          </Badge>
                         </div>
-                        {incident.restaurant?.name && (
+
+                        <p className="text-muted-foreground line-clamp-2">
+                          {incident.description || 'Sin descripción'}
+                        </p>
+
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
-                            <User className="h-4 w-4" />
-                            <span>{incident.restaurant.name}</span>
+                            <Calendar className="h-4 w-4" />
+                            <span>Creada: {format(new Date(incident.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}</span>
                           </div>
-                        )}
+                          {incident.restaurant?.name && (
+                            <div className="flex items-center gap-1">
+                              <User className="h-4 w-4" />
+                              <span>{incident.restaurant.name}</span>
+                            </div>
+                          )}
+                          {incident.participante && (
+                            <div className="flex items-center gap-1">
+                              <User className="h-4 w-4" />
+                              <span>Participante: {incident.participante}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 ml-4">
+                        <Select 
+                          value={incident.status} 
+                          onValueChange={(value) => updateIncidentStatus(incident.id, value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="open">Abierta</SelectItem>
+                            <SelectItem value="in_progress">En Progreso</SelectItem>
+                            <SelectItem value="pending">Pendiente</SelectItem>
+                            <SelectItem value="resolved">Resuelta</SelectItem>
+                            <SelectItem value="closed">Cerrada</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openIncidentDetails(incident)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver Detalles
+                        </Button>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2 ml-4">
-                      <Select 
-                        value={incident.status} 
-                        onValueChange={(value) => updateIncidentStatus(incident.id, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="open">Abierta</SelectItem>
-                          <SelectItem value="in_progress">En Progreso</SelectItem>
-                          <SelectItem value="pending">Pendiente</SelectItem>
-                          <SelectItem value="resolved">Resuelta</SelectItem>
-                          <SelectItem value="closed">Cerrada</SelectItem>
-                        </SelectContent>
-                      </Select>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openIncidentDetails(incident)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        Ver Detalles
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
-      </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </div>
+      )}
 
       {/* Dialog de Detalles */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
@@ -600,6 +654,14 @@ export function IncidentTrackingPanel() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog para crear incidencias */}
+      <NewIncidentDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSubmit={(data) => createIncident.mutate(data)}
+        isLoading={createIncident.isPending}
+      />
     </div>
   );
 }
