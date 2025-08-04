@@ -18,7 +18,8 @@ import {
   Monitor,
   Menu,
   X,
-  Receipt
+  Receipt,
+  AlertTriangle
 } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import AdvisorManagement from '@/components/AdvisorManagement';
@@ -35,6 +36,7 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { ConnectionStatus } from '@/components/common/ConnectionStatus';
 import { LoadingFallback } from '@/components/common/LoadingFallback';
 import { OrquestDashboard } from '@/components/orquest/OrquestDashboard';
+import { NewIncidentManagement } from '@/components/incidents/NewIncidentManagement';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const AdvisorPage = () => {
@@ -106,6 +108,7 @@ const AdvisorPage = () => {
     { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'orange' },
     { id: 'reports', label: 'Reportes', icon: FileText, color: 'yellow' },
     { id: 'notifications', label: 'Alertas', icon: Bell, color: 'red' },
+    { id: 'incidents', label: 'Incidencias', icon: AlertTriangle, color: 'orange' },
     { id: 'biloop', label: 'Biloop', icon: Receipt, color: 'cyan' },
     { id: 'management', label: 'Gestión', icon: Users, color: 'indigo' },
   ];
@@ -435,6 +438,12 @@ const AdvisorPage = () => {
                           <AdvisorManagement />
                         </CardContent>
                       </Card>
+                    </ErrorBoundary>
+                  )}
+
+                  {activeTab === 'incidents' && (
+                    <ErrorBoundary>
+                      <NewIncidentManagement />
                     </ErrorBoundary>
                   )}
 

@@ -156,6 +156,12 @@ const advisorMenuItems: AdvisorMenuItem[] = [
     hash: "biloop",
   },
   {
+    title: "Incidencias",
+    url: "/advisor",
+    icon: AlertTriangle,
+    hash: "incidents",
+  },
+  {
     title: "Gestión",
     url: "/advisor",
     icon: Users,
