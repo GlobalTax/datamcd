@@ -8,6 +8,7 @@ import { useNewIncidents } from '@/hooks/useNewIncidents';
 import { IncidentFilters } from '@/types/newIncident';
 import { MetricsDashboard } from './MetricsDashboard';
 import { VoiceNotesManager } from '@/components/voice/VoiceNotesManager';
+import { IncidentTrackingPanel } from './IncidentTrackingPanel';
 import { NewIncidentDialog } from './NewIncidentDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -103,8 +104,12 @@ export function NewIncidentManagement() {
 
       {/* Tabs principales */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Vista General</TabsTrigger>
+          <TabsTrigger value="tracking">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            Seguimiento
+          </TabsTrigger>
           <TabsTrigger value="metrics">
             <BarChart3 className="h-4 w-4 mr-2" />
             Métricas
@@ -181,6 +186,10 @@ export function NewIncidentManagement() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="tracking">
+          <IncidentTrackingPanel />
         </TabsContent>
 
         <TabsContent value="metrics">
