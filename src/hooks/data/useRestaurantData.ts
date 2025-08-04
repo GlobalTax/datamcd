@@ -39,22 +39,35 @@ export const restaurantDataKeys = {
 };
 
 export function useRestaurantData(restaurantId: string) {
-  const { effectiveFranchisee } = useAuth();
+  const { effectiveFranchisee, user } = useAuth();
 
   return useQuery({
     queryKey: restaurantDataKeys.detail(restaurantId, effectiveFranchisee?.id),
     queryFn: async (): Promise<RestaurantData> => {
-      if (!restaurantId || !effectiveFranchisee?.id) {
-        throw new Error('Restaurant ID and franchisee ID are required');
+      if (!restaurantId) {
+        throw new Error('Restaurant ID is required');
       }
+
+      // Obtener el rol del usuario
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user?.id)
+        .single();
+
+      const userRole = profileData?.role;
+      const isSuperAdmin = userRole === 'superadmin' || userRole === 'admin';
 
       logger.info('Fetching restaurant data', {
         component: 'useRestaurantData',
         restaurantId,
-        franchiseeId: effectiveFranchisee.id
+        userRole,
+        isSuperAdmin,
+        franchiseeId: effectiveFranchisee?.id
       });
 
-      const { data, error } = await supabase
+      // Query base para obtener datos del restaurante
+      let query = supabase
         .from('franchisee_restaurants')
         .select(`
           id,
@@ -81,25 +94,40 @@ export function useRestaurantData(restaurantId: string) {
             property_type
           )
         `)
-        .eq('id', restaurantId)
-        .eq('franchisee_id', effectiveFranchisee.id)
-        .maybeSingle();
+        .eq('id', restaurantId);
+
+      // Para superadmins: acceso a cualquier restaurante
+      // Para franquiciados: solo sus restaurantes asignados
+      if (!isSuperAdmin) {
+        if (!effectiveFranchisee?.id) {
+          throw new Error('Franchisee ID is required for non-admin users');
+        }
+        query = query.eq('franchisee_id', effectiveFranchisee.id);
+      }
+
+      const { data, error } = await query.maybeSingle();
 
       if (error) {
         logger.error('Error fetching restaurant data', {
           error: error.message,
           restaurantId,
-          franchiseeId: effectiveFranchisee.id,
+          userRole,
+          franchiseeId: effectiveFranchisee?.id,
           component: 'useRestaurantData'
         });
         throw new Error(`Error fetching restaurant data: ${error.message}`);
       }
 
       if (!data) {
-        const errorMsg = `Restaurant ${restaurantId} not found for current franchisee. Access denied or restaurant doesn't exist.`;
+        const errorMsg = isSuperAdmin 
+          ? `Restaurant ${restaurantId} not found in the system.`
+          : `Restaurant ${restaurantId} not found for current franchisee. Access denied or restaurant doesn't exist.`;
+        
         logger.warn('Restaurant not found', {
           restaurantId,
-          franchiseeId: effectiveFranchisee.id,
+          userRole,
+          isSuperAdmin,
+          franchiseeId: effectiveFranchisee?.id,
           component: 'useRestaurantData'
         });
         throw new Error(errorMsg);
@@ -108,12 +136,14 @@ export function useRestaurantData(restaurantId: string) {
       logger.info('Successfully fetched restaurant data', {
         component: 'useRestaurantData',
         restaurantId: data.id,
-        restaurantName: data.base_restaurant?.restaurant_name
+        restaurantName: data.base_restaurant?.restaurant_name,
+        userRole,
+        isSuperAdmin
       });
 
       return data as RestaurantData;
     },
-    enabled: !!restaurantId && !!effectiveFranchisee?.id,
+    enabled: !!restaurantId && !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: (failureCount, error) => {

@@ -413,6 +413,13 @@ export type Database = {
             referencedRelation: "franchisee_restaurants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "annual_budgets_new_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_access_view"
+            referencedColumns: ["restaurant_id"]
+          },
         ]
       }
       audit_logs: {
@@ -947,6 +954,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "franchisee_restaurants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_access_view"
+            referencedColumns: ["restaurant_id"]
           },
         ]
       }
@@ -1686,6 +1700,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "franchisee_restaurants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_tracking_franchisee_restaurant_id_fkey"
+            columns: ["franchisee_restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_access_view"
+            referencedColumns: ["restaurant_id"]
           },
         ]
       }
@@ -2786,6 +2807,13 @@ export type Database = {
             referencedRelation: "franchisee_restaurants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "restaurant_budgets_franchisee_restaurant_id_fkey"
+            columns: ["franchisee_restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_access_view"
+            referencedColumns: ["restaurant_id"]
+          },
         ]
       }
       restaurant_incidents: {
@@ -3151,6 +3179,13 @@ export type Database = {
             referencedRelation: "franchisee_restaurants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "valuation_budgets_franchisee_restaurant_id_fkey"
+            columns: ["franchisee_restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_access_view"
+            referencedColumns: ["restaurant_id"]
+          },
         ]
       }
       valuation_scenarios: {
@@ -3409,6 +3444,33 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      restaurant_access_view: {
+        Row: {
+          city: string | null
+          franchisee_id: string | null
+          franchisee_name: string | null
+          franchisee_user_id: string | null
+          restaurant_id: string | null
+          restaurant_name: string | null
+          site_number: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchisee_restaurants_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franchisees_user_id_fkey"
+            columns: ["franchisee_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tap_funky: {
         Row: {
