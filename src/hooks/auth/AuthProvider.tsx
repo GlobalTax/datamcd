@@ -143,7 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           profile = {
             id: userId,
             email: sessionUser?.email || 'usuario@ejemplo.com',
-            full_name: sessionUser?.user_metadata?.full_name || 'Usuario'
+            full_name: sessionUser?.user_metadata?.full_name || 'Usuario',
+            role: 'franchisee' // Default role
           };
         } else {
           profile = profileData;
@@ -153,30 +154,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile = {
           id: userId,
           email: sessionUser?.email || 'usuario@ejemplo.com',
-          full_name: sessionUser?.user_metadata?.full_name || 'Usuario'
+          full_name: sessionUser?.user_metadata?.full_name || 'Usuario',
+          role: 'franchisee' // Default role
         };
       }
 
-      setUser({ ...profile, role: 'superadmin' }); // Agregar role temporal
+      setUser(profile);
 
-      // Cargar franquiciado para todos los usuarios
-      try {
-        const { data: franchiseeData, error: franchiseeError } = await supabase
-          .from('franchisees')
-          .select('*')
-          .eq('user_id', userId)
-          .single();
+      // Solo cargar franquiciado para usuarios que no son superadmin/admin
+      if (profile.role !== 'superadmin' && profile.role !== 'admin') {
+        try {
+          const { data: franchiseeData, error: franchiseeError } = await supabase
+            .from('franchisees')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
 
-        if (franchiseeError) {
+          if (franchiseeError) {
+            await createFranchisee(userId);
+          } else {
+            setFranchisee(franchiseeData);
+            
+            // Cargar restaurantes del franquiciado
+            await fetchRestaurants(franchiseeData.id);
+          }
+        } catch (franchiseeError) {
           await createFranchisee(userId);
-        } else {
-          setFranchisee(franchiseeData);
-          
-          // Cargar restaurantes del franquiciado
-          await fetchRestaurants(franchiseeData.id);
         }
-      } catch (franchiseeError) {
-        await createFranchisee(userId);
       }
     } catch (error) {
       logger.authError('Failed to fetch user data', { userId, retryCount }, error as Error);
