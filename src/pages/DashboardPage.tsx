@@ -41,19 +41,30 @@ const DashboardPage = () => {
     effectiveFranchisee,
     getDebugInfo
   } = useAuth();
+  
+  // Solo cargar restaurants si no es superadmin/admin
+  const shouldLoadRestaurants = user?.role !== 'superadmin' && user?.role !== 'admin';
   const { restaurants, isLoading: restaurantsLoading } = useRestaurants();
   const navigate = useNavigate();
   
-  const loading = restaurantsLoading;
+  const loading = shouldLoadRestaurants ? restaurantsLoading : false;
   
   // Simular isUsingCache para compatibilidad
   const isUsingCache = connectionStatus === 'offline';
 
   const debugInfo = getDebugInfo();
   console.log('DASHBOARD DEBUG:', debugInfo);
+  console.log('🎯 Dashboard Page - User role check:', {
+    userId: user?.id,
+    userRole: user?.role,
+    isSuperadmin: user?.role === 'superadmin',
+    isAdmin: user?.role === 'admin',
+    shouldLoadRestaurants,
+    franchiseeExists: !!franchisee
+  });
 
-  // Transformar datos para el componente
-  const displayRestaurants: DisplayRestaurant[] = restaurants.map(r => ({
+  // Transformar datos para el componente (solo para franchisees)
+  const displayRestaurants: DisplayRestaurant[] = shouldLoadRestaurants ? restaurants.map(r => ({
     id: r.id || `restaurant-${Math.random()}`,
     name: r.restaurant_name || 'Restaurante',
     restaurant_name: r.restaurant_name || 'Restaurante',
@@ -70,7 +81,7 @@ const DashboardPage = () => {
     lastYearRevenue: 0, // Will be populated from assignments later
     baseRent: 0, // Will be populated from assignments later
     isOwnedByMcD: false,
-  }));
+  })) : [];
 
   // Calcular métricas del dashboard
   const calculateDashboardMetrics = () => {
@@ -120,7 +131,9 @@ const DashboardPage = () => {
             <SidebarTrigger className="-ml-1" />
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
+                <h1 className="text-lg font-semibold text-gray-900">
+                  {user?.role === 'superadmin' || user?.role === 'admin' ? 'Dashboard Administrativo' : 'Dashboard'}
+                </h1>
                 {isUsingCache ? (
                   <div className="flex items-center gap-2 px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs">
                     <WifiOff className="w-3 h-3" />

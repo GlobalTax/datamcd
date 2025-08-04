@@ -160,6 +160,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       setUser(profile);
+      
+      console.log('🔍 AuthProvider - User loaded:', {
+        userId,
+        role: profile.role,
+        email: profile.email,
+        isAdmin: profile.role === 'superadmin' || profile.role === 'admin'
+      });
 
       // Solo cargar franquiciado para usuarios que no son superadmin/admin
       if (profile.role !== 'superadmin' && profile.role !== 'admin') {
@@ -198,12 +205,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: userId,
         email: session?.user?.email || 'usuario@ejemplo.com',
         full_name: session?.user?.user_metadata?.full_name || 'Usuario',
-        role: 'superadmin'
+        role: 'franchisee' // Default role
       };
-      setUser({ ...fallbackProfile, role: 'superadmin' });
+      setUser(fallbackProfile);
       
-      // Intentar crear franquiciado
-      await createFranchisee(userId);
+      // Solo intentar crear franquiciado si no es superadmin/admin
+      if (fallbackProfile.role !== 'superadmin' && fallbackProfile.role !== 'admin') {
+        await createFranchisee(userId);
+      }
     } finally {
       isInitializing.current = false;
     }
@@ -212,7 +221,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Versión con debounce para evitar llamadas rápidas
   const debouncedFetchUserData = useDebounce(fetchUserData, 300);
 
-  // Crear franquiciado si no existe
+  // Crear franquiciado si no existe (solo para usuarios que no son admin/superadmin)
   const createFranchisee = useCallback(async (userId: string) => {
     try {
       const { data: newFranchisee, error } = await supabase
@@ -227,7 +236,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         logger.dataError('Failed to create franchisee', 'franchisees', 'insert', { userId }, error);
-        // Crear franquiciado fallback local
+        // Para usuarios normales, crear franquiciado fallback local
         const fallbackFranchisee: Franchisee = {
           id: `temp-${userId}`,
           user_id: userId,
