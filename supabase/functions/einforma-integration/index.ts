@@ -137,6 +137,7 @@ async function getEInformaToken(): Promise<string> {
 
   try {
     // URL según documentación oficial de eInforma
+    console.log('Getting eInforma token with credentials:', !!clientId, !!clientSecret);
     const tokenResponse = await fetch('https://developers.einforma.com/oauth/token', {
       method: 'POST',
       headers: {
@@ -195,7 +196,7 @@ async function searchCompanyByCIF(cif: string, accessToken: string): Promise<any
     const searchData = await searchResponse.json();
     console.log('Search response data:', JSON.stringify(searchData, null, 2));
     
-    // Verificar estructura de respuesta según documentación
+    // Verificar estructura de respuesta según documentación eInforma
     if (!searchData.resultado?.empresa || searchData.resultado.empresa.length === 0) {
       console.log('No companies found for CIF:', cif);
       return null;
@@ -262,7 +263,7 @@ async function enrichCompanyData(supabaseClient: any, cif: string) {
       );
     }
 
-    console.log('Company found:', companyBasicData.name);
+    console.log('Company found:', companyBasicData.denominacion || companyBasicData.name);
 
     // Obtener reporte detallado (opcional, puede tener coste adicional)
     let detailedReport = null;
@@ -283,7 +284,7 @@ async function enrichCompanyData(supabaseClient: any, cif: string) {
       municipio: companyBasicData.localidad,
       provincia: companyBasicData.provincia,
       codigo_cnae: companyBasicData.cnae,
-      descripcion_cnae: null, // No disponible en búsqueda básica
+      descripcion_cnae: null, // No disponible en búsqueda básica  
       situacion_aeat: companyBasicData.situacion || 'ACTIVA',
       fecha_constitucion: companyBasicData.fechaConstitucion,
       capital_social: companyBasicData.capitalSocial,
