@@ -123,78 +123,124 @@ async function validateCIF(cif: string) {
 }
 
 async function getEInformaToken(): Promise<string> {
+  console.log('=== Getting eInforma token ===');
+  
   const clientId = Deno.env.get('EINFORMA_CLIENT_ID');
   const clientSecret = Deno.env.get('EINFORMA_CLIENT_SECRET');
   
+  console.log('Client ID configured:', !!clientId);
+  console.log('Client Secret configured:', !!clientSecret);
+  
   if (!clientId || !clientSecret) {
-    throw new Error('eInforma credentials not configured');
+    throw new Error('eInforma credentials not configured. Please configure EINFORMA_CLIENT_ID and EINFORMA_CLIENT_SECRET in Supabase secrets.');
   }
 
-  // URL corregida según documentación oficial de eInforma
-  const tokenResponse = await fetch('https://developers.einforma.com/oauth/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: clientId,
-      client_secret: clientSecret,
-    }),
-  });
+  try {
+    // URL según documentación oficial de eInforma
+    const tokenResponse = await fetch('https://developers.einforma.com/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    });
 
-  if (!tokenResponse.ok) {
-    const errorText = await tokenResponse.text();
-    console.error('eInforma token error:', errorText);
-    throw new Error(`Failed to get eInforma token: ${tokenResponse.status} ${errorText}`);
+    console.log('Token response status:', tokenResponse.status);
+    console.log('Token response headers:', Object.fromEntries(tokenResponse.headers));
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('eInforma token error response:', errorText);
+      throw new Error(`Failed to get eInforma token: ${tokenResponse.status} - ${errorText}`);
+    }
+
+    const tokenData: EInformaAuthResponse = await tokenResponse.json();
+    console.log('Token obtained successfully, expires in:', tokenData.expires_in);
+    return tokenData.access_token;
+  } catch (error) {
+    console.error('Error getting eInforma token:', error);
+    throw error;
   }
-
-  const tokenData: EInformaAuthResponse = await tokenResponse.json();
-  return tokenData.access_token;
 }
 
 async function searchCompanyByCIF(cif: string, accessToken: string): Promise<any> {
-  // URL y parámetros corregidos según documentación oficial de eInforma
-  const searchResponse = await fetch(`https://developers.einforma.com/api/v1/companies?companySearch=${encodeURIComponent(cif)}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!searchResponse.ok) {
-    const errorText = await searchResponse.text();
-    console.error('eInforma search error:', errorText);
-    throw new Error(`Failed to search company: ${searchResponse.status} ${errorText}`);
-  }
-
-  const searchData: EInformaCompanySearchResponse = await searchResponse.json();
+  console.log('=== Searching company by CIF:', cif, '===');
   
-  if (!searchData.data || searchData.data.length === 0) {
-    return null;
-  }
+  try {
+    // URL según documentación oficial de eInforma - buscar por nombre/CIF
+    const searchUrl = `https://developers.einforma.com/companies?name=${encodeURIComponent(cif)}`;
+    console.log('Search URL:', searchUrl);
+    
+    const searchResponse = await fetch(searchUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-  return searchData.data[0];
+    console.log('Search response status:', searchResponse.status);
+    console.log('Search response headers:', Object.fromEntries(searchResponse.headers));
+
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text();
+      console.error('eInforma search error response:', errorText);
+      throw new Error(`Failed to search company: ${searchResponse.status} - ${errorText}`);
+    }
+
+    const searchData = await searchResponse.json();
+    console.log('Search response data:', JSON.stringify(searchData, null, 2));
+    
+    // Verificar estructura de respuesta según documentación
+    if (!searchData.resultado?.empresa || searchData.resultado.empresa.length === 0) {
+      console.log('No companies found for CIF:', cif);
+      return null;
+    }
+
+    const company = searchData.resultado.empresa[0];
+    console.log('Company found:', company);
+    return company;
+  } catch (error) {
+    console.error('Error searching company:', error);
+    throw error;
+  }
 }
 
 async function getCompanyReport(companyId: string, accessToken: string): Promise<any> {
-  // URL corregida para endpoint de reportes detallados
-  const reportResponse = await fetch(`https://developers.einforma.com/api/v1/companies/${companyId}/report`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  console.log('=== Getting company report for ID:', companyId, '===');
+  
+  try {
+    // URL según documentación oficial de eInforma
+    const reportUrl = `https://developers.einforma.com/companies/${companyId}/report`;
+    console.log('Report URL:', reportUrl);
+    
+    const reportResponse = await fetch(reportUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-  if (!reportResponse.ok) {
-    const errorText = await reportResponse.text();
-    console.error('eInforma report error:', errorText);
-    throw new Error(`Failed to get company report: ${reportResponse.status} ${errorText}`);
+    console.log('Report response status:', reportResponse.status);
+
+    if (!reportResponse.ok) {
+      const errorText = await reportResponse.text();
+      console.error('eInforma report error response:', errorText);
+      throw new Error(`Failed to get company report: ${reportResponse.status} - ${errorText}`);
+    }
+
+    const reportData = await reportResponse.json();
+    console.log('Report obtained successfully');
+    return reportData;
+  } catch (error) {
+    console.error('Error getting company report:', error);
+    throw error;
   }
-
-  return await reportResponse.json();
 }
 
 async function enrichCompanyData(supabaseClient: any, cif: string) {
@@ -227,31 +273,37 @@ async function enrichCompanyData(supabaseClient: any, cif: string) {
       // Continúar con datos básicos si no se puede obtener el reporte detallado
     }
 
-    // Mapear datos de eInforma a nuestro formato
+    // Mapear datos de eInforma a nuestro formato según documentación
     const mappedData: EInformaCompanyData = {
       cif: cif.toUpperCase(),
-      razon_social: companyBasicData.name,
-      nombre_comercial: companyBasicData.comercialName || companyBasicData.name,
-      domicilio_fiscal: companyBasicData.address,
-      codigo_postal: companyBasicData.postalCode,
-      municipio: companyBasicData.city,
-      provincia: companyBasicData.province,
+      razon_social: companyBasicData.denominacion || '',
+      nombre_comercial: companyBasicData.nombreComercial?.[0] || companyBasicData.denominacion,
+      domicilio_fiscal: companyBasicData.domicilioSocial,
+      codigo_postal: null, // No disponible en búsqueda básica
+      municipio: companyBasicData.localidad,
+      provincia: companyBasicData.provincia,
       codigo_cnae: companyBasicData.cnae,
-      descripcion_cnae: companyBasicData.cnaeDescription,
-      situacion_aeat: companyBasicData.status || 'ACTIVA',
-      fecha_constitucion: companyBasicData.constitutionDate,
-      capital_social: companyBasicData.capital,
-      forma_juridica: companyBasicData.legalForm,
-      telefono: companyBasicData.phone,
+      descripcion_cnae: null, // No disponible en búsqueda básica
+      situacion_aeat: companyBasicData.situacion || 'ACTIVA',
+      fecha_constitucion: companyBasicData.fechaConstitucion,
+      capital_social: companyBasicData.capitalSocial,
+      forma_juridica: companyBasicData.formaJuridica,
+      telefono: companyBasicData.telefono?.[0],
       email: companyBasicData.email,
-      web: companyBasicData.web,
-      empleados_estimados: companyBasicData.employees,
-      facturacion_estimada: companyBasicData.turnover,
-      rating_crediticio: companyBasicData.rating,
+      web: companyBasicData.web?.[0],
+      empleados_estimados: companyBasicData.empleados,
+      facturacion_estimada: companyBasicData.ventas,
+      rating_crediticio: null, // No disponible en búsqueda básica
       datos_adicionales: {
         fuente: 'eInforma API',
         consulta_date: new Date().toISOString(),
         company_id: companyBasicData.id,
+        fecha_ultimo_balance: companyBasicData.fechaUltimoBalance,
+        identificativo: companyBasicData.identificativo,
+        tipo_denominacion: companyBasicData.tipoDenominacion,
+        cargo_principal: companyBasicData.cargoPrincipal,
+        anio_ventas: companyBasicData.anioVentas,
+        fax: companyBasicData.fax?.[0],
         detailed_report: detailedReport ? 'available' : 'not_available'
       }
     };
