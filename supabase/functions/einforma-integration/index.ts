@@ -29,10 +29,33 @@ interface EInformaCompanyData {
   datos_adicionales?: any;
 }
 
-interface EInformaAuthResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
+// eInforma usa autenticación básica, no OAuth
+interface EInformaSearchResponse {
+  empresa: Array<{
+    id: string;
+    denominacion: string;
+    nombreComercial?: string[];
+    cif: string;
+    domicilioSocial?: string;
+    localidad?: string;
+    provincia?: string;
+    cnae?: string;
+    situacion?: string;
+    fechaConstitucion?: string;
+    capitalSocial?: number;
+    formaJuridica?: string;
+    telefono?: string[];
+    email?: string;
+    web?: string[];
+    empleados?: number;
+    ventas?: number;
+    fechaUltimoBalance?: string;
+    identificativo?: string;
+    tipoDenominacion?: string;
+    cargoPrincipal?: string;
+    anioVentas?: string;
+    fax?: string[];
+  }>;
 }
 
 interface EInformaCompanySearchResponse {
@@ -122,65 +145,39 @@ async function validateCIF(cif: string) {
   );
 }
 
-async function getEInformaToken(): Promise<string> {
-  console.log('=== Getting eInforma token ===');
+async function getEInformaCredentials(): Promise<string> {
+  console.log('=== Getting eInforma credentials ===');
   
-  const clientId = Deno.env.get('EINFORMA_CLIENT_ID');
-  const clientSecret = Deno.env.get('EINFORMA_CLIENT_SECRET');
+  const username = Deno.env.get('EINFORMA_CLIENT_ID');  // Usuario de eInforma
+  const password = Deno.env.get('EINFORMA_CLIENT_SECRET');  // Clave de eInforma
   
-  console.log('Client ID configured:', !!clientId);
-  console.log('Client Secret configured:', !!clientSecret);
+  console.log('Username configured:', !!username);
+  console.log('Password configured:', !!password);
   
-  if (!clientId || !clientSecret) {
-    throw new Error('eInforma credentials not configured. Please configure EINFORMA_CLIENT_ID and EINFORMA_CLIENT_SECRET in Supabase secrets.');
+  if (!username || !password) {
+    throw new Error('eInforma credentials not configured. Please configure EINFORMA_CLIENT_ID (username) and EINFORMA_CLIENT_SECRET (password) in Supabase secrets.');
   }
 
-  try {
-    // URL según documentación oficial de eInforma
-    console.log('Getting eInforma token with credentials:', !!clientId, !!clientSecret);
-    const tokenResponse = await fetch('https://developers.einforma.com/oauth/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: clientId,
-        client_secret: clientSecret,
-      }),
-    });
-
-    console.log('Token response status:', tokenResponse.status);
-    console.log('Token response headers:', Object.fromEntries(tokenResponse.headers));
-
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error('eInforma token error response:', errorText);
-      throw new Error(`Failed to get eInforma token: ${tokenResponse.status} - ${errorText}`);
-    }
-
-    const tokenData: EInformaAuthResponse = await tokenResponse.json();
-    console.log('Token obtained successfully, expires in:', tokenData.expires_in);
-    return tokenData.access_token;
-  } catch (error) {
-    console.error('Error getting eInforma token:', error);
-    throw error;
-  }
+  // eInforma usa autenticación básica, no OAuth
+  const basicAuth = btoa(`${username}:${password}`);
+  console.log('Basic auth credentials prepared');
+  return basicAuth;
 }
 
-async function searchCompanyByCIF(cif: string, accessToken: string): Promise<any> {
+async function searchCompanyByCIF(cif: string, basicAuth: string): Promise<any> {
   console.log('=== Searching company by CIF:', cif, '===');
   
   try {
-    // URL según documentación oficial de eInforma - buscar por nombre/CIF
-    const searchUrl = `https://developers.einforma.com/companies?name=${encodeURIComponent(cif)}`;
+    // URL según documentación oficial de eInforma API
+    const searchUrl = `https://www.einforma.com/api/search?q=${encodeURIComponent(cif)}`;
     console.log('Search URL:', searchUrl);
     
     const searchResponse = await fetch(searchUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'Authorization': `Basic ${basicAuth}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     });
 
@@ -197,12 +194,12 @@ async function searchCompanyByCIF(cif: string, accessToken: string): Promise<any
     console.log('Search response data:', JSON.stringify(searchData, null, 2));
     
     // Verificar estructura de respuesta según documentación eInforma
-    if (!searchData.resultado?.empresa || searchData.resultado.empresa.length === 0) {
+    if (!searchData.empresa || searchData.empresa.length === 0) {
       console.log('No companies found for CIF:', cif);
       return null;
     }
 
-    const company = searchData.resultado.empresa[0];
+    const company = searchData.empresa[0];
     console.log('Company found:', company);
     return company;
   } catch (error) {
@@ -211,19 +208,20 @@ async function searchCompanyByCIF(cif: string, accessToken: string): Promise<any
   }
 }
 
-async function getCompanyReport(companyId: string, accessToken: string): Promise<any> {
+async function getCompanyReport(companyId: string, basicAuth: string): Promise<any> {
   console.log('=== Getting company report for ID:', companyId, '===');
   
   try {
     // URL según documentación oficial de eInforma
-    const reportUrl = `https://developers.einforma.com/companies/${companyId}/report`;
+    const reportUrl = `https://www.einforma.com/api/company/${companyId}`;
     console.log('Report URL:', reportUrl);
     
     const reportResponse = await fetch(reportUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'Authorization': `Basic ${basicAuth}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     });
 
@@ -246,12 +244,12 @@ async function getCompanyReport(companyId: string, accessToken: string): Promise
 
 async function enrichCompanyData(supabaseClient: any, cif: string) {
   try {
-    // Obtener token de autenticación
-    const accessToken = await getEInformaToken();
-    console.log('eInforma token obtained successfully');
+    // Obtener credenciales de autenticación básica
+    const basicAuth = await getEInformaCredentials();
+    console.log('eInforma credentials obtained successfully');
 
     // Buscar empresa por CIF
-    const companyBasicData = await searchCompanyByCIF(cif, accessToken);
+    const companyBasicData = await searchCompanyByCIF(cif, basicAuth);
     
     if (!companyBasicData) {
       return new Response(
@@ -268,7 +266,7 @@ async function enrichCompanyData(supabaseClient: any, cif: string) {
     // Obtener reporte detallado (opcional, puede tener coste adicional)
     let detailedReport = null;
     try {
-      detailedReport = await getCompanyReport(companyBasicData.id, accessToken);
+      detailedReport = await getCompanyReport(companyBasicData.id, basicAuth);
     } catch (error) {
       console.warn('Could not get detailed report:', error.message);
       // Continúar con datos básicos si no se puede obtener el reporte detallado
