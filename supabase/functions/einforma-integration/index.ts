@@ -163,32 +163,65 @@ async function getCompanyReportByCIF(cif: string, apiKey: string): Promise<any> 
   console.log('=== Getting company report for CIF:', cif, '===');
   
   try {
-    // URL correcta según la API developers de eInforma
-    const reportUrl = `https://developers.einforma.com/api/v1/companies/${cif}/report`;
-    console.log('Report URL:', reportUrl);
+    // Intentar múltiples endpoints posibles de eInforma
+    const possibleUrls = [
+      `https://api.einforma.com/v1/companies/${cif}`,
+      `https://api.einforma.com/v2/companies/${cif}`,
+      `https://developers.einforma.com/api/v1/companies/${cif}`,
+      `https://api.einforma.es/v1/companies/${cif}`,
+    ];
     
-    const reportResponse = await fetch(reportUrl, {
-      method: 'GET',
-      headers: {
-        'X-API-Key': apiKey,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': 'McDonald\'s-Portal/1.0'
-      },
-    });
+    console.log('Trying multiple eInforma API endpoints...');
+    
+    for (const url of possibleUrls) {
+      console.log('Trying URL:', url);
+      
+      // Intentar con diferentes métodos de autenticación
+      const authMethods = [
+        { 'Authorization': `Bearer ${apiKey}` },
+        { 'X-API-Key': apiKey },
+        { 'api-key': apiKey },
+        { 'Authorization': `Token ${apiKey}` }
+      ];
+      
+      for (const authHeader of authMethods) {
+        try {
+          console.log('Trying auth method:', Object.keys(authHeader)[0]);
+          
+          const reportResponse = await fetch(url, {
+            method: 'GET',
+            headers: {
+              ...authHeader,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'User-Agent': 'McDonald\'s-Portal/1.0'
+            }
+          });
 
-    console.log('Report response status:', reportResponse.status);
-    console.log('Report response headers:', Object.fromEntries(reportResponse.headers));
-
-    if (!reportResponse.ok) {
-      const errorText = await reportResponse.text();
-      console.error('eInforma API error response:', errorText);
-      throw new Error(`Failed to get company report: ${reportResponse.status} - ${errorText}`);
+          
+          console.log('Response status:', reportResponse.status);
+          
+          if (reportResponse.ok) {
+            const reportData = await reportResponse.json();
+            console.log('Success with URL:', url, 'and auth:', Object.keys(authHeader)[0]);
+            return reportData;
+          } else if (reportResponse.status === 401) {
+            console.log('Auth failed for:', Object.keys(authHeader)[0]);
+            continue; // Probar siguiente método de auth
+          } else {
+            console.log('URL failed with status:', reportResponse.status);
+            break; // Probar siguiente URL
+          }
+        } catch (authError) {
+          console.log('Auth method failed:', Object.keys(authHeader)[0], authError.message);
+          continue;
+        }
+      }
     }
-
-    const reportData = await reportResponse.json();
-    console.log('Report response data:', JSON.stringify(reportData, null, 2));
-    return reportData;
+    
+    // Si llegamos aquí, ningún endpoint funcionó
+    throw new Error('No se pudo conectar con la API de eInforma. Verifique la configuración del API Key.');
+    
   } catch (error) {
     console.error('Error getting company report:', error);
     throw error;
