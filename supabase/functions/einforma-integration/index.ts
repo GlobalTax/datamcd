@@ -148,93 +148,46 @@ async function validateCIF(cif: string) {
 async function getEInformaCredentials(): Promise<string> {
   console.log('=== Getting eInforma credentials ===');
   
-  const username = Deno.env.get('EINFORMA_CLIENT_ID');  // Usuario de eInforma
-  const password = Deno.env.get('EINFORMA_CLIENT_SECRET');  // Clave de eInforma
+  const bearerToken = Deno.env.get('EINFORMA_BEARER_TOKEN');
   
-  console.log('Username configured:', !!username);
-  console.log('Password configured:', !!password);
+  console.log('Bearer token configured:', !!bearerToken);
   
-  if (!username || !password) {
-    throw new Error('eInforma credentials not configured. Please configure EINFORMA_CLIENT_ID (username) and EINFORMA_CLIENT_SECRET (password) in Supabase secrets.');
+  if (!bearerToken) {
+    throw new Error('eInforma Bearer Token not configured. Please configure EINFORMA_BEARER_TOKEN in Supabase secrets.');
   }
 
-  // eInforma usa autenticación básica, no OAuth
-  const basicAuth = btoa(`${username}:${password}`);
-  console.log('Basic auth credentials prepared');
-  return basicAuth;
+  return bearerToken;
 }
 
-async function searchCompanyByCIF(cif: string, basicAuth: string): Promise<any> {
-  console.log('=== Searching company by CIF:', cif, '===');
+async function getCompanyReportByCIF(cif: string, bearerToken: string): Promise<any> {
+  console.log('=== Getting company report for CIF:', cif, '===');
   
   try {
-    // URL según documentación oficial de eInforma API
-    const searchUrl = `https://www.einforma.com/api/search?q=${encodeURIComponent(cif)}`;
-    console.log('Search URL:', searchUrl);
-    
-    const searchResponse = await fetch(searchUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Basic ${basicAuth}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    });
-
-    console.log('Search response status:', searchResponse.status);
-    console.log('Search response headers:', Object.fromEntries(searchResponse.headers));
-
-    if (!searchResponse.ok) {
-      const errorText = await searchResponse.text();
-      console.error('eInforma search error response:', errorText);
-      throw new Error(`Failed to search company: ${searchResponse.status} - ${errorText}`);
-    }
-
-    const searchData = await searchResponse.json();
-    console.log('Search response data:', JSON.stringify(searchData, null, 2));
-    
-    // Verificar estructura de respuesta según documentación eInforma
-    if (!searchData.empresa || searchData.empresa.length === 0) {
-      console.log('No companies found for CIF:', cif);
-      return null;
-    }
-
-    const company = searchData.empresa[0];
-    console.log('Company found:', company);
-    return company;
-  } catch (error) {
-    console.error('Error searching company:', error);
-    throw error;
-  }
-}
-
-async function getCompanyReport(companyId: string, basicAuth: string): Promise<any> {
-  console.log('=== Getting company report for ID:', companyId, '===');
-  
-  try {
-    // URL según documentación oficial de eInforma
-    const reportUrl = `https://www.einforma.com/api/company/${companyId}`;
+    // URL correcta según la API developers de eInforma
+    const reportUrl = `https://developers.einforma.com/api/v1/companies/${cif}/report`;
     console.log('Report URL:', reportUrl);
     
     const reportResponse = await fetch(reportUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Basic ${basicAuth}`,
+        'Authorization': `Bearer ${bearerToken}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'User-Agent': 'McDonald\'s-Portal/1.0'
       },
     });
 
     console.log('Report response status:', reportResponse.status);
+    console.log('Report response headers:', Object.fromEntries(reportResponse.headers));
 
     if (!reportResponse.ok) {
       const errorText = await reportResponse.text();
-      console.error('eInforma report error response:', errorText);
+      console.error('eInforma API error response:', errorText);
       throw new Error(`Failed to get company report: ${reportResponse.status} - ${errorText}`);
     }
 
     const reportData = await reportResponse.json();
-    console.log('Report obtained successfully');
+    console.log('Report response data:', JSON.stringify(reportData, null, 2));
     return reportData;
   } catch (error) {
     console.error('Error getting company report:', error);
@@ -244,14 +197,14 @@ async function getCompanyReport(companyId: string, basicAuth: string): Promise<a
 
 async function enrichCompanyData(supabaseClient: any, cif: string) {
   try {
-    // Obtener credenciales de autenticación básica
-    const basicAuth = await getEInformaCredentials();
+    // Obtener Bearer Token
+    const bearerToken = await getEInformaCredentials();
     console.log('eInforma credentials obtained successfully');
 
-    // Buscar empresa por CIF
-    const companyBasicData = await searchCompanyByCIF(cif, basicAuth);
+    // Obtener reporte de empresa directamente por CIF
+    const reportData = await getCompanyReportByCIF(cif, bearerToken);
     
-    if (!companyBasicData) {
+    if (!reportData) {
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -261,49 +214,36 @@ async function enrichCompanyData(supabaseClient: any, cif: string) {
       );
     }
 
-    console.log('Company found:', companyBasicData.denominacion || companyBasicData.name);
+    console.log('Company found:', reportData.denominacion || reportData.name || reportData.razon_social);
 
-    // Obtener reporte detallado (opcional, puede tener coste adicional)
-    let detailedReport = null;
-    try {
-      detailedReport = await getCompanyReport(companyBasicData.id, basicAuth);
-    } catch (error) {
-      console.warn('Could not get detailed report:', error.message);
-      // Continúar con datos básicos si no se puede obtener el reporte detallado
-    }
-
-    // Mapear datos de eInforma a nuestro formato según documentación
+    // Mapear datos de eInforma a nuestro formato según la respuesta real de la API
     const mappedData: EInformaCompanyData = {
       cif: cif.toUpperCase(),
-      razon_social: companyBasicData.denominacion || '',
-      nombre_comercial: companyBasicData.nombreComercial?.[0] || companyBasicData.denominacion,
-      domicilio_fiscal: companyBasicData.domicilioSocial,
-      codigo_postal: null, // No disponible en búsqueda básica
-      municipio: companyBasicData.localidad,
-      provincia: companyBasicData.provincia,
-      codigo_cnae: companyBasicData.cnae,
-      descripcion_cnae: null, // No disponible en búsqueda básica  
-      situacion_aeat: companyBasicData.situacion || 'ACTIVA',
-      fecha_constitucion: companyBasicData.fechaConstitucion,
-      capital_social: companyBasicData.capitalSocial,
-      forma_juridica: companyBasicData.formaJuridica,
-      telefono: companyBasicData.telefono?.[0],
-      email: companyBasicData.email,
-      web: companyBasicData.web?.[0],
-      empleados_estimados: companyBasicData.empleados,
-      facturacion_estimada: companyBasicData.ventas,
-      rating_crediticio: null, // No disponible en búsqueda básica
+      razon_social: reportData.denominacion || reportData.name || reportData.razon_social,
+      nombre_comercial: reportData.nombreComercial || reportData.nombre_comercial,
+      domicilio_fiscal: reportData.domicilioSocial?.direccion || reportData.domicilio_fiscal,
+      codigo_postal: reportData.domicilioSocial?.codigoPostal || reportData.codigo_postal,
+      municipio: reportData.domicilioSocial?.localidad || reportData.localidad || reportData.municipio,
+      provincia: reportData.domicilioSocial?.provincia || reportData.provincia,
+      codigo_cnae: reportData.cnae?.codigo || reportData.cnae_codigo || reportData.codigo_cnae,
+      descripcion_cnae: reportData.cnae?.descripcion || reportData.cnae_descripcion || reportData.descripcion_cnae,
+      situacion_aeat: reportData.situacionAeat || reportData.situacion_aeat || 'ACTIVA',
+      fecha_constitucion: reportData.fechaConstitucion || reportData.fecha_constitucion,
+      capital_social: reportData.capitalSocial ? parseFloat(reportData.capitalSocial) : 
+                     reportData.capital_social ? parseFloat(reportData.capital_social) : null,
+      forma_juridica: reportData.formaJuridica || reportData.forma_juridica,
+      telefono: reportData.contacto?.telefono || reportData.telefono,
+      email: reportData.contacto?.email || reportData.email,
+      web: reportData.contacto?.web || reportData.web,
+      empleados_estimados: reportData.empleados ? parseInt(reportData.empleados) : 
+                          reportData.empleados_estimados ? parseInt(reportData.empleados_estimados) : null,
+      facturacion_estimada: reportData.facturacion ? parseFloat(reportData.facturacion) : 
+                           reportData.facturacion_estimada ? parseFloat(reportData.facturacion_estimada) : null,
+      rating_crediticio: reportData.rating || reportData.rating_crediticio,
       datos_adicionales: {
-        fuente: 'eInforma API',
+        fuente: 'eInforma API v1',
         consulta_date: new Date().toISOString(),
-        company_id: companyBasicData.id,
-        fecha_ultimo_balance: companyBasicData.fechaUltimoBalance,
-        identificativo: companyBasicData.identificativo,
-        tipo_denominacion: companyBasicData.tipoDenominacion,
-        cargo_principal: companyBasicData.cargoPrincipal,
-        anio_ventas: companyBasicData.anioVentas,
-        fax: companyBasicData.fax?.[0],
-        detailed_report: detailedReport ? 'available' : 'not_available'
+        raw_data: reportData
       }
     };
 
@@ -338,11 +278,11 @@ async function enrichCompanyData(supabaseClient: any, cif: string) {
     console.error('Error enriching company data from eInforma:', error);
     
     // Si hay error de credenciales, devolver mensaje específico
-    if (error.message.includes('credentials not configured')) {
+    if (error.message.includes('Bearer Token not configured')) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Credenciales de eInforma no configuradas. Contacte con el administrador.',
+          error: 'Token de eInforma no configurado. Contacte con el administrador.',
           code: 'CREDENTIALS_NOT_CONFIGURED'
         }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
