@@ -127,30 +127,36 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            General
+        <TabsList className="w-full flex flex-wrap sm:grid sm:grid-cols-6 gap-1 h-auto p-1">
+          <TabsTrigger value="general" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap">
+            <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">General</span>
+            <span className="sm:hidden">Gen</span>
           </TabsTrigger>
-          <TabsTrigger value="finance" className="flex items-center gap-2">
-            <Euro className="h-4 w-4" />
-            Finanzas
+          <TabsTrigger value="finance" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap">
+            <Euro className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Finanzas</span>
+            <span className="sm:hidden">Fin</span>
           </TabsTrigger>
-          <TabsTrigger value="incidents" className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Incidencias
+          <TabsTrigger value="incidents" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap">
+            <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Incidencias</span>
+            <span className="sm:hidden">Inc</span>
           </TabsTrigger>
-          <TabsTrigger value="personnel" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Personal
+          <TabsTrigger value="personnel" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap">
+            <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Personal</span>
+            <span className="sm:hidden">Per</span>
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Analytics
+          <TabsTrigger value="analytics" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap">
+            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Analytics</span>
+            <span className="sm:hidden">Ana</span>
           </TabsTrigger>
-          <TabsTrigger value="company" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Empresa
+          <TabsTrigger value="company" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap">
+            <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Empresa</span>
+            <span className="sm:hidden">Emp</span>
           </TabsTrigger>
         </TabsList>
 
