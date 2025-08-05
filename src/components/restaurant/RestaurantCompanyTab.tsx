@@ -44,21 +44,24 @@ export const RestaurantCompanyTab: React.FC<RestaurantCompanyTabProps> = ({ rest
     lastSuccessfulCIF
   });
 
-  setDebugInfo({
-    restaurantId,
-    restaurantCIF,
-    currentRestaurant: currentRestaurant ? {
-      id: currentRestaurant.id,
-      restaurant_name: currentRestaurant.restaurant_name,
-      company_tax_id: currentRestaurant.company_tax_id
-    } : null,
-    cifToValidate,
-    companyData: companyData ? {
-      cif: companyData.cif,
-      razon_social: companyData.razon_social,
-      validado_einforma: companyData.validado_einforma
-    } : null
-  });
+  // Update debug info in useEffect to prevent infinite re-renders
+  useEffect(() => {
+    setDebugInfo({
+      restaurantId,
+      restaurantCIF,
+      currentRestaurant: currentRestaurant ? {
+        id: currentRestaurant.id,
+        restaurant_name: currentRestaurant.restaurant_name,
+        company_tax_id: currentRestaurant.company_tax_id
+      } : null,
+      cifToValidate,
+      companyData: companyData ? {
+        cif: companyData.cif,
+        razon_social: companyData.razon_social,
+        validado_einforma: companyData.validado_einforma
+      } : null
+    });
+  }, [restaurantId, restaurantCIF, currentRestaurant, cifToValidate, companyData]);
 
   // Función estable para cargar datos
   const loadCompanyData = useCallback(async (cif: string) => {
