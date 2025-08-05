@@ -285,11 +285,11 @@ export const UnifiedRestaurantsTable: React.FC<UnifiedRestaurantsTableProps> = (
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentRestaurants.map((restaurant) => {
-                  const googleMapsLink = createGoogleMapsLink(restaurant.address, restaurant.city);
-                  
-                  return (
-                    <TableRow key={restaurant.id}>
+                {currentRestaurants.map((restaurant, index) => {
+                   const googleMapsLink = createGoogleMapsLink(restaurant.address, restaurant.city);
+                   
+                   return (
+                     <TableRow key={`${restaurant.id}-${index}`}>
                       <TableCell>
                         <div>
                           <div className="font-medium">{restaurant.restaurant_name}</div>

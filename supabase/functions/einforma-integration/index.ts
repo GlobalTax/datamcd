@@ -130,7 +130,8 @@ async function getEInformaToken(): Promise<string> {
     throw new Error('eInforma credentials not configured');
   }
 
-  const tokenResponse = await fetch('https://api.einforma.com/oauth/token', {
+  // URL corregida según documentación de eInforma
+  const tokenResponse = await fetch('https://api.axesor.es/oauth/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -153,7 +154,7 @@ async function getEInformaToken(): Promise<string> {
 }
 
 async function searchCompanyByCIF(cif: string, accessToken: string): Promise<any> {
-  const searchResponse = await fetch(`https://api.einforma.com/companies?cif=${encodeURIComponent(cif)}`, {
+  const searchResponse = await fetch(`https://api.axesor.es/companies?cif=${encodeURIComponent(cif)}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
@@ -177,7 +178,7 @@ async function searchCompanyByCIF(cif: string, accessToken: string): Promise<any
 }
 
 async function getCompanyReport(companyId: string, accessToken: string): Promise<any> {
-  const reportResponse = await fetch(`https://api.einforma.com/companies/${companyId}/report`, {
+  const reportResponse = await fetch(`https://api.axesor.es/companies/${companyId}/report`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${accessToken}`,

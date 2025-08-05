@@ -68,9 +68,15 @@ export const RestaurantCompanyTab: React.FC<RestaurantCompanyTabProps> = ({ rest
       return;
     }
 
-    const enrichedData = await enrichCompanyData(cifToValidate);
-    if (enrichedData) {
-      setCompanyData(enrichedData);
+    try {
+      const enrichedData = await enrichCompanyData(cifToValidate);
+      if (enrichedData) {
+        setCompanyData(enrichedData);
+        toast.success('Datos enriquecidos correctamente desde eInforma');
+      }
+    } catch (error) {
+      console.error('Error enriching data:', error);
+      toast.error('Error al enriquecer los datos. Inténtalo de nuevo.');
     }
   };
 
