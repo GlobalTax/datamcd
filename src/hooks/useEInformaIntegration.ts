@@ -69,6 +69,7 @@ export const useEInformaIntegration = () => {
 
     setIsEnriching(true);
     try {
+      console.log('[useEInformaIntegration] Enriching company data for CIF:', cif);
       const { data, error } = await supabase.functions.invoke('einforma-integration', {
         body: {
           action: 'enrich_company',
@@ -76,17 +77,24 @@ export const useEInformaIntegration = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useEInformaIntegration] Edge function error:', error);
+        throw error;
+      }
+
+      console.log('[useEInformaIntegration] Edge function response:', data);
 
       if (data.success) {
         toast.success('Datos de empresa enriquecidos correctamente');
+        console.log('[useEInformaIntegration] Company data enriched successfully:', data.data);
         return data.data;
       } else {
+        console.error('[useEInformaIntegration] Enrichment failed:', data.error);
         toast.error(data.error || 'Error al enriquecer los datos');
         return null;
       }
     } catch (error) {
-      console.error('Error enriching company data:', error);
+      console.error('[useEInformaIntegration] Error enriching company data:', error);
       toast.error('Error al conectar con eInforma');
       return null;
     } finally {
@@ -119,6 +127,7 @@ export const useEInformaIntegration = () => {
   const getCompanyByCIF = async (cif: string): Promise<CompanyData | null> => {
     if (!cif) return null;
 
+    console.log('[useEInformaIntegration] Getting company by CIF:', cif);
     try {
       const { data, error } = await supabase
         .from('company_data')
@@ -127,13 +136,14 @@ export const useEInformaIntegration = () => {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching company data:', error);
+        console.error('[useEInformaIntegration] Supabase error fetching company data:', error);
         return null;
       }
 
+      console.log('[useEInformaIntegration] Company data from database:', data);
       return data;
     } catch (error) {
-      console.error('Error querying company data:', error);
+      console.error('[useEInformaIntegration] Error querying company data:', error);
       return null;
     }
   };
