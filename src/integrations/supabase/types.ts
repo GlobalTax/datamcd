@@ -530,6 +530,93 @@ export type Database = {
         }
         Relationships: []
       }
+      company_data: {
+        Row: {
+          capital_social: number | null
+          cif: string
+          codigo_cnae: string | null
+          codigo_postal: string | null
+          created_at: string
+          created_by: string | null
+          datos_adicionales: Json | null
+          descripcion_cnae: string | null
+          domicilio_fiscal: string | null
+          email: string | null
+          empleados_estimados: number | null
+          facturacion_estimada: number | null
+          fecha_constitucion: string | null
+          fecha_ultima_actualizacion: string | null
+          forma_juridica: string | null
+          id: string
+          municipio: string | null
+          nombre_comercial: string | null
+          provincia: string | null
+          rating_crediticio: string | null
+          razon_social: string | null
+          situacion_aeat: string | null
+          telefono: string | null
+          updated_at: string
+          validado_einforma: boolean | null
+          web: string | null
+        }
+        Insert: {
+          capital_social?: number | null
+          cif: string
+          codigo_cnae?: string | null
+          codigo_postal?: string | null
+          created_at?: string
+          created_by?: string | null
+          datos_adicionales?: Json | null
+          descripcion_cnae?: string | null
+          domicilio_fiscal?: string | null
+          email?: string | null
+          empleados_estimados?: number | null
+          facturacion_estimada?: number | null
+          fecha_constitucion?: string | null
+          fecha_ultima_actualizacion?: string | null
+          forma_juridica?: string | null
+          id?: string
+          municipio?: string | null
+          nombre_comercial?: string | null
+          provincia?: string | null
+          rating_crediticio?: string | null
+          razon_social?: string | null
+          situacion_aeat?: string | null
+          telefono?: string | null
+          updated_at?: string
+          validado_einforma?: boolean | null
+          web?: string | null
+        }
+        Update: {
+          capital_social?: number | null
+          cif?: string
+          codigo_cnae?: string | null
+          codigo_postal?: string | null
+          created_at?: string
+          created_by?: string | null
+          datos_adicionales?: Json | null
+          descripcion_cnae?: string | null
+          domicilio_fiscal?: string | null
+          email?: string | null
+          empleados_estimados?: number | null
+          facturacion_estimada?: number | null
+          fecha_constitucion?: string | null
+          fecha_ultima_actualizacion?: string | null
+          forma_juridica?: string | null
+          id?: string
+          municipio?: string | null
+          nombre_comercial?: string | null
+          provincia?: string | null
+          rating_crediticio?: string | null
+          razon_social?: string | null
+          situacion_aeat?: string | null
+          telefono?: string | null
+          updated_at?: string
+          validado_einforma?: boolean | null
+          web?: string | null
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           address: string | null
