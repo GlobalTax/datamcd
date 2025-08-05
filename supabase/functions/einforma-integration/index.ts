@@ -203,18 +203,18 @@ async function getCompanyReportByCIF(cif: string, apiKey: string): Promise<any> 
           
           if (reportResponse.ok) {
             const reportData = await reportResponse.json();
-            console.log('Success with URL:', url, 'and auth:', Object.keys(authHeader)[0]);
-            return reportData;
-          } else if (reportResponse.status === 401) {
-            console.log('Auth failed for:', Object.keys(authHeader)[0]);
-            continue; // Probar siguiente método de auth
-          } else {
-            console.log('URL failed with status:', reportResponse.status);
-            break; // Probar siguiente URL
-          }
-        } catch (authError) {
-          console.log('Auth method failed:', Object.keys(authHeader)[0], authError.message);
-          continue;
+          console.log('Success with URL and auth method');
+          return reportData;
+        } else if (reportResponse.status === 401) {
+          console.log('Auth failed for method');
+          continue; // Probar siguiente método de auth
+        } else {
+          console.log('URL failed with status:', reportResponse.status);
+          break; // Probar siguiente URL
+        }
+      } catch (authError) {
+        console.log('Auth method failed:', authError.message);
+        continue;
         }
       }
     }

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useSecurityValidation } from '@/hooks/useSecurityValidation';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { User } from '@/types/auth';
 
 const UserManagement = () => {
   const { user } = useAuth();
+  const { canManageUsers, canDeleteUser, validateUserDeletion } = useSecurityValidation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +52,14 @@ const UserManagement = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string, userName: string) => {
+  const handleDeleteUser = async (userId: string, userName: string, targetUserRole: string) => {
+    // Validate deletion permissions
+    const canDelete = await validateUserDeletion(userId);
+    if (!canDelete) {
+      toast.error('No tienes permisos para eliminar este usuario');
+      return;
+    }
+
     if (!confirm(`¿Estás seguro de que quieres eliminar a ${userName}?`)) {
       return;
     }
@@ -106,13 +115,13 @@ const UserManagement = () => {
     }
   };
 
-  // Solo admins pueden gestionar usuarios
-  if (!user) {
+  // Security check - only admins and superadmins can manage users
+  if (!canManageUsers()) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center text-gray-500">
-            <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+          <div className="text-center text-muted-foreground">
+            <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>No tienes permisos para gestionar usuarios</p>
           </div>
         </CardContent>
@@ -174,12 +183,12 @@ const UserManagement = () => {
                       {new Date(userItem.created_at).toLocaleDateString('es-ES')}
                     </TableCell>
                     <TableCell>
-                      {userItem.id !== user?.id && (
+                      {userItem.id !== user?.id && canDeleteUser(userItem.role) && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteUser(userItem.id, userItem.full_name || userItem.email)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeleteUser(userItem.id, userItem.full_name || userItem.email, userItem.role)}
+                          className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

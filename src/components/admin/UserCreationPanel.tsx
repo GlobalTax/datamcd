@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/auth/AuthProvider';
 import { useUserCreation } from '@/hooks/useUserCreation';
+import { useSecurityValidation } from '@/hooks/useSecurityValidation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,12 +18,14 @@ interface UserCreationPanelProps {
 export const UserCreationPanel: React.FC<UserCreationPanelProps> = ({ onUserCreated }) => {
   const { user } = useAuth();
   const { createUser, creating } = useUserCreation();
+  const { canManageUsers, isAdmin, isSuperAdmin } = useSecurityValidation();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
     role: ''
   });
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,10 +54,32 @@ export const UserCreationPanel: React.FC<UserCreationPanelProps> = ({ onUserCrea
     }
   };
 
-  const canCreateUser = !!user; // Superadmin mode
-  
-  if (!canCreateUser) {
-    return null;
+  // Determine available roles based on current user's role
+  useEffect(() => {
+    if (!user) return;
+    
+    const userRole = user.role;
+    if (userRole === 'superadmin') {
+      setAvailableRoles(['admin', 'franchisee', 'staff']);
+    } else if (userRole === 'admin') {
+      setAvailableRoles(['franchisee', 'staff']);
+    } else {
+      setAvailableRoles([]);
+    }
+  }, [user]);
+
+  // Security check - only admins and superadmins can create users
+  if (!canManageUsers()) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-muted-foreground">
+            <UserPlus className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>No tienes permisos para crear usuarios</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -118,10 +143,13 @@ export const UserCreationPanel: React.FC<UserCreationPanelProps> = ({ onUserCrea
                   <SelectValue placeholder="Seleccionar rol..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="superadmin">Super Admin</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="franchisee">Franquiciado</SelectItem>
-                  <SelectItem value="staff">Personal</SelectItem>
+                  {availableRoles.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role === 'admin' ? 'Administrador' :
+                       role === 'franchisee' ? 'Franquiciado' :
+                       role === 'staff' ? 'Personal' : role}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -6,10 +6,11 @@ import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  // Simplified: no role restrictions for superadmin mode
+  requiredRoles?: string[];
+  adminOnly?: boolean;
 }
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, requiredRoles, adminOnly }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const [showTimeout, setShowTimeout] = useState(false);
 
@@ -48,8 +49,28 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Simplified: Only check if user is authenticated
-  // No role-based restrictions for development phase
+  // Role-based access control
+  if (adminOnly && !['admin', 'superadmin'].includes(user.role || '')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive">No tienes permisos para acceder a esta página</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (requiredRoles && requiredRoles.length > 0) {
+    if (!requiredRoles.includes(user.role || '')) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-destructive">No tienes permisos para acceder a esta página</p>
+          </div>
+        </div>
+      );
+    }
+  }
 
   return <>{children}</>;
 };
