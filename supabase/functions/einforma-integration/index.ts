@@ -148,18 +148,18 @@ async function validateCIF(cif: string) {
 async function getEInformaCredentials(): Promise<string> {
   console.log('=== Getting eInforma credentials ===');
   
-  const bearerToken = Deno.env.get('EINFORMA_BEARER_TOKEN');
+  const apiKey = Deno.env.get('EINFORMA_API_KEY');
   
-  console.log('Bearer token configured:', !!bearerToken);
+  console.log('API key configured:', !!apiKey);
   
-  if (!bearerToken) {
-    throw new Error('eInforma Bearer Token not configured. Please configure EINFORMA_BEARER_TOKEN in Supabase secrets.');
+  if (!apiKey) {
+    throw new Error('eInforma API Key not configured. Please configure EINFORMA_API_KEY in Supabase secrets.');
   }
 
-  return bearerToken;
+  return apiKey;
 }
 
-async function getCompanyReportByCIF(cif: string, bearerToken: string): Promise<any> {
+async function getCompanyReportByCIF(cif: string, apiKey: string): Promise<any> {
   console.log('=== Getting company report for CIF:', cif, '===');
   
   try {
@@ -170,7 +170,7 @@ async function getCompanyReportByCIF(cif: string, bearerToken: string): Promise<
     const reportResponse = await fetch(reportUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${bearerToken}`,
+        'X-API-Key': apiKey,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'User-Agent': 'McDonald\'s-Portal/1.0'
@@ -197,12 +197,12 @@ async function getCompanyReportByCIF(cif: string, bearerToken: string): Promise<
 
 async function enrichCompanyData(supabaseClient: any, cif: string) {
   try {
-    // Obtener Bearer Token
-    const bearerToken = await getEInformaCredentials();
+    // Obtener API Key
+    const apiKey = await getEInformaCredentials();
     console.log('eInforma credentials obtained successfully');
 
     // Obtener reporte de empresa directamente por CIF
-    const reportData = await getCompanyReportByCIF(cif, bearerToken);
+    const reportData = await getCompanyReportByCIF(cif, apiKey);
     
     if (!reportData) {
       return new Response(
@@ -278,11 +278,11 @@ async function enrichCompanyData(supabaseClient: any, cif: string) {
     console.error('Error enriching company data from eInforma:', error);
     
     // Si hay error de credenciales, devolver mensaje específico
-    if (error.message.includes('Bearer Token not configured')) {
+    if (error.message.includes('API Key not configured')) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Token de eInforma no configurado. Contacte con el administrador.',
+          error: 'API Key de eInforma no configurada. Contacte con el administrador.',
           code: 'CREDENTIALS_NOT_CONFIGURED'
         }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
