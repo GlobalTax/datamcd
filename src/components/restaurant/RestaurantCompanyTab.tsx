@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Building2, CheckCircle, RefreshCw, Search } from 'lucide-react';
+import { AlertCircle, Building2, CheckCircle, RefreshCw, Search, Database } from 'lucide-react';
 import { useEInformaIntegration, type CompanyData } from '@/hooks/useEInformaIntegration';
 import { useBaseRestaurants } from '@/hooks/useBaseRestaurants';
 import { toast } from 'sonner';
@@ -18,6 +18,8 @@ interface RestaurantCompanyTabProps {
 export const RestaurantCompanyTab: React.FC<RestaurantCompanyTabProps> = ({ restaurantId }) => {
   const [cifToValidate, setCifToValidate] = useState('');
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
+  const [lastSuccessfulCIF, setLastSuccessfulCIF] = useState<string>('');
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const { restaurants } = useBaseRestaurants();
   const {
     isLoading,
@@ -32,17 +34,71 @@ export const RestaurantCompanyTab: React.FC<RestaurantCompanyTabProps> = ({ rest
   const currentRestaurant = restaurants?.find(r => r.id === restaurantId);
   const restaurantCIF = currentRestaurant?.company_tax_id;
 
+  // Debug logging
+  console.log('[RestaurantCompanyTab] Debug Info:', {
+    restaurantId,
+    currentRestaurant,
+    restaurantCIF,
+    cifToValidate,
+    companyData: companyData ? { cif: companyData.cif, razon_social: companyData.razon_social } : null,
+    lastSuccessfulCIF
+  });
+
+  setDebugInfo({
+    restaurantId,
+    restaurantCIF,
+    currentRestaurant: currentRestaurant ? {
+      id: currentRestaurant.id,
+      restaurant_name: currentRestaurant.restaurant_name,
+      company_tax_id: currentRestaurant.company_tax_id
+    } : null,
+    cifToValidate,
+    companyData: companyData ? {
+      cif: companyData.cif,
+      razon_social: companyData.razon_social,
+      validado_einforma: companyData.validado_einforma
+    } : null
+  });
+
+  // Función estable para cargar datos
+  const loadCompanyData = useCallback(async (cif: string) => {
+    console.log('[RestaurantCompanyTab] Loading company data for CIF:', cif);
+    try {
+      const data = await getCompanyByCIF(cif);
+      console.log('[RestaurantCompanyTab] Company data loaded:', data);
+      
+      if (data) {
+        setCompanyData(data);
+        setLastSuccessfulCIF(cif);
+        console.log('[RestaurantCompanyTab] Company data set successfully');
+      } else {
+        console.log('[RestaurantCompanyTab] No company data found for CIF:', cif);
+        // Solo limpiar si estamos cargando un CIF diferente
+        if (lastSuccessfulCIF !== cif) {
+          setCompanyData(null);
+        }
+      }
+    } catch (error) {
+      console.error('[RestaurantCompanyTab] Error loading company data:', error);
+      toast.error('Error al cargar los datos de la empresa');
+    }
+  }, [getCompanyByCIF, lastSuccessfulCIF]);
+
   useEffect(() => {
+    console.log('[RestaurantCompanyTab] useEffect triggered with restaurantCIF:', restaurantCIF);
     if (restaurantCIF) {
       setCifToValidate(restaurantCIF);
       loadCompanyData(restaurantCIF);
+    } else {
+      // Si el restaurante no tiene CIF, intentar con CIF por defecto basado en el sitio
+      const defaultCIF = currentRestaurant?.site_number === '633' ? 'B66176728' : '';
+      if (defaultCIF) {
+        console.log('[RestaurantCompanyTab] Using default CIF for site 633:', defaultCIF);
+        setCifToValidate(defaultCIF);
+        loadCompanyData(defaultCIF);
+      }
     }
-  }, [restaurantCIF]);
-
-  const loadCompanyData = async (cif: string) => {
-    const data = await getCompanyByCIF(cif);
-    setCompanyData(data);
-  };
+  }, [restaurantCIF, currentRestaurant?.site_number, loadCompanyData]);
 
   const handleValidateCIF = async () => {
     if (!cifToValidate.trim()) {
@@ -68,14 +124,26 @@ export const RestaurantCompanyTab: React.FC<RestaurantCompanyTabProps> = ({ rest
       return;
     }
 
+    console.log('[RestaurantCompanyTab] Enriching data for CIF:', cifToValidate);
     try {
       const enrichedData = await enrichCompanyData(cifToValidate);
+      console.log('[RestaurantCompanyTab] Enriched data received:', enrichedData);
+      
       if (enrichedData) {
         setCompanyData(enrichedData);
+        setLastSuccessfulCIF(cifToValidate);
         toast.success('Datos enriquecidos correctamente desde eInforma');
+        
+        // Recargar datos después de un breve delay para asegurar persistencia
+        setTimeout(() => {
+          console.log('[RestaurantCompanyTab] Reloading data after enrichment');
+          loadCompanyData(cifToValidate);
+        }, 1000);
+      } else {
+        toast.error('No se pudieron obtener datos de eInforma para este CIF');
       }
     } catch (error) {
-      console.error('Error enriching data:', error);
+      console.error('[RestaurantCompanyTab] Error enriching data:', error);
       toast.error('Error al enriquecer los datos. Inténtalo de nuevo.');
     }
   };
@@ -95,6 +163,23 @@ export const RestaurantCompanyTab: React.FC<RestaurantCompanyTabProps> = ({ rest
 
   return (
     <div className="space-y-6">
+      {/* Debug Panel - Solo en desarrollo */}
+      {process.env.NODE_ENV === 'development' && debugInfo && (
+        <Card className="border-dashed border-orange-200 bg-orange-50/50">
+          <CardHeader>
+            <CardTitle className="text-sm text-orange-600 flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Debug Info
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="text-xs text-orange-700 overflow-auto">
+              {JSON.stringify(debugInfo, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Validación de CIF */}
       <Card>
         <CardHeader>
