@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useRestaurantDataLegacy } from '@/hooks/data/useRestaurantData';
+import { useFranchiseeRestaurantId } from '@/hooks/useFranchiseeRestaurantId';
 import { RestaurantKPICards } from './RestaurantKPICards';
 import { RestaurantGeneralTab } from './RestaurantGeneralTab';
 import { RestaurantFinanceTab } from './RestaurantFinanceTab';
@@ -31,9 +32,10 @@ interface RestaurantPanelProps {
 
 export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }) => {
   const { restaurant, loading, error, refetch } = useRestaurantDataLegacy(restaurantId);
+  const { franchiseeRestaurantId, loading: mappingLoading, error: mappingError } = useFranchiseeRestaurantId(restaurantId);
   const navigate = useNavigate();
 
-  if (loading) {
+  if (loading || mappingLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -44,7 +46,7 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
     );
   }
 
-  if (error || !restaurant) {
+  if (error || !restaurant || mappingError || !franchiseeRestaurantId) {
     return (
       <Card>
         <CardContent className="p-8">
@@ -52,7 +54,7 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
             <AlertTriangle className="mx-auto h-16 w-16 text-destructive mb-6" />
             <h3 className="text-xl font-semibold mb-3">Restaurante no disponible</h3>
             <p className="text-muted-foreground mb-4">
-              {error || 'No se pudieron cargar los datos del restaurante'}
+              {error || mappingError || 'No se pudieron cargar los datos del restaurante'}
             </p>
             
             <div className="bg-muted/50 p-4 rounded-lg mb-6 text-left">
@@ -62,6 +64,7 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
                 <li>• El ID del restaurante no es válido</li>
                 <li>• No tienes permisos para acceder a este restaurante</li>
                 <li>• El restaurante ha sido eliminado o desactivado</li>
+                <li>• No se encontró la relación franquicia-restaurante</li>
               </ul>
             </div>
             
@@ -123,7 +126,7 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
       </Card>
 
       {/* KPI Cards */}
-      <RestaurantKPICards restaurantId={restaurantId} />
+      <RestaurantKPICards restaurantId={franchiseeRestaurantId} />
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="general" className="w-full">
@@ -165,19 +168,19 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
         </TabsContent>
 
         <TabsContent value="finance" className="mt-6">
-          <RestaurantFinanceTab restaurantId={restaurantId} />
+          <RestaurantFinanceTab restaurantId={franchiseeRestaurantId} />
         </TabsContent>
 
         <TabsContent value="incidents" className="mt-6">
-          <RestaurantIncidentsTab restaurantId={restaurantId} />
+          <RestaurantIncidentsTab restaurantId={franchiseeRestaurantId} />
         </TabsContent>
 
         <TabsContent value="personnel" className="mt-6">
-          <RestaurantPersonnelTab restaurantId={restaurantId} />
+          <RestaurantPersonnelTab restaurantId={franchiseeRestaurantId} />
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-6">
-          <RestaurantAnalyticsTab restaurantId={restaurantId} />
+          <RestaurantAnalyticsTab restaurantId={franchiseeRestaurantId} />
         </TabsContent>
 
         <TabsContent value="company" className="mt-6">
