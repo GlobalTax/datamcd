@@ -6,18 +6,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Updated CompanyData interface according to specifications
+// CompanyData interface matching the database schema
 interface CompanyData {
-  name: string;
-  nif: string;
-  address_street?: string;
-  address_city?: string;
-  address_postal_code?: string;
-  business_sector?: string;
-  legal_representative?: string;
-  status: 'activo' | 'inactivo';
-  client_type: 'empresa';
-  is_mock?: boolean; // Flag to indicate if data is simulated
+  id?: string;
+  cif: string;
+  razon_social?: string;
+  nombre_comercial?: string;
+  domicilio_fiscal?: string;
+  codigo_postal?: string;
+  municipio?: string;
+  provincia?: string;
+  codigo_cnae?: string;
+  descripcion_cnae?: string;
+  situacion_aeat?: string;
+  fecha_constitucion?: string;
+  capital_social?: number;
+  forma_juridica?: string;
+  telefono?: string;
+  email?: string;
+  web?: string;
+  empleados_estimados?: number;
+  facturacion_estimada?: number;
+  rating_crediticio?: string;
+  fecha_ultima_actualizacion?: string;
+  datos_adicionales?: any;
+  validado_einforma?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // OAuth2 token cache
@@ -99,15 +114,15 @@ serve(async (req) => {
       }
     );
 
-    const { action, cif } = await req.json();
-    console.log(`eInforma Integration - Action: ${action}, CIF: ${cif}`);
+    const { action, cif, restaurant_id } = await req.json();
+    console.log(`eInforma Integration - Action: ${action}, CIF: ${cif}, Restaurant: ${restaurant_id}`);
 
     switch (action) {
       case 'validate_cif':
         return await validateCIF(cif);
       
       case 'enrich_company':
-        return await enrichCompanyData(supabaseClient, cif);
+        return await enrichCompanyData(supabaseClient, cif, restaurant_id);
       
       case 'get_company_data':
         return await getCompanyData(supabaseClient, cif);
@@ -239,43 +254,55 @@ async function getOAuth2Token(): Promise<string> {
 // Generate mock company data for development mode
 function generateMockCompanyData(nif: string): CompanyData {
   const companies = {
-    'B67261552': {
-      name: 'Tecnología Avanzada S.L.',
-      nif: 'B67261552',
-      address_street: 'Calle Gran Vía 123',
-      address_city: 'Madrid',
-      address_postal_code: '28001',
-      business_sector: 'Desarrollo de software',
-      legal_representative: 'Juan Pérez García',
-      status: 'activo' as const,
-      client_type: 'empresa' as const,
-      is_mock: true
+    'B66176728': {
+      cif: 'B66176728',
+      razon_social: 'SANT ADRIA 633 SL',
+      nombre_comercial: 'McDonald\'s Sant Adrià',
+      domicilio_fiscal: 'Carrer de la Concòrdia, 633, Sant Adrià de Besòs',
+      codigo_postal: '08030',
+      municipio: 'Sant Adrià de Besòs',
+      provincia: 'Barcelona',
+      codigo_cnae: '5610',
+      descripcion_cnae: 'Restaurantes y puestos de comidas',
+      situacion_aeat: 'ACTIVA',
+      fecha_constitucion: '2010-03-15',
+      capital_social: 3000,
+      forma_juridica: 'Sociedad Limitada',
+      telefono: '936548901',
+      email: 'info@santadria633.com',
+      empleados_estimados: 25,
+      facturacion_estimada: 850000,
+      rating_crediticio: 'A',
+      validado_einforma: false,
+      datos_adicionales: { is_mock: true, source: 'development' }
     },
-    'A12345678': {
-      name: 'Distribuciones del Norte S.A.',
-      nif: 'A12345678',
-      address_street: 'Avenida de la Constitución 456',
-      address_city: 'Barcelona',
-      address_postal_code: '08001',
-      business_sector: 'Distribución comercial',
-      legal_representative: 'María López Sánchez',
-      status: 'activo' as const,
-      client_type: 'empresa' as const,
-      is_mock: true
+    'B67261552': {
+      cif: 'B67261552',
+      razon_social: 'Tecnología Avanzada S.L.',
+      domicilio_fiscal: 'Calle Gran Vía 123, Madrid',
+      codigo_postal: '28001',
+      municipio: 'Madrid',
+      provincia: 'Madrid',
+      descripcion_cnae: 'Desarrollo de software',
+      situacion_aeat: 'ACTIVA',
+      empleados_estimados: 15,
+      validado_einforma: false,
+      datos_adicionales: { is_mock: true, source: 'development' }
     }
   };
   
   return companies[nif as keyof typeof companies] || {
-    name: `Empresa Ejemplo ${nif}`,
-    nif: nif,
-    address_street: 'Calle Ejemplo 1',
-    address_city: 'Madrid',
-    address_postal_code: '28000',
-    business_sector: 'Actividades empresariales',
-    legal_representative: 'Representante Legal',
-    status: 'activo' as const,
-    client_type: 'empresa' as const,
-    is_mock: true
+    cif: nif,
+    razon_social: `Empresa Ejemplo ${nif}`,
+    domicilio_fiscal: 'Calle Ejemplo 1, Madrid',
+    codigo_postal: '28000',
+    municipio: 'Madrid',
+    provincia: 'Madrid',
+    descripcion_cnae: 'Actividades empresariales',
+    situacion_aeat: 'ACTIVA',
+    empleados_estimados: 10,
+    validado_einforma: false,
+    datos_adicionales: { is_mock: true, source: 'development' }
   };
 }
 
@@ -306,18 +333,35 @@ async function getCompanyReportByCIF(cif: string, token: string): Promise<Compan
     const reportData = await reportResponse.json();
     console.log('Success with eInforma API');
     
-    // Map eInforma response to our CompanyData format
+    // Map eInforma response to our database schema
     const mappedData: CompanyData = {
-      name: reportData.denominacion || reportData.name || reportData.razon_social || 'Nombre no disponible',
-      nif: cif.toUpperCase(),
-      address_street: reportData.domicilioSocial?.direccion || reportData.address_street,
-      address_city: reportData.domicilioSocial?.localidad || reportData.localidad || reportData.address_city,
-      address_postal_code: reportData.domicilioSocial?.codigoPostal || reportData.address_postal_code,
-      business_sector: reportData.cnae?.descripcion || reportData.cnae_descripcion || reportData.business_sector,
-      legal_representative: reportData.representante_legal || reportData.legal_representative,
-      status: (reportData.situacionAeat === 'ACTIVA' || reportData.status === 'active') ? 'activo' : 'inactivo',
-      client_type: 'empresa',
-      is_mock: false
+      cif: cif.toUpperCase(),
+      razon_social: reportData.denominacion || reportData.name || reportData.razonSocial,
+      nombre_comercial: reportData.nombreComercial?.[0] || reportData.comercialName,
+      domicilio_fiscal: reportData.domicilioSocial?.direccionCompleta || 
+                       `${reportData.domicilioSocial?.direccion || ''}, ${reportData.domicilioSocial?.localidad || ''}`.trim(),
+      codigo_postal: reportData.domicilioSocial?.codigoPostal || reportData.postalCode,
+      municipio: reportData.domicilioSocial?.localidad || reportData.city,
+      provincia: reportData.domicilioSocial?.provincia || reportData.province,
+      codigo_cnae: reportData.cnae?.codigo || reportData.cnae,
+      descripcion_cnae: reportData.cnae?.descripcion || reportData.cnaeDescription,
+      situacion_aeat: reportData.situacionAeat || reportData.status?.toUpperCase(),
+      fecha_constitucion: reportData.fechaConstitucion || reportData.constitutionDate,
+      capital_social: reportData.capitalSocial || reportData.capital,
+      forma_juridica: reportData.formaJuridica || reportData.legalForm,
+      telefono: reportData.telefono?.[0] || reportData.phone,
+      email: reportData.email,
+      web: reportData.web?.[0] || reportData.web,
+      empleados_estimados: reportData.empleados || reportData.employees,
+      facturacion_estimada: reportData.ventas || reportData.turnover,
+      rating_crediticio: reportData.rating,
+      fecha_ultima_actualizacion: new Date().toISOString(),
+      validado_einforma: true,
+      datos_adicionales: {
+        source: 'einforma_api',
+        original_response: reportData,
+        enrichment_date: new Date().toISOString()
+      }
     };
     
     return mappedData;
@@ -328,7 +372,7 @@ async function getCompanyReportByCIF(cif: string, token: string): Promise<Compan
   }
 }
 
-async function enrichCompanyData(supabaseClient: any, cif: string) {
+async function enrichCompanyData(supabaseClient: any, cif: string, restaurant_id?: string) {
   try {
     let companyData: CompanyData;
     let isFromAPI = false;
@@ -352,15 +396,59 @@ async function enrichCompanyData(supabaseClient: any, cif: string) {
       }
     }
 
-    console.log('Company found:', companyData.name, isFromAPI ? '(from API)' : '(mock data)');
+    console.log('Company found:', companyData.razon_social, isFromAPI ? '(from API)' : '(mock data)');
+
+    // Save/update company data in database
+    try {
+      const { data: savedData, error: saveError } = await supabaseClient
+        .from('company_data')
+        .upsert({
+          ...companyData,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'cif'
+        })
+        .select()
+        .single();
+
+      if (saveError) {
+        console.error('Error saving company data:', saveError);
+      } else {
+        console.log('Company data saved successfully:', savedData.cif);
+        companyData = savedData;
+      }
+
+      // Update restaurant's company_tax_id if restaurant_id is provided
+      if (restaurant_id) {
+        console.log('Updating restaurant company_tax_id:', restaurant_id, cif);
+        
+        const { error: updateError } = await supabaseClient
+          .from('base_restaurants')
+          .update({ 
+            company_tax_id: cif.toUpperCase(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', restaurant_id);
+
+        if (updateError) {
+          console.error('Error updating restaurant company_tax_id:', updateError);
+        } else {
+          console.log('Restaurant company_tax_id updated successfully');
+        }
+      }
+
+    } catch (dbError) {
+      console.error('Database operation failed:', dbError);
+      // Continue without saving to database
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         data: companyData,
-        is_mock: companyData.is_mock || false,
+        is_mock: !isFromAPI,
         message: isFromAPI 
-          ? 'Datos de empresa obtenidos desde eInforma'
+          ? 'Datos de empresa obtenidos desde eInforma y guardados'
           : 'Datos de empresa simulados (modo desarrollo)'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

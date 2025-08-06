@@ -64,16 +64,17 @@ export const useEInformaIntegration = () => {
     }
   };
 
-  const enrichCompanyData = async (cif: string): Promise<CompanyData | null> => {
+  const enrichCompanyData = async (cif: string, restaurantId?: string): Promise<CompanyData | null> => {
     if (!cif) return null;
 
     setIsEnriching(true);
     try {
-      console.log('[useEInformaIntegration] Enriching company data for CIF:', cif);
+      console.log('[useEInformaIntegration] Enriching company data for CIF:', cif, 'Restaurant:', restaurantId);
       const { data, error } = await supabase.functions.invoke('einforma-integration', {
         body: {
           action: 'enrich_company',
-          cif: cif.trim().toUpperCase()
+          cif: cif.trim().toUpperCase(),
+          restaurant_id: restaurantId
         }
       });
 
@@ -85,7 +86,7 @@ export const useEInformaIntegration = () => {
       console.log('[useEInformaIntegration] Edge function response:', data);
 
       if (data.success) {
-        toast.success('Datos de empresa enriquecidos correctamente');
+        toast.success(data.message || 'Datos de empresa enriquecidos correctamente');
         console.log('[useEInformaIntegration] Company data enriched successfully:', data.data);
         return data.data;
       } else {

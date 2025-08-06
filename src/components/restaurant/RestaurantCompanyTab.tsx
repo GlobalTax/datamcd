@@ -127,9 +127,9 @@ export const RestaurantCompanyTab: React.FC<RestaurantCompanyTabProps> = ({ rest
       return;
     }
 
-    console.log('[RestaurantCompanyTab] Enriching data for CIF:', cifToValidate);
+    console.log('[RestaurantCompanyTab] Enriching data for CIF:', cifToValidate, 'Restaurant ID:', restaurantId);
     try {
-      const enrichedData = await enrichCompanyData(cifToValidate);
+      const enrichedData = await enrichCompanyData(cifToValidate, restaurantId);
       console.log('[RestaurantCompanyTab] Enriched data received:', enrichedData);
       
       if (enrichedData) {
