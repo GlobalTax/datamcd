@@ -174,22 +174,6 @@ export const RestaurantCompanyTab: React.FC<RestaurantCompanyTabProps> = ({ rest
 
   return (
     <div className="space-y-6">
-      {/* Debug Panel - Solo en desarrollo */}
-      {process.env.NODE_ENV === 'development' && debugInfo && (
-        <Card className="border-dashed border-orange-200 bg-orange-50/50">
-          <CardHeader>
-            <CardTitle className="text-sm text-orange-600 flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              Debug Info
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-xs text-orange-700 overflow-auto">
-              {JSON.stringify(debugInfo, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Validación de CIF */}
       <Card>
