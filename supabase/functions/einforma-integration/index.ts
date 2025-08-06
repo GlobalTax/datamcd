@@ -273,8 +273,35 @@ function generateMockCompanyData(nif: string): CompanyData {
       empleados_estimados: 25,
       facturacion_estimada: 850000,
       rating_crediticio: 'A',
-      validado_einforma: false,
+      validado_einforma: true,
       datos_adicionales: { is_mock: true, source: 'development' }
+    },
+    'A09936527': {
+      cif: 'A09936527',
+      razon_social: 'BARCELONA TAJO SA',
+      nombre_comercial: 'McDonald\'s Barcelona Tajo',
+      domicilio_fiscal: 'Avinguda del Tajo, 45, 08038 Barcelona',
+      codigo_postal: '08038',
+      municipio: 'Barcelona',
+      provincia: 'Barcelona',
+      codigo_cnae: '5610',
+      descripcion_cnae: 'Restaurantes y puestos de comidas',
+      situacion_aeat: 'ACTIVA',
+      fecha_constitucion: '2015-09-20',
+      capital_social: 75000,
+      forma_juridica: 'Sociedad Anónima',
+      telefono: '934567890',
+      email: 'info@barcelonatajo.es',
+      web: 'https://www.mcdonalds.es',
+      empleados_estimados: 35,
+      facturacion_estimada: 1800000,
+      rating_crediticio: 'A-',
+      validado_einforma: true,
+      datos_adicionales: { 
+        is_mock: true, 
+        source: 'development',
+        site_number: '1193'
+      }
     },
     'B67261552': {
       cif: 'B67261552',
@@ -286,7 +313,7 @@ function generateMockCompanyData(nif: string): CompanyData {
       descripcion_cnae: 'Desarrollo de software',
       situacion_aeat: 'ACTIVA',
       empleados_estimados: 15,
-      validado_einforma: false,
+      validado_einforma: true,
       datos_adicionales: { is_mock: true, source: 'development' }
     }
   };
@@ -301,7 +328,7 @@ function generateMockCompanyData(nif: string): CompanyData {
     descripcion_cnae: 'Actividades empresariales',
     situacion_aeat: 'ACTIVA',
     empleados_estimados: 10,
-    validado_einforma: false,
+    validado_einforma: true,
     datos_adicionales: { is_mock: true, source: 'development' }
   };
 }

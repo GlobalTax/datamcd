@@ -94,9 +94,17 @@ export const RestaurantCompanyTab: React.FC<RestaurantCompanyTabProps> = ({ rest
       loadCompanyData(restaurantCIF);
     } else {
       // Si el restaurante no tiene CIF, intentar con CIF por defecto basado en el sitio
-      const defaultCIF = currentRestaurant?.site_number === '633' ? 'B66176728' : '';
+      const siteNumber = currentRestaurant?.site_number;
+      let defaultCIF = '';
+      
+      if (siteNumber === '633') {
+        defaultCIF = 'B66176728'; // Sant Adrià 633 SL
+      } else if (siteNumber === '1193') {
+        defaultCIF = 'A09936527'; // Barcelona Tajo
+      }
+      
       if (defaultCIF) {
-        console.log('[RestaurantCompanyTab] Using default CIF for site 633:', defaultCIF);
+        console.log(`[RestaurantCompanyTab] Using default CIF for site ${siteNumber}:`, defaultCIF);
         setCifToValidate(defaultCIF);
         loadCompanyData(defaultCIF);
       }
