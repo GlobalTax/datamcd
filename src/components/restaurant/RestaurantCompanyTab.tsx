@@ -76,16 +76,13 @@ export const RestaurantCompanyTab: React.FC<RestaurantCompanyTabProps> = ({ rest
         console.log('[RestaurantCompanyTab] Company data set successfully');
       } else {
         console.log('[RestaurantCompanyTab] No company data found for CIF:', cif);
-        // Solo limpiar si estamos cargando un CIF diferente
-        if (lastSuccessfulCIF !== cif) {
-          setCompanyData(null);
-        }
+        setCompanyData(null);
       }
     } catch (error) {
       console.error('[RestaurantCompanyTab] Error loading company data:', error);
       toast.error('Error al cargar los datos de la empresa');
     }
-  }, [getCompanyByCIF, lastSuccessfulCIF]);
+  }, [getCompanyByCIF]);
 
   useEffect(() => {
     console.log('[RestaurantCompanyTab] useEffect triggered with restaurantCIF:', restaurantCIF);
