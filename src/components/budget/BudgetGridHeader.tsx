@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Save, Eye, EyeOff, BarChart3, TrendingUp } from 'lucide-react';
 import { BudgetData } from '@/types/budgetTypes';
+import { markInteraction } from '@/lib/monitoring/marks';
 
 interface BudgetGridHeaderProps {
   year: number;
@@ -107,7 +108,7 @@ export const BudgetGridHeader: React.FC<BudgetGridHeaderProps> = ({
             </span>
           )}
           <Button 
-            onClick={onSave}
+            onClick={() => { markInteraction('budget:save', { path: location.pathname }); onSave(); }}
             disabled={!hasChanges || loading}
             className="flex items-center gap-2"
           >

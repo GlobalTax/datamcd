@@ -3452,6 +3452,51 @@ export type Database = {
           },
         ]
       }
+      web_vitals: {
+        Row: {
+          created_at: string
+          delta: number | null
+          detail: Json | null
+          id: string
+          label: string | null
+          metric: string
+          navigation_type: string | null
+          pathname: string
+          rating: string | null
+          session_id: string | null
+          user_id: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          delta?: number | null
+          detail?: Json | null
+          id?: string
+          label?: string | null
+          metric: string
+          navigation_type?: string | null
+          pathname: string
+          rating?: string | null
+          session_id?: string | null
+          user_id?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string
+          delta?: number | null
+          detail?: Json | null
+          id?: string
+          label?: string | null
+          metric?: string
+          navigation_type?: string | null
+          pathname?: string
+          rating?: string | null
+          session_id?: string | null
+          user_id?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       pg_all_foreign_keys: {

@@ -1,10 +1,30 @@
 import { logger } from '@/lib/logger';
+import { supabase } from '@/integrations/supabase/client';
 
 // Initialize Web Vitals + lightweight performance observers
 export function initMonitoring() {
   try {
     const BUDGETS = { CLS: 0.1, LCP: 2500, INP: 200, TTFB: 800 } as const;
     const RESOURCE_BUDGETS = { JS_TOTAL: 600_000, CHUNK_MAX: 300_000 } as const;
+
+    // Session + user context for metric correlation
+    const PERF_SESSION_KEY = 'perf_session_id';
+    const session_id = (() => {
+      try {
+        const existing = sessionStorage.getItem(PERF_SESSION_KEY);
+        if (existing) return existing;
+        const id = (crypto?.randomUUID?.() || String(Date.now()));
+        sessionStorage.setItem(PERF_SESSION_KEY, id);
+        return id;
+      } catch { return String(Date.now()); }
+    })();
+
+    let user_id: string | null = null;
+    // Fire-and-forget: enrich with current user id if available
+    supabase.auth.getUser().then(({ data }) => {
+      user_id = data?.user?.id ?? null;
+    }).catch(() => {});
+
     // Dynamically import web-vitals to keep initial bundle lean
     import('web-vitals').then(({ onCLS, onFID, onLCP, onINP, onTTFB }) => {
       const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
@@ -27,6 +47,24 @@ export function initMonitoring() {
           if (typeof budget === 'number' && typeof value === 'number' && value > budget) {
             logger.warn('PerfBudgetExceeded', { ...payload, budget, metric: name });
           }
+        } catch {}
+
+        // Persist to Supabase (non-blocking)
+        try {
+          const detail = (metric as any)?.attribution ? { attribution: (metric as any).attribution } : null;
+          // @ts-ignore - ignore awaiting intentionally
+          supabase.from('web_vitals').insert({
+            user_id,
+            session_id,
+            pathname: location.pathname,
+            metric: metric.name,
+            value: typeof metric.value === 'number' ? Number(metric.value.toFixed(2)) : metric.value,
+            rating: metric.rating,
+            delta: typeof metric.delta === 'number' ? Number(metric.delta.toFixed(2)) : metric.delta,
+            navigation_type: base.navType as any,
+            label: metric.id,
+            detail
+          });
         } catch {}
       };
 

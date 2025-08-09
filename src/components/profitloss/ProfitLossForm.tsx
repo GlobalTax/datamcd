@@ -7,6 +7,7 @@ import { useProfitLossData } from '@/hooks/useProfitLossData';
 import { logger } from '@/lib/logger';
 import { ProfitLossFormData } from '@/types/profitLoss';
 import { Save } from 'lucide-react';
+import { markInteraction } from '@/lib/monitoring/marks';
 import { ProfitLossFormHeader } from './form/ProfitLossFormHeader';
 import { RevenueSection } from './form/RevenueSection';
 import { CostOfSalesSection } from './form/CostOfSalesSection';
@@ -59,6 +60,7 @@ export const ProfitLossForm = ({ restaurantId, onClose, editData }: ProfitLossFo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    markInteraction('pl:submit', { path: location.pathname });
     setIsSubmitting(true);
 
     try {
