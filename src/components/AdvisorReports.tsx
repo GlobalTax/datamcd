@@ -7,7 +7,7 @@ import { Building, Users, MapPin, TrendingUp, Calendar, Globe } from 'lucide-rea
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
-
+import { LoadingFallback, CardSkeleton } from '@/components/common/LoadingFallback';
 interface ReportData {
   totalRestaurants: number;
   totalFranchisees: number;
@@ -144,8 +144,25 @@ export const AdvisorReports: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="text-center py-8">
-        <p>Cargando reportes...</p>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="h-[300px] w-full rounded-md bg-muted animate-pulse" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="h-[300px] w-full rounded-md bg-muted animate-pulse" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

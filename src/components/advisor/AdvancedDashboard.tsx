@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingFallback } from '@/components/common/LoadingFallback';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -171,11 +172,7 @@ export const AdvancedDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <RefreshCw className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingFallback variant="card" message="Cargando dashboard..." />;
   }
 
   return (
