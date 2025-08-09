@@ -12,6 +12,8 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
+  SidebarSeparator,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, UserCheck, Store, FileText, Bell, TrendingUp, Activity, Monitor, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -179,6 +181,20 @@ export function AppSidebar() {
     getDebugInfo
   } = useAuth();
 
+  const { setOpen, isMobile } = useSidebar();
+
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1024px)');
+    const update = () => {
+      if (!isMobile && mq.matches) {
+        setOpen(false);
+      }
+    };
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, [isMobile, setOpen]);
+
   // Log de debugging detallado
   const debugInfo = getDebugInfo?.() || {};
   logger.debug('Sidebar debug info', { 
@@ -215,44 +231,68 @@ export function AppSidebar() {
     return location.pathname === item.url;
   };
 
+  const pick = (titles: string[], source: (GeneralMenuItem | AdvisorMenuItem)[]) =>
+    source.filter((it) => titles.includes(it.title));
+
+  const generalGroups = [
+    { label: 'Principal', items: pick(['Dashboard'], generalMenuItems) },
+    { label: 'Operaciones', items: pick(['Restaurantes','Franquiciados','Empleados','Incidencias','Orquest','Panel Trabajadores','Biloop'], generalMenuItems) },
+    { label: 'Finanzas', items: pick(['Análisis','Valoración','Presupuestos Anuales','Datos Históricos'], generalMenuItems) },
+  ];
+
+  const advisorGroups = [
+    { label: 'Principal', items: pick(['Dashboard'], advisorMenuItems) },
+    { label: 'Gestión', items: pick(['Franquiciados','Restaurantes','Incidencias','Orquest','Biloop'], advisorMenuItems) },
+    { label: 'Insights', items: pick(['Analytics','Reportes','Valoración','Presupuestos','Alertas'], advisorMenuItems) },
+  ];
+
+  const groups = isAdvisorPage ? advisorGroups : generalGroups;
+
   return (
-    <Sidebar>
-      <SidebarHeader className="p-6 border-b">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">M</span>
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="p-3 border-b">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 bg-[hsl(var(--mcd-red))] rounded-md flex items-center justify-center">
+            <span className="text-white font-bold text-[11px]">M</span>
           </div>
           <div>
             <h2 className="font-semibold text-gray-900">McDonald's</h2>
-            <p className="text-xs text-gray-500">Portal de Gestión</p>
+            <p className="text-[11px] text-gray-500">Gestión</p>
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="p-4">
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-            {isAdvisorPage ? 'Panel de Asesor' : 'Servicios'}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild
-                    isActive={isActiveItem(item)}
-                    className="w-full justify-start px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <button onClick={() => handleNavigation(item)}>
-                      <item.icon className="w-4 h-4" />
-                      <span className="font-medium">{item.title}</span>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarContent className="p-2">
+        {groups.map((group, gi) => (
+          <React.Fragment key={group.label}>
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                {group.label}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0.5">
+                  {group.items.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActiveItem(item)}
+                        size="sm"
+                        tooltip={item.title}
+                        className="w-full justify-start px-2.5 py-1.5 gap-2 rounded-md"
+                      >
+                        <button onClick={() => handleNavigation(item)}>
+                          <item.icon className="w-4 h-4" />
+                          <span className="font-medium">{item.title}</span>
+                        </button>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            {gi < groups.length - 1 && <SidebarSeparator className="my-1.5" />}
+          </React.Fragment>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t">
