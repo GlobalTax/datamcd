@@ -32,7 +32,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { AppNavbar } from '@/components/navigation/AppNavbar';
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { Seo } from '@/components/seo/Seo';
-import { markInteraction } from '@/lib/monitoring/marks';
+import { markInteraction, mark, measure } from '@/lib/monitoring/marks';
 
 // Lazy loading de módulos pesados
 const AdvancedDashboard = React.lazy(() => import('@/components/advisor/AdvancedDashboard').then(m => ({ default: m.AdvancedDashboard })));
@@ -63,7 +63,14 @@ const prefetchTab = (id: string) => {
   if (prefetched.has(id)) return;
   const fn = modulePrefetchers[id];
   if (fn) {
-    fn().finally(() => prefetched.add(id));
+    const label = `prefetch:tab:${id}`;
+    try { mark(`${label}:start`, { id }); } catch {}
+    fn()
+      .catch(() => {})
+      .finally(() => {
+        try { measure(label, `${label}:start`, undefined, { id }); } catch {}
+        prefetched.add(id);
+      });
   }
 };
 

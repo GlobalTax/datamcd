@@ -3,6 +3,8 @@ import { logger } from '@/lib/logger';
 // Initialize Web Vitals + lightweight performance observers
 export function initMonitoring() {
   try {
+    const BUDGETS = { CLS: 0.1, LCP: 2500, INP: 200, TTFB: 800 } as const;
+    const RESOURCE_BUDGETS = { JS_TOTAL: 600_000, CHUNK_MAX: 300_000 } as const;
     // Dynamically import web-vitals to keep initial bundle lean
     import('web-vitals').then(({ onCLS, onFID, onLCP, onINP, onTTFB }) => {
       const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
@@ -15,12 +17,17 @@ export function initMonitoring() {
       const report = (metric: any) => {
         // Round to 2 decimals to avoid high-cardinality logs
         const value = typeof metric.value === 'number' ? Number(metric.value.toFixed(2)) : metric.value;
-        logger.info(`WebVital:${metric.name}`, {
-          ...base,
-          id: metric.id,
-          value,
-          rating: metric.rating,
-        });
+        const payload = { ...base, id: metric.id, value, rating: metric.rating };
+        logger.info(`WebVital:${metric.name}`, payload);
+
+        try {
+          // Performance budgets: warn when thresholds are exceeded
+          const name = metric.name as 'CLS' | 'LCP' | 'INP' | 'TTFB' | string;
+          const budget = (BUDGETS as any)[name];
+          if (typeof budget === 'number' && typeof value === 'number' && value > budget) {
+            logger.warn('PerfBudgetExceeded', { ...payload, budget, metric: name });
+          }
+        } catch {}
       };
 
       onCLS(report);
@@ -55,7 +62,7 @@ export function initMonitoring() {
       } catch { }
     }
 
-    // After load, flag slow resources (>2000ms)
+    // After load, flag slow resources (>2000ms) and check bundle budgets
     window.addEventListener('load', () => {
       setTimeout(() => {
         const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
@@ -72,6 +79,29 @@ export function initMonitoring() {
               path: location.pathname,
             });
           });
+
+        try {
+          // Bundle size budgets (transfer size)
+          const scripts = resources.filter((r) => r.initiatorType === 'script');
+          const jsTotal = scripts.reduce((sum, r) => sum + (r.transferSize || 0), 0);
+          const jsMaxChunk = scripts.reduce((max, r) => Math.max(max, r.transferSize || 0), 0);
+          if (jsTotal > RESOURCE_BUDGETS.JS_TOTAL) {
+            logger.warn('PerfBudgetExceeded:JS_TOTAL', {
+              component: 'perf',
+              path: location.pathname,
+              value: jsTotal,
+              budget: RESOURCE_BUDGETS.JS_TOTAL,
+            });
+          }
+          if (jsMaxChunk > RESOURCE_BUDGETS.CHUNK_MAX) {
+            logger.warn('PerfBudgetExceeded:CHUNK_MAX', {
+              component: 'perf',
+              path: location.pathname,
+              value: jsMaxChunk,
+              budget: RESOURCE_BUDGETS.CHUNK_MAX,
+            });
+          }
+        } catch {}
       }, 2000);
     }, { once: true });
   } catch (e) {
