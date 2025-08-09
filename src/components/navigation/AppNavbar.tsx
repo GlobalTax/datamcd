@@ -40,9 +40,12 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b animate-fade-in" role="banner">
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="h-14 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b animate-fade-in" role="banner">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-primary text-primary-foreground px-3 py-1 rounded">
+          Saltar al contenido
+        </a>
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="h-14 flex items-center justify-between">
           {/* IZQUIERDA: botón móvil + branding */}
           <div className="flex items-center gap-3">
             {onOpenSidebar ? (

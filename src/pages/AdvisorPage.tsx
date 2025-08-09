@@ -22,25 +22,28 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import AdvisorManagement from '@/components/AdvisorManagement';
-import { FranchiseesManagement } from '@/components/FranchiseesManagement';
 import { useFranchisees } from '@/hooks/useFranchisees';
-import { AdvisorReports } from '@/components/AdvisorReports';
-import { UnifiedRestaurantsTable } from '@/components/UnifiedRestaurantsTable';
 import { useRestaurants } from '@/hooks/data/useRestaurants';
-import { AdvancedDashboard } from '@/components/advisor/AdvancedDashboard';
-import { NotificationCenter } from '@/components/advisor/NotificationCenter';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { AdvancedReports } from '@/components/advisor/AdvancedReports';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { ConnectionStatus } from '@/components/common/ConnectionStatus';
 import { LoadingFallback } from '@/components/common/LoadingFallback';
-import { OrquestDashboard } from '@/components/orquest/OrquestDashboard';
-import { NewIncidentManagement } from '@/components/incidents/NewIncidentManagement';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { AppNavbar } from '@/components/navigation/AppNavbar';
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { Seo } from '@/components/seo/Seo';
+
+// Lazy loading de módulos pesados
+const AdvancedDashboard = React.lazy(() => import('@/components/advisor/AdvancedDashboard').then(m => ({ default: m.AdvancedDashboard })));
+const FranchiseesManagement = React.lazy(() => import('@/components/FranchiseesManagement').then(m => ({ default: m.FranchiseesManagement })));
+const AdvisorReports = React.lazy(() => import('@/components/AdvisorReports').then(m => ({ default: m.AdvisorReports })));
+const UnifiedRestaurantsTable = React.lazy(() => import('@/components/UnifiedRestaurantsTable').then(m => ({ default: m.UnifiedRestaurantsTable })));
+const NotificationCenter = React.lazy(() => import('@/components/advisor/NotificationCenter').then(m => ({ default: m.NotificationCenter })));
+const AdvancedReports = React.lazy(() => import('@/components/advisor/AdvancedReports').then(m => ({ default: m.AdvancedReports })));
+const OrquestDashboard = React.lazy(() => import('@/components/orquest/OrquestDashboard').then(m => ({ default: m.OrquestDashboard })));
+const NewIncidentManagement = React.lazy(() => import('@/components/incidents/NewIncidentManagement').then(m => ({ default: m.NewIncidentManagement })));
+const AdvisorManagement = React.lazy(() => import('@/components/AdvisorManagement'));
+
 const AdvisorPage = () => {
   const { user, signOut, loading } = useUnifiedAuth();
   const navigate = useNavigate();
@@ -153,6 +156,20 @@ const AdvisorPage = () => {
           description="Panel de asesor con KPIs, franquiciados, restaurantes y reportes."
           canonicalUrl={`${window.location.origin}/advisor`}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Inicio', item: `${window.location.origin}/` },
+                { '@type': 'ListItem', position: 2, name: 'Advisor', item: `${window.location.origin}/advisor` },
+                { '@type': 'ListItem', position: 3, name: getCurrentPageTitle() },
+              ],
+            }),
+          }}
+        />
         {/* Mobile Navigation */}
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent side="left" className="w-80 p-0">
@@ -224,7 +241,8 @@ const AdvisorPage = () => {
             />
 
             {/* Page Content */}
-            <main className="p-6">
+            <main id="main-content" className="p-6">
+              <React.Suspense fallback={<LoadingFallback variant="page" message="Cargando contenido..." />}>
               <div className="max-w-7xl mx-auto">
                 <Breadcrumbs
                   items={[
@@ -441,6 +459,7 @@ const AdvisorPage = () => {
                   )}
                 </div>
               </div>
+              </React.Suspense>
             </main>
           </div>
         </div>
