@@ -3,8 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useRestaurantDataLegacy } from '@/hooks/data/useRestaurantData';
-import { useFranchiseeRestaurantId } from '@/hooks/useFranchiseeRestaurantId';
+import { useRestaurant, useFranchiseeRestaurantId } from '@/hooks/queries/useRestaurantQueries';
 import { RestaurantKPICards } from './RestaurantKPICards';
 import { RestaurantGeneralTab } from './RestaurantGeneralTab';
 import { RestaurantFinanceTab } from './RestaurantFinanceTab';
@@ -31,8 +30,8 @@ interface RestaurantPanelProps {
 }
 
 export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }) => {
-  const { restaurant, loading, error, refetch } = useRestaurantDataLegacy(restaurantId);
-  const { franchiseeRestaurantId, loading: mappingLoading, error: mappingError } = useFranchiseeRestaurantId(restaurantId);
+  const { data: franchiseeRestaurantId, isLoading: mappingLoading, error: mappingError } = useFranchiseeRestaurantId(restaurantId);
+  const { data: restaurant, isLoading: loading, error } = useRestaurant(franchiseeRestaurantId);
   const navigate = useNavigate();
 
   if (loading || mappingLoading) {
@@ -54,7 +53,7 @@ export const RestaurantPanel: React.FC<RestaurantPanelProps> = ({ restaurantId }
             <AlertTriangle className="mx-auto h-16 w-16 text-destructive mb-6" />
             <h3 className="text-xl font-semibold mb-3">Restaurante no disponible</h3>
             <p className="text-muted-foreground mb-4">
-              {error || mappingError || 'No se pudieron cargar los datos del restaurante'}
+              {(error?.message || mappingError?.message) || 'No se pudieron cargar los datos del restaurante'}
             </p>
             
             <div className="bg-muted/50 p-4 rounded-lg mb-6 text-left">
