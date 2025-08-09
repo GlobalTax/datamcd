@@ -38,7 +38,7 @@ import { LoadingFallback } from '@/components/common/LoadingFallback';
 import { OrquestDashboard } from '@/components/orquest/OrquestDashboard';
 import { NewIncidentManagement } from '@/components/incidents/NewIncidentManagement';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-
+import { AppNavbar } from '@/components/navigation/AppNavbar';
 const AdvisorPage = () => {
   const { user, signOut, loading } = useUnifiedAuth();
   const navigate = useNavigate();
@@ -149,11 +149,6 @@ const AdvisorPage = () => {
         
         {/* Mobile Navigation */}
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="lg:hidden fixed top-4 left-4 z-50">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
           <SheetContent side="left" className="w-80 p-0">
             <div className="h-full flex flex-col">
               <div className="p-6 border-b">
@@ -211,49 +206,16 @@ const AdvisorPage = () => {
 
           {/* Main Content */}
           <div className="flex-1">
-            {/* Header */}
-            <header className="bg-card border-b shadow-sm">
-              <div className="px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="lg:hidden">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setSidebarOpen(true)}
-                      >
-                        <Menu className="h-5 w-5" />
-                      </Button>
-                    </div>
-                    <div>
-                      <h1 className="text-2xl font-bold text-foreground">{getCurrentPageTitle()}</h1>
-                      <p className="text-muted-foreground">
-                        Gestión integral de franquicias McDonald's
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="secondary" className="hidden sm:inline-flex">
-                        {franchisees.length} franquiciados
-                      </Badge>
-                      <Badge variant="secondary" className="hidden sm:inline-flex">
-                        {restaurants.length} restaurantes
-                      </Badge>
-                    </div>
-                    <Button
-                      onClick={handleSignOut}
-                      variant="outline"
-                      className="hidden lg:flex"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Cerrar Sesión
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </header>
+            <AppNavbar
+              title={getCurrentPageTitle()}
+              subtitle="Gestión integral de franquicias McDonald's"
+              counts={[
+                { label: 'franquiciados', value: franchisees.length },
+                { label: 'restaurantes', value: restaurants.length },
+              ]}
+              onSignOut={handleSignOut}
+              onOpenSidebar={() => setSidebarOpen(true)}
+            />
 
             {/* Page Content */}
             <main className="p-6">
