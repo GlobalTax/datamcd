@@ -35,6 +35,7 @@ import WorkersPage from "./pages/WorkersPage";
 
 import NotFound from "./pages/NotFound";
 import { mark, measure } from '@/lib/monitoring/marks';
+import { PerfDebugPanel } from '@/components/debug/PerfDebugPanel';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -237,6 +238,7 @@ function App() {
               />
               <Route path="*" element={<NotFound />} />
               </Routes>
+              {import.meta.env.MODE === 'development' && <PerfDebugPanel />}
             </BrowserRouter>
           </TooltipProvider>
         </ImpersonationProvider>
