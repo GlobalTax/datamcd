@@ -255,7 +255,7 @@ export function AppSidebar() {
           <div className="w-7 h-7 bg-[hsl(var(--mcd-red))] rounded-md flex items-center justify-center">
             <span className="text-white font-bold text-[11px]">M</span>
           </div>
-          <div>
+          <div className="group-data-[collapsible=icon]:hidden">
             <h2 className="font-semibold text-gray-900">McDonald's</h2>
             <p className="text-[11px] text-gray-500">Gestión</p>
           </div>
@@ -282,7 +282,7 @@ export function AppSidebar() {
                       >
                         <button onClick={() => handleNavigation(item)}>
                           <item.icon className="w-4 h-4" />
-                          <span className="font-medium">{item.title}</span>
+                          <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
                         </button>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -297,7 +297,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-4 border-t">
         <div className="space-y-3">
-          <div className="px-3 py-2 rounded-lg bg-gray-50">
+          <div className="px-3 py-2 rounded-lg bg-gray-50 group-data-[collapsible=icon]:hidden">
             <p className="text-sm font-medium text-gray-900 truncate">
               {user?.full_name || user?.email}
             </p>
@@ -314,7 +314,7 @@ export function AppSidebar() {
               className="flex-1 justify-start px-3"
             >
               <Settings className="w-4 h-4 mr-2" />
-              Configuración
+              <span className="group-data-[collapsible=icon]:hidden">Configuración</span>
             </Button>
             
             <Button
