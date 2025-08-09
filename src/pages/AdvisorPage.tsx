@@ -32,6 +32,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { AppNavbar } from '@/components/navigation/AppNavbar';
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { Seo } from '@/components/seo/Seo';
+import { markInteraction } from '@/lib/monitoring/marks';
 
 // Lazy loading de módulos pesados
 const AdvancedDashboard = React.lazy(() => import('@/components/advisor/AdvancedDashboard').then(m => ({ default: m.AdvancedDashboard })));
@@ -167,6 +168,7 @@ const AdvisorPage = () => {
           onMouseEnter={() => prefetchTab(item.id)}
           onFocus={() => prefetchTab(item.id)}
           onClick={() => {
+            markInteraction('advisor:tab-change', { to: item.id });
             setActiveTab(item.id);
             if (mobile) setSidebarOpen(false);
           }}

@@ -1,8 +1,9 @@
 
+import React from 'react';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/auth/AuthProvider";
 import { ImpersonationProvider } from "@/hooks/useImpersonation";
 import { ConnectionStatusProvider } from "@/components/common/ConnectionStatusProvider";
@@ -33,7 +34,7 @@ import WorkersPage from "./pages/WorkersPage";
 
 
 import NotFound from "./pages/NotFound";
-
+import { mark, measure } from '@/lib/monitoring/marks';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -53,6 +54,22 @@ const queryClient = new QueryClient({
   },
 });
 
+function RouteChangePerf() {
+  const location = useLocation();
+  React.useEffect(() => {
+    const label = `nav:${location.pathname}`;
+    try {
+      mark(`${label}:start`, { path: location.pathname });
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          measure(label, `${label}:start`, undefined, { path: location.pathname });
+        });
+      });
+    } catch {}
+  }, [location.pathname]);
+  return null;
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -63,6 +80,7 @@ function App() {
               <TooltipProvider>
                 <BrowserRouter>
                   <Toaster />
+                  <RouteChangePerf />
                   <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
