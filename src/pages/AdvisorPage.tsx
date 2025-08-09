@@ -44,6 +44,28 @@ const OrquestDashboard = React.lazy(() => import('@/components/orquest/OrquestDa
 const NewIncidentManagement = React.lazy(() => import('@/components/incidents/NewIncidentManagement').then(m => ({ default: m.NewIncidentManagement })));
 const AdvisorManagement = React.lazy(() => import('@/components/AdvisorManagement'));
 
+// Prefetch de módulos bajo demanda y en segundo plano
+const prefetched = new Set<string>();
+const modulePrefetchers: Record<string, () => Promise<unknown>> = {
+  dashboard: () => import('@/components/advisor/AdvancedDashboard'),
+  franchisees: () => import('@/components/FranchiseesManagement'),
+  restaurants: () => import('@/components/UnifiedRestaurantsTable'),
+  orquest: () => import('@/components/orquest/OrquestDashboard'),
+  analytics: () => import('@/components/advisor/AdvancedReports'),
+  reports: () => import('@/components/AdvisorReports'),
+  notifications: () => import('@/components/advisor/NotificationCenter'),
+  management: () => import('@/components/AdvisorManagement'),
+  incidents: () => import('@/components/incidents/NewIncidentManagement'),
+};
+
+const prefetchTab = (id: string) => {
+  if (prefetched.has(id)) return;
+  const fn = modulePrefetchers[id];
+  if (fn) {
+    fn().finally(() => prefetched.add(id));
+  }
+};
+
 const AdvisorPage = () => {
   const { user, signOut, loading } = useUnifiedAuth();
   const navigate = useNavigate();
@@ -60,6 +82,19 @@ const AdvisorPage = () => {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Prefetch de pestañas comunes en segundo plano cuando el hilo está ocioso
+  React.useEffect(() => {
+    const warm = () => ['franchisees', 'restaurants', 'reports'].forEach(prefetchTab);
+    // @ts-ignore
+    const ric = (window as any).requestIdleCallback as ((cb: () => void, opts?: any) => number) | undefined;
+    if (ric) {
+      ric(warm, { timeout: 1500 });
+      return;
+    }
+    const t = setTimeout(warm, 1500);
+    return () => clearTimeout(t);
   }, []);
   const { restaurants: rawRestaurants, isLoading: restaurantsLoading, refetch: refetchRestaurants, stats } = useRestaurants();
   
@@ -129,6 +164,8 @@ const AdvisorPage = () => {
               ? 'bg-primary text-primary-foreground shadow-sm' 
               : 'hover:bg-muted'
           }`}
+          onMouseEnter={() => prefetchTab(item.id)}
+          onFocus={() => prefetchTab(item.id)}
           onClick={() => {
             setActiveTab(item.id);
             if (mobile) setSidebarOpen(false);
