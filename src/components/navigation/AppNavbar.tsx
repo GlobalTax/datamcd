@@ -88,7 +88,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
                 <span className="text-primary-foreground font-semibold">M</span>
               </div>
               <div className="leading-tight">
-                <h1 className="text-sm font-semibold text-foreground">{title}</h1>
+                <span className="text-sm font-semibold text-foreground">{title}</span>
                 {subtitle && (
                   <p className="text-xs text-muted-foreground">{subtitle}</p>
                 )}
