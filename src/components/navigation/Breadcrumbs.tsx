@@ -41,9 +41,9 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className }) =>
         <BreadcrumbList>
           {list.map((item, i) => {
             const isLast = i === list.length - 1;
-            return (
-              <React.Fragment key={`${item.label}-${i}`}>
-                <BreadcrumbItem>
+            const elements = [
+              (
+                <BreadcrumbItem key={`item-${i}`}>
                   {isLast || !item.href ? (
                     <BreadcrumbPage>{item.label}</BreadcrumbPage>
                   ) : (
@@ -52,10 +52,14 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className }) =>
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
-                {!isLast && <BreadcrumbSeparator />}
-              </React.Fragment>
-            );
+              ),
+            ];
+            if (!isLast) {
+              elements.push(<BreadcrumbSeparator key={`sep-${i}`} />);
+            }
+            return elements;
           })}
+
         </BreadcrumbList>
       </Breadcrumb>
     </nav>
