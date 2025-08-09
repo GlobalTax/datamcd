@@ -39,6 +39,8 @@ import { OrquestDashboard } from '@/components/orquest/OrquestDashboard';
 import { NewIncidentManagement } from '@/components/incidents/NewIncidentManagement';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { AppNavbar } from '@/components/navigation/AppNavbar';
+import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
+import { Seo } from '@/components/seo/Seo';
 const AdvisorPage = () => {
   const { user, signOut, loading } = useUnifiedAuth();
   const navigate = useNavigate();
@@ -146,7 +148,11 @@ const AdvisorPage = () => {
       <ErrorBoundary>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         <ConnectionStatus />
-        
+        <Seo
+          title={`${getCurrentPageTitle()} · McDonald's Portal`}
+          description="Panel de asesor con KPIs, franquiciados, restaurantes y reportes."
+          canonicalUrl={`${window.location.origin}/advisor`}
+        />
         {/* Mobile Navigation */}
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent side="left" className="w-80 p-0">
@@ -220,6 +226,14 @@ const AdvisorPage = () => {
             {/* Page Content */}
             <main className="p-6">
               <div className="max-w-7xl mx-auto">
+                <Breadcrumbs
+                  items={[
+                    { label: 'Inicio', href: '/' },
+                    { label: 'Advisor', href: '/advisor' },
+                    { label: getCurrentPageTitle() }
+                  ]}
+                  className="mb-4"
+                />
                 {/* Quick Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                   <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
