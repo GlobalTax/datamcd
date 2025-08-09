@@ -60,6 +60,11 @@ const generalMenuItems: GeneralMenuItem[] = [
     icon: BarChart3,
   },
   {
+    title: "Resumen Financiero",
+    url: "/resumen-financiero",
+    icon: Activity,
+  },
+  {
     title: "Valoración",
     url: "/valuation",
     icon: Calculator,
@@ -237,7 +242,7 @@ export function AppSidebar() {
   const generalGroups = [
     { label: 'Principal', items: pick(['Dashboard'], generalMenuItems) },
     { label: 'Operaciones', items: pick(['Restaurantes','Franquiciados','Empleados','Incidencias','Orquest','Panel Trabajadores','Biloop'], generalMenuItems) },
-    { label: 'Finanzas', items: pick(['Análisis','Valoración','Presupuestos Anuales','Datos Históricos'], generalMenuItems) },
+    { label: 'Finanzas', items: pick(['Resumen Financiero','Análisis','Valoración','Presupuestos Anuales','Datos Históricos'], generalMenuItems) },
   ];
 
   const advisorGroups = [

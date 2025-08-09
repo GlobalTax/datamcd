@@ -26,6 +26,7 @@ import FranchiseeManagementPage from "./pages/FranchiseeManagementPage";
 import ValuationApp from "./pages/ValuationApp";
 import SettingsPage from "./pages/SettingsPage";
 import AnnualBudgetPage from "./pages/AnnualBudgetPage";
+import FinancialSummaryPage from "./pages/FinancialSummaryPage";
 import EmployeePage from "./pages/EmployeePage";
 import OrquestPage from "./pages/OrquestPage";
 import IncidentManagementPage from "./pages/IncidentManagementPage";
@@ -131,6 +132,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AnalysisPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/resumen-financiero"
+                element={
+                  <ProtectedRoute>
+                    <FinancialSummaryPage />
                   </ProtectedRoute>
                 }
               />
