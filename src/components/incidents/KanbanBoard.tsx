@@ -30,7 +30,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ incidents, onChangeSta
   }, [incidents]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-3 xl:gap-4 2xl:gap-5">
       {columns.map((col) => (
         <Card key={col.key} className="bg-card">
           <CardHeader className="py-3">
