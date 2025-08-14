@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, FileText, Download, Calendar, Play } from 'lucide-react';
+import { DollarSign, FileText, Download, Calendar, Play, CloudDownload } from 'lucide-react';
 import { Employee } from '@/types/employee';
 import { usePayroll } from '@/hooks/usePayroll';
+import { useOrquestPayroll } from '@/hooks/useOrquestPayroll';
+import { useAuth } from '@/hooks/auth';
 
 interface PayrollViewProps {
   employees: Employee[];
@@ -18,6 +20,8 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees, restaurantI
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
   const { payrollRecords, loading, fetchPayrollRecords, generatePayroll, updatePayrollStatus } = usePayroll(restaurantId);
+  const { importJanuaryPayroll, loading: importLoading } = useOrquestPayroll();
+  const { franchisee } = useAuth();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-ES', {
@@ -43,6 +47,18 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees, restaurantI
     for (const employee of activeEmployees) {
       await generatePayroll(employee.id, periodStart, periodEnd);
     }
+  };
+
+  const handleImportFromOrquest = async () => {
+    if (!franchisee?.id) {
+      console.error('No franchisee ID available');
+      return;
+    }
+
+    await importJanuaryPayroll(franchisee.id);
+    
+    // Refrescar datos después de importar
+    await fetchPayrollRecords(selectedMonth);
   };
 
   const filteredPayroll = selectedEmployee && selectedEmployee !== 'all'
@@ -168,6 +184,14 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees, restaurantI
               <Button variant="outline" onClick={handleGeneratePayrolls}>
                 <FileText className="w-4 h-4 mr-2" />
                 Generar Nóminas
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleImportFromOrquest}
+                disabled={importLoading}
+              >
+                <CloudDownload className="w-4 h-4 mr-2" />
+                {importLoading ? 'Importando...' : 'Importar Orquest'}
               </Button>
               <Button>
                 <Download className="w-4 h-4 mr-2" />
