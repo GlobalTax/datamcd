@@ -275,7 +275,7 @@ export function AppSidebar() {
 
       <SidebarContent className="p-2">
         {groups.map((group, gi) => (
-          <React.Fragment key={group.label}>
+          <div key={group.label}>
             <SidebarGroup>
               <SidebarGroupLabel className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                 {group.label}
@@ -302,7 +302,7 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
             {gi < groups.length - 1 && <SidebarSeparator className="my-1.5" />}
-          </React.Fragment>
+          </div>
         ))}
       </SidebarContent>
 
