@@ -169,9 +169,15 @@ const advisorMenuItems: AdvisorMenuItem[] = [
     hash: "incidents",
   },
   {
-    title: "Gestión",
+    title: "Empleados",
     url: "/advisor",
     icon: Users,
+    hash: "employees",
+  },
+  {
+    title: "Gestión",
+    url: "/advisor",
+    icon: Cog,
     hash: "management",
   },
 ];
@@ -247,7 +253,7 @@ export function AppSidebar() {
 
   const advisorGroups = [
     { label: 'Principal', items: pick(['Dashboard'], advisorMenuItems) },
-    { label: 'Gestión', items: pick(['Franquiciados','Restaurantes','Incidencias','Orquest','Biloop'], advisorMenuItems) },
+    { label: 'Gestión', items: pick(['Franquiciados','Restaurantes','Empleados','Incidencias','Orquest','Biloop','Gestión'], advisorMenuItems) },
     { label: 'Insights', items: pick(['Analytics','Reportes','Valoración','Presupuestos','Alertas'], advisorMenuItems) },
   ];
 
