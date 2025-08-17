@@ -35,9 +35,15 @@ const RestaurantHubPage: React.FC = () => {
   const { navigateToCurrentRestaurant } = useRestaurantRoutes();
   const { effectiveFranchisee } = useAuth();
   
-  // Get franchisee ID for integrations
-  const franchiseeId = effectiveFranchisee?.id;
-  const { hubData, loading: hubLoading } = useRestaurantHubKPIs(restaurantId!, franchiseeId);
+  // Get KPIs data for the restaurant
+  const { kpis: hubData, isLoading: hubLoading } = useRestaurantHubKPIs(restaurantId);
+
+  // Derive additional metrics from available data
+  const performanceScore = hubData ? Math.min(100, (hubData.totalRevenue / 1000000) * 100) : 0;
+  const budgetStatus = hubData ? 
+    (Math.abs(hubData.monthlyDeviation) < 5 ? 'on-track' : 
+     hubData.monthlyDeviation > 5 ? 'over-budget' : 'under-budget') : 'neutral';
+  const criticalIncidents = 0; // TODO: Add critical incidents to KPIs interface
 
   if (loading) {
     return (
@@ -120,20 +126,20 @@ const RestaurantHubPage: React.FC = () => {
                 <HubCard
                   title="KPIs Generales"
                   icon={TrendingUp}
-                  status={getStatusForValue(hubData.performanceScore, { good: 80, warning: 60 })}
+                  status={getStatusForValue(performanceScore, { good: 80, warning: 60 })}
                   onAction={() => navigateToCurrentRestaurant('analytics')}
                   actionLabel="Ver Analytics"
                   loading={hubLoading}
                 >
                   <div className="space-y-2">
                     <HubKPIValue 
-                      value={hubData.monthlyRevenue} 
+                      value={hubData?.totalRevenue || 0} 
                       type="currency" 
-                      trend={hubData.revenueGrowth}
+                      trend={hubData?.revenueGrowth || 0}
                       size="md"
                     />
                     <div className="text-xs text-muted-foreground">
-                      Performance: {hubData.performanceScore?.toFixed(0) || 'N/A'}/100
+                      Performance: {performanceScore?.toFixed(0) || 'N/A'}/100
                     </div>
                   </div>
                 </HubCard>
@@ -142,20 +148,20 @@ const RestaurantHubPage: React.FC = () => {
                 <HubCard
                   title="Equipo"
                   icon={Users}
-                  status={getStatusForValue(hubData.activeEmployees, { good: 20, warning: 15 })}
+                  status={getStatusForValue(hubData?.activeEmployees || 0, { good: 20, warning: 15 })}
                   onAction={() => navigateToCurrentRestaurant('staff')}
                   actionLabel="Gestionar Personal"
                   loading={hubLoading}
                 >
                   <div className="space-y-2">
                     <HubKPIValue 
-                      value={hubData.activeEmployees} 
+                      value={hubData?.activeEmployees || 0} 
                       type="number"
                       suffix="activos"
                       size="md"
                     />
                     <div className="text-xs text-muted-foreground">
-                      Rotación: {hubData.employeeTurnover?.toFixed(1) || 'N/A'}% trimestral
+                      Rotación: {hubData?.monthlyTurnover?.toFixed(1) || 'N/A'}% mensual
                     </div>
                   </div>
                 </HubCard>
@@ -164,19 +170,19 @@ const RestaurantHubPage: React.FC = () => {
                 <HubCard
                   title="Nómina"
                   icon={CreditCard}
-                  status={getStatusForValue(hubData.monthlyPayrollCost, { good: 50000, warning: 40000 })}
+                  status={getStatusForValue(hubData?.monthlyCost || 0, { good: 50000, warning: 40000 })}
                   onAction={() => navigateToCurrentRestaurant('payroll')}
                   actionLabel="Ver Nómina"
                   loading={hubLoading}
                 >
                   <div className="space-y-2">
                     <HubKPIValue 
-                      value={hubData.monthlyPayrollCost} 
+                      value={hubData?.monthlyCost || 0} 
                       type="currency"
                       size="md"
                     />
                     <div className="text-xs text-muted-foreground">
-                      {hubData.totalWorkingHours?.toFixed(0) || 'N/A'}h mensuales
+                      {hubData?.hoursWorked?.toFixed(0) || 'N/A'}h mensuales
                     </div>
                   </div>
                 </HubCard>
@@ -185,19 +191,19 @@ const RestaurantHubPage: React.FC = () => {
                 <HubCard
                   title="P&L"
                   icon={BarChart3}
-                  status={getStatusForValue(hubData.netMargin, { good: 15, warning: 10 })}
+                  status={getStatusForValue(hubData?.netMargin || 0, { good: 15, warning: 10 })}
                   onAction={() => navigateToCurrentRestaurant('profit-loss')}
                   actionLabel="Ver Estados"
                   loading={hubLoading}
                 >
                   <div className="space-y-2">
                     <HubKPIValue 
-                      value={hubData.ebitda} 
+                      value={hubData?.ebitda || 0} 
                       type="currency"
                       size="md"
                     />
                     <div className="text-xs text-muted-foreground">
-                      Margen neto: {hubData.netMargin?.toFixed(1) || 'N/A'}%
+                      Margen neto: {hubData?.netMargin?.toFixed(1) || 'N/A'}%
                     </div>
                   </div>
                 </HubCard>
@@ -206,22 +212,22 @@ const RestaurantHubPage: React.FC = () => {
                 <HubCard
                   title="Presupuesto"
                   icon={DollarSign}
-                  status={hubData.budgetStatus === 'on-track' ? 'success' : 
-                          hubData.budgetStatus === 'over-budget' ? 'error' :
-                          hubData.budgetStatus === 'under-budget' ? 'warning' : 'neutral'}
+                  status={budgetStatus === 'on-track' ? 'success' : 
+                          budgetStatus === 'over-budget' ? 'error' :
+                          budgetStatus === 'under-budget' ? 'warning' : 'neutral'}
                   onAction={() => navigateToCurrentRestaurant('budget')}
                   actionLabel="Ver Presupuesto"
                   loading={hubLoading}
                 >
                   <div className="space-y-2">
                     <HubKPIValue 
-                      value={hubData.monthlyBudgetDeviation} 
+                      value={hubData?.monthlyDeviation || 0} 
                       type="percentage"
                       size="md"
                       prefix="Desv:"
                     />
                     <div className="text-xs text-muted-foreground">
-                      Año completado: {hubData.yearCompletionPercent.toFixed(0)}%
+                      Año completado: {hubData?.yearProgress?.toFixed(0) || 'N/A'}%
                     </div>
                   </div>
                 </HubCard>
@@ -230,21 +236,21 @@ const RestaurantHubPage: React.FC = () => {
                 <HubCard
                   title="Incidencias"
                   icon={AlertTriangle}
-                  status={hubData.criticalIncidents > 0 ? 'error' : 
-                          hubData.activeIncidents > 3 ? 'warning' : 'success'}
+                  status={criticalIncidents > 0 ? 'error' : 
+                          (hubData?.activeIncidents || 0) > 3 ? 'warning' : 'success'}
                   onAction={() => navigateToCurrentRestaurant('incidents')}
                   actionLabel="Ver Incidencias"
                   loading={hubLoading}
                 >
                   <div className="space-y-2">
                     <HubKPIValue 
-                      value={hubData.activeIncidents} 
+                      value={hubData?.activeIncidents || 0} 
                       type="number"
                       suffix="activas"
                       size="md"
                     />
                     <div className="text-xs text-muted-foreground">
-                      {hubData.criticalIncidents} críticas • {hubData.avgResolutionTime?.toFixed(1) || 'N/A'}d resolución
+                      {criticalIncidents} críticas • {hubData?.avgResolutionTime?.toFixed(1) || 'N/A'}h resolución
                     </div>
                   </div>
                 </HubCard>
@@ -253,21 +259,21 @@ const RestaurantHubPage: React.FC = () => {
                 <HubCard
                   title="Integraciones"
                   icon={Settings}
-                  status={hubData.orquestStatus === 'connected' && hubData.biloopStatus === 'connected' ? 'success' :
-                          hubData.orquestStatus === 'connected' || hubData.biloopStatus === 'connected' ? 'warning' : 'error'}
+                  status={hubData?.orquestStatus === 'connected' && hubData?.biloopStatus === 'connected' ? 'success' :
+                          hubData?.orquestStatus === 'connected' || hubData?.biloopStatus === 'connected' ? 'warning' : 'error'}
                   onAction={() => navigateToCurrentRestaurant('integrations')}
                   actionLabel="Configurar"
                   loading={hubLoading}
                 >
                   <div className="space-y-2">
                     <HubStatusIndicator 
-                      status={getIntegrationStatus(hubData.orquestStatus)}
+                      status={getIntegrationStatus(hubData?.orquestStatus || 'disconnected')}
                       label="Orquest"
-                      subtitle={hubData.lastSyncDate ? 
-                        `Sync: ${hubData.lastSyncDate.toLocaleDateString()}` : 'Sin sync'}
+                      subtitle={hubData?.lastSync ? 
+                        `Sync: ${new Date(hubData.lastSync).toLocaleDateString()}` : 'Sin sync'}
                     />
                     <HubStatusIndicator 
-                      status={getIntegrationStatus(hubData.biloopStatus)}
+                      status={getIntegrationStatus(hubData?.biloopStatus || 'disconnected')}
                       label="Biloop"
                       subtitle="Pendiente configuración"
                     />
@@ -278,22 +284,22 @@ const RestaurantHubPage: React.FC = () => {
                 <HubCard
                   title="Documentos"
                   icon={FileText}
-                  status={hubData.pendingDocuments > 3 ? 'error' : 
-                          hubData.pendingDocuments > 1 ? 'warning' : 'success'}
+                  status={(hubData?.pendingDocuments || 0) > 3 ? 'error' : 
+                          (hubData?.pendingDocuments || 0) > 1 ? 'warning' : 'success'}
                   onAction={() => navigateToCurrentRestaurant('analytics')}
                   actionLabel="Ver Documentos"
                   loading={hubLoading}
                 >
                   <div className="space-y-2">
                     <HubKPIValue 
-                      value={hubData.pendingDocuments} 
+                      value={hubData?.pendingDocuments || 0} 
                       type="number"
                       suffix="pendientes"
                       size="md"
                     />
                     <div className="text-xs text-muted-foreground">
-                      Última actualización: {hubData.lastDocumentUpdate ? 
-                        hubData.lastDocumentUpdate.toLocaleDateString() : 'N/A'}
+                      Última actualización: {hubData?.lastUpdate ? 
+                        new Date(hubData.lastUpdate).toLocaleDateString() : 'N/A'}
                     </div>
                   </div>
                 </HubCard>
