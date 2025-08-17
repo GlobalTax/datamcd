@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -2245,6 +2245,50 @@ export type Database = {
         }
         Relationships: []
       }
+      orquest_payroll_raw: {
+        Row: {
+          created_at: string
+          franchisee_id: string | null
+          id: string
+          payload: Json
+          period_from: string
+          period_to: string
+          service_id: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          franchisee_id?: string | null
+          id?: string
+          payload: Json
+          period_from: string
+          period_to: string
+          service_id: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          franchisee_id?: string | null
+          id?: string
+          payload?: Json
+          period_from?: string
+          period_to?: string
+          service_id?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orquest_payroll_raw_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pos_integration_configs: {
         Row: {
           api_key_encrypted: string | null
@@ -3604,7 +3648,7 @@ export type Database = {
         Returns: undefined
       }
       create_franchisee_profile: {
-        Args: { user_id: string; user_email: string; user_full_name: string }
+        Args: { user_email: string; user_full_name: string; user_id: string }
         Returns: undefined
       }
       create_test_user: {
@@ -3630,26 +3674,26 @@ export type Database = {
       log_admin_action: {
         Args: {
           action_type: string
-          entity_type: string
-          entity_id: string
           details?: Json
+          entity_id: string
+          entity_type: string
         }
         Returns: undefined
       }
       log_security_event_enhanced: {
         Args:
           | {
-              event_type: string
-              event_description: string
               additional_data?: Json
+              event_description: string
+              event_type: string
             }
           | {
-              event_type: string
+              additional_data?: Json
               event_description: string
-              user_id_param?: string
+              event_type: string
               ip_address_param?: unknown
               user_agent_param?: string
-              additional_data?: Json
+              user_id_param?: string
             }
         Returns: undefined
       }
@@ -3691,9 +3735,9 @@ export type Database = {
       }
       validate_admin_action_enhanced: {
         Args: {
+          action_data?: Json
           action_type: string
           target_user_id?: string
-          action_data?: Json
         }
         Returns: boolean
       }
@@ -3714,11 +3758,11 @@ export type Database = {
         Returns: boolean
       }
       validate_user_deletion: {
-        Args: { target_user_id: string; deleter_user_id: string }
+        Args: { deleter_user_id: string; target_user_id: string }
         Returns: boolean
       }
       validate_user_role_assignment: {
-        Args: { target_role: string; assigner_role: string }
+        Args: { assigner_role: string; target_role: string }
         Returns: boolean
       }
     }
