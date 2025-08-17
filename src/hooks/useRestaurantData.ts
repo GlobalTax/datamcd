@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useUnifiedRestaurant } from './useUnifiedRestaurants';
 
+// Mantener compatibilidad con el tipo original
 interface RestaurantData {
   id: string;
   status: string;
@@ -28,133 +29,122 @@ interface RestaurantData {
   notes: string;
 }
 
-export const useRestaurantData = (restaurantId: string) => {
-  const [restaurant, setRestaurant] = useState<RestaurantData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { effectiveFranchisee } = useAuth();
+// Hook consolidado para obtener todos los datos de un restaurante usando el nuevo modelo
+export const useRestaurantData = (restaurantId: string | undefined) => {
+  // Usar la vista unificada como fuente principal
+  const restaurantQuery = useUnifiedRestaurant(restaurantId);
 
-  useEffect(() => {
-    if (!restaurantId || !effectiveFranchisee?.id) {
-      setLoading(false);
-      return;
-    }
+  // Empleados del restaurante
+  const employeesQuery = useQuery({
+    queryKey: ['restaurant-employees', restaurantId],
+    queryFn: async () => {
+      if (!restaurantId) return [];
+      
+      const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('restaurant_id', restaurantId)
+        .eq('status', 'active');
 
-    const fetchRestaurantData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!restaurantId,
+  });
 
-        const { data, error: fetchError } = await supabase
-          .from('franchisee_restaurants')
-          .select(`
-            id,
-            status,
-            franchise_start_date,
-            franchise_end_date,
-            monthly_rent,
-            last_year_revenue,
-            franchise_fee_percentage,
-            advertising_fee_percentage,
-            notes,
-            base_restaurant:base_restaurants(
-              id,
-              restaurant_name,
-              site_number,
-              address,
-              city,
-              state,
-              country,
-              restaurant_type,
-              opening_date,
-              seating_capacity,
-              square_meters,
-              property_type
-            )
-          `)
-          .eq('id', restaurantId)
-          .eq('franchisee_id', effectiveFranchisee.id)
-          .maybeSingle();
+  // Incidencias del restaurante
+  const incidentsQuery = useQuery({
+    queryKey: ['restaurant-incidents', restaurantId],
+    queryFn: async () => {
+      if (!restaurantId) return [];
+      
+      const { data, error } = await supabase
+        .from('incidents')
+        .select('*')
+        .eq('restaurant_id', restaurantId)
+        .order('created_at', { ascending: false })
+        .limit(10);
 
-        if (fetchError) {
-          throw new Error(fetchError.message);
-        }
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!restaurantId,
+  });
 
-        if (!data) {
-          throw new Error(`Restaurante ${restaurantId} no encontrado para el franchisee actual. Puede que no tengas acceso o que el restaurante no exista.`);
-        }
+  // Presupuestos del restaurante
+  const budgetsQuery = useQuery({
+    queryKey: ['restaurant-budgets', restaurantId],
+    queryFn: async () => {
+      if (!restaurantId) return [];
+      
+      const currentYear = new Date().getFullYear();
+      const { data, error } = await supabase
+        .from('annual_budgets')
+        .select('*')
+        .eq('restaurant_id', restaurantId)
+        .eq('year', currentYear);
 
-        setRestaurant(data as any);
-      } catch (err) {
-        console.error('Error fetching restaurant data:', err);
-        setError(err instanceof Error ? err.message : 'Error desconocido');
-      } finally {
-        setLoading(false);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!restaurantId,
+  });
+
+  // Transformar datos para compatibilidad con el formato original
+  const transformToLegacyFormat = (unifiedRestaurant: any): RestaurantData | null => {
+    if (!unifiedRestaurant) return null;
+
+    return {
+      id: unifiedRestaurant.id,
+      status: unifiedRestaurant.status,
+      franchise_start_date: unifiedRestaurant.franchise_start_date,
+      franchise_end_date: unifiedRestaurant.franchise_end_date,
+      monthly_rent: unifiedRestaurant.monthly_rent,
+      last_year_revenue: unifiedRestaurant.last_year_revenue,
+      franchise_fee_percentage: unifiedRestaurant.franchise_fee_percentage,
+      advertising_fee_percentage: unifiedRestaurant.advertising_fee_percentage,
+      notes: unifiedRestaurant.notes,
+      base_restaurant: {
+        id: unifiedRestaurant.base_restaurant_id,
+        restaurant_name: unifiedRestaurant.restaurant_name,
+        site_number: unifiedRestaurant.site_number,
+        address: unifiedRestaurant.address,
+        city: unifiedRestaurant.city,
+        state: unifiedRestaurant.state || '',
+        country: unifiedRestaurant.country,
+        restaurant_type: unifiedRestaurant.restaurant_type,
+        opening_date: unifiedRestaurant.opening_date || '',
+        seating_capacity: unifiedRestaurant.seating_capacity || 0,
+        square_meters: unifiedRestaurant.square_meters || 0,
+        property_type: unifiedRestaurant.property_type || '',
       }
     };
-
-    fetchRestaurantData();
-  }, [restaurantId, effectiveFranchisee?.id]);
-
-  const refetch = () => {
-    if (restaurantId && effectiveFranchisee?.id) {
-      const fetchRestaurantData = async () => {
-        try {
-          setLoading(true);
-          setError(null);
-
-          const { data, error: fetchError } = await supabase
-            .from('franchisee_restaurants')
-            .select(`
-              id,
-              status,
-              franchise_start_date,
-              franchise_end_date,
-              monthly_rent,
-              last_year_revenue,
-              franchise_fee_percentage,
-              advertising_fee_percentage,
-              notes,
-              base_restaurant:base_restaurants(
-                id,
-                restaurant_name,
-                site_number,
-                address,
-                city,
-                state,
-                country,
-                restaurant_type,
-                opening_date,
-                seating_capacity,
-                square_meters,
-                property_type
-              )
-            `)
-            .eq('id', restaurantId)
-            .eq('franchisee_id', effectiveFranchisee.id)
-            .maybeSingle();
-
-          if (fetchError) {
-            throw new Error(fetchError.message);
-          }
-
-          setRestaurant(data as any);
-        } catch (err) {
-          console.error('Error refetching restaurant data:', err);
-          setError(err instanceof Error ? err.message : 'Error desconocido');
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchRestaurantData();
-    }
   };
 
   return {
-    restaurant,
-    loading,
-    error,
-    refetch
+    // Mantener interfaz original para compatibilidad
+    restaurant: transformToLegacyFormat(restaurantQuery.data),
+    loading: restaurantQuery.isLoading,
+    error: restaurantQuery.error?.message || null,
+    refetch: restaurantQuery.refetch,
+
+    // Nuevos datos del modelo unificado
+    unifiedRestaurant: restaurantQuery.data,
+    employees: employeesQuery.data || [],
+    incidents: incidentsQuery.data || [],
+    budgets: budgetsQuery.data || [],
+
+    // Estados adicionales
+    isLoadingEmployees: employeesQuery.isLoading,
+    isLoadingIncidents: incidentsQuery.isLoading,
+    isLoadingBudgets: budgetsQuery.isLoading,
+
+    // Función para refrescar todos los datos
+    refetchAll: () => {
+      restaurantQuery.refetch();
+      employeesQuery.refetch();
+      incidentsQuery.refetch();
+      budgetsQuery.refetch();
+    },
   };
 };

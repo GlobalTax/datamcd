@@ -347,6 +347,7 @@ export type Database = {
           created_by: string | null
           dec: number | null
           feb: number | null
+          franchisee_id: string | null
           id: string
           jan: number | null
           jul: number | null
@@ -369,6 +370,7 @@ export type Database = {
           created_by?: string | null
           dec?: number | null
           feb?: number | null
+          franchisee_id?: string | null
           id?: string
           jan?: number | null
           jul?: number | null
@@ -391,6 +393,7 @@ export type Database = {
           created_by?: string | null
           dec?: number | null
           feb?: number | null
+          franchisee_id?: string | null
           id?: string
           jan?: number | null
           jul?: number | null
@@ -407,6 +410,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "annual_budgets_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "annual_budgets_new_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
@@ -419,6 +429,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "restaurant_access_view"
             referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "annual_budgets_new_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -729,6 +746,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           employee_id: string
+          franchisee_id: string | null
           gross_pay: number
           id: string
           income_tax: number | null
@@ -752,6 +770,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           employee_id: string
+          franchisee_id?: string | null
           gross_pay: number
           id?: string
           income_tax?: number | null
@@ -775,6 +794,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           employee_id?: string
+          franchisee_id?: string | null
           gross_pay?: number
           id?: string
           income_tax?: number | null
@@ -806,6 +826,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_payroll_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employee_time_off: {
@@ -816,6 +843,7 @@ export type Database = {
           days_requested: number
           employee_id: string
           end_date: string
+          franchisee_id: string | null
           id: string
           reason: string | null
           start_date: string
@@ -830,6 +858,7 @@ export type Database = {
           days_requested: number
           employee_id: string
           end_date: string
+          franchisee_id?: string | null
           id?: string
           reason?: string | null
           start_date: string
@@ -844,6 +873,7 @@ export type Database = {
           days_requested?: number
           employee_id?: string
           end_date?: string
+          franchisee_id?: string | null
           id?: string
           reason?: string | null
           start_date?: string
@@ -866,6 +896,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_time_off_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employee_time_tracking: {
@@ -880,6 +917,7 @@ export type Database = {
           id: string
           notes: string | null
           overtime_hours: number | null
+          restaurant_id: string | null
           status: string | null
           total_hours: number | null
           updated_at: string
@@ -895,6 +933,7 @@ export type Database = {
           id?: string
           notes?: string | null
           overtime_hours?: number | null
+          restaurant_id?: string | null
           status?: string | null
           total_hours?: number | null
           updated_at?: string
@@ -910,6 +949,7 @@ export type Database = {
           id?: string
           notes?: string | null
           overtime_hours?: number | null
+          restaurant_id?: string | null
           status?: string | null
           total_hours?: number | null
           updated_at?: string
@@ -920,6 +960,27 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_time_tracking_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_time_tracking_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_access_view"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "employee_time_tracking_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
             referencedColumns: ["id"]
           },
         ]
@@ -939,6 +1000,7 @@ export type Database = {
           emergency_contact_phone: string | null
           employee_number: string
           first_name: string
+          franchisee_id: string | null
           hire_date: string
           hourly_rate: number | null
           id: string
@@ -973,6 +1035,7 @@ export type Database = {
           emergency_contact_phone?: string | null
           employee_number: string
           first_name: string
+          franchisee_id?: string | null
           hire_date: string
           hourly_rate?: number | null
           id?: string
@@ -1007,6 +1070,7 @@ export type Database = {
           emergency_contact_phone?: string | null
           employee_number?: string
           first_name?: string
+          franchisee_id?: string | null
           hire_date?: string
           hourly_rate?: number | null
           id?: string
@@ -1036,6 +1100,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "employees_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "employees_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
@@ -1048,6 +1119,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "restaurant_access_view"
             referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "employees_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1290,6 +1368,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "restaurant"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franchisee_restaurants_base_restaurant_id_fkey"
+            columns: ["base_restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["base_restaurant_id"]
           },
           {
             foreignKeyName: "franchisee_restaurants_franchisee_id_fkey"
@@ -1555,6 +1640,13 @@ export type Database = {
             referencedRelation: "restaurant"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "incidents_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["base_restaurant_id"]
+          },
         ]
       }
       integration_configs: {
@@ -1574,6 +1666,7 @@ export type Database = {
           is_active: boolean | null
           last_key_rotation: string | null
           last_sync: string | null
+          restaurant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1592,6 +1685,7 @@ export type Database = {
           is_active?: boolean | null
           last_key_rotation?: string | null
           last_sync?: string | null
+          restaurant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1610,6 +1704,7 @@ export type Database = {
           is_active?: boolean | null
           last_key_rotation?: string | null
           last_sync?: string | null
+          restaurant_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1618,6 +1713,27 @@ export type Database = {
             columns: ["franchisee_id"]
             isOneToOne: false
             referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_configs_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_configs_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_access_view"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "integration_configs_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
             referencedColumns: ["id"]
           },
         ]
@@ -1717,6 +1833,13 @@ export type Database = {
             referencedRelation: "restaurant"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "metric_snapshots_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["base_restaurant_id"]
+          },
         ]
       }
       monthly_tracking: {
@@ -1794,6 +1917,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "restaurant_access_view"
             referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "monthly_tracking_franchisee_restaurant_id_fkey"
+            columns: ["franchisee_restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2945,6 +3075,13 @@ export type Database = {
             referencedRelation: "restaurant_access_view"
             referencedColumns: ["restaurant_id"]
           },
+          {
+            foreignKeyName: "restaurant_budgets_franchisee_restaurant_id_fkey"
+            columns: ["franchisee_restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       restaurant_incidents: {
@@ -3317,6 +3454,13 @@ export type Database = {
             referencedRelation: "restaurant_access_view"
             referencedColumns: ["restaurant_id"]
           },
+          {
+            foreignKeyName: "valuation_budgets_franchisee_restaurant_id_fkey"
+            columns: ["franchisee_restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       valuation_scenarios: {
@@ -3627,6 +3771,56 @@ export type Database = {
           },
         ]
       }
+      unified_restaurants: {
+        Row: {
+          address: string | null
+          advertising_fee_percentage: number | null
+          assigned_at: string | null
+          autonomous_community: string | null
+          average_monthly_sales: number | null
+          base_created_at: string | null
+          base_restaurant_id: string | null
+          city: string | null
+          company_name: string | null
+          country: string | null
+          franchise_end_date: string | null
+          franchise_fee_percentage: number | null
+          franchise_start_date: string | null
+          franchisee_city: string | null
+          franchisee_country: string | null
+          franchisee_id: string | null
+          franchisee_name: string | null
+          id: string | null
+          is_assigned: boolean | null
+          last_year_revenue: number | null
+          lease_end_date: string | null
+          lease_start_date: string | null
+          monthly_rent: number | null
+          notes: string | null
+          opening_date: string | null
+          postal_code: string | null
+          property_type: string | null
+          restaurant_name: string | null
+          restaurant_type: string | null
+          seating_capacity: number | null
+          site_number: string | null
+          square_meters: number | null
+          state: string | null
+          status: string | null
+          status_display: string | null
+          tax_id: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchisee_restaurants_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       check_session_security: {
@@ -3666,6 +3860,15 @@ export type Database = {
       get_user_auth_status: {
         Args: { user_uuid: string }
         Returns: Json
+      }
+      get_user_restaurants: {
+        Args: { user_uuid?: string }
+        Returns: {
+          franchisee_id: string
+          restaurant_id: string
+          restaurant_name: string
+          site_number: string
+        }[]
       }
       is_superadmin: {
         Args: Record<PropertyKey, never>

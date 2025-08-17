@@ -1,275 +1,208 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useRestaurantKPIs } from '@/hooks/useRestaurantKPIs';
-import { useEmployees } from '@/hooks/useEmployees';
-import { useProfitLossData } from '@/hooks/useProfitLossData';
-import { useOrquest } from '@/hooks/useOrquest';
-import { useBiloop } from '@/hooks/useBiloop';
+import { useUnifiedRestaurant } from './useUnifiedRestaurants';
 
-export interface HubKPIData {
+export interface RestaurantHubKPIs {
   // KPIs Generales
-  monthlyRevenue: number | null;
-  revenueGrowth: number | null;
-  performanceScore: number | null;
+  totalRevenue: number;
+  revenueGrowth: number;
   
   // Equipo
   activeEmployees: number;
-  totalEmployees: number;
-  employeeTurnover: number | null;
+  monthlyTurnover: number;
   
   // Nómina
-  monthlyPayrollCost: number | null;
-  totalWorkingHours: number | null;
-  averageCostPerHour: number | null;
+  monthlyCost: number;
+  hoursWorked: number;
   
   // P&L
-  ebitda: number | null;
-  netMargin: number | null;
-  ytdRevenue: number | null;
+  ebitda: number;
+  netMargin: number;
   
   // Presupuesto
-  monthlyBudgetDeviation: number | null;
-  yearCompletionPercent: number;
-  budgetStatus: 'on-track' | 'over-budget' | 'under-budget' | 'no-data';
+  monthlyDeviation: number;
+  yearProgress: number;
   
   // Incidencias
   activeIncidents: number;
-  criticalIncidents: number;
-  avgResolutionTime: number | null;
+  avgResolutionTime: number;
   
   // Integraciones
   orquestStatus: 'connected' | 'disconnected' | 'error';
   biloopStatus: 'connected' | 'disconnected' | 'error';
-  lastSyncDate: Date | null;
+  lastSync: string | null;
   
   // Documentos
   pendingDocuments: number;
-  lastDocumentUpdate: Date | null;
+  lastUpdate: string | null;
 }
 
-export const useRestaurantHubKPIs = (restaurantId: string, franchiseeId?: string) => {
-  const [hubData, setHubData] = useState<HubKPIData>({
-    monthlyRevenue: null,
-    revenueGrowth: null,
-    performanceScore: null,
-    activeEmployees: 0,
-    totalEmployees: 0,
-    employeeTurnover: null,
-    monthlyPayrollCost: null,
-    totalWorkingHours: null,
-    averageCostPerHour: null,
-    ebitda: null,
-    netMargin: null,
-    ytdRevenue: null,
-    monthlyBudgetDeviation: null,
-    yearCompletionPercent: 0,
-    budgetStatus: 'no-data',
-    activeIncidents: 0,
-    criticalIncidents: 0,
-    avgResolutionTime: null,
-    orquestStatus: 'disconnected',
-    biloopStatus: 'disconnected',
-    lastSyncDate: null,
-    pendingDocuments: 0,
-    lastDocumentUpdate: null,
-  });
-  const [loading, setLoading] = useState(true);
+export const useRestaurantHubKPIs = (restaurantId: string | undefined): {
+  kpis: RestaurantHubKPIs | null;
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => void;
+} => {
+  // Usar el hook de restaurante unificado para datos básicos
+  const { data: restaurant } = useUnifiedRestaurant(restaurantId);
 
-  // Hook calls for data sources
-  const { kpis: restaurantKPIs, loading: kpisLoading } = useRestaurantKPIs(restaurantId);
-  const { employees, stats: employeeStats, loading: employeesLoading } = useEmployees(restaurantId);
-  const { profitLossData, isLoading: plLoading } = useProfitLossData(restaurantId, new Date().getFullYear());
-  const { services: orquestServices, employees: orquestEmployees, loading: orquestLoading } = useOrquest(franchiseeId);
+  const query = useQuery({
+    queryKey: ['restaurant-hub-kpis', restaurantId],
+    queryFn: async (): Promise<RestaurantHubKPIs> => {
+      if (!restaurantId) {
+        throw new Error('Restaurant ID is required');
+      }
 
-  const fetchBudgetData = async () => {
-    try {
-      const currentYear = new Date().getFullYear();
-      const currentMonth = new Date().getMonth() + 1;
+      console.log('Fetching KPIs for restaurant:', restaurantId);
+
+      // Parallelizar todas las consultas para mejor performance
+      const [
+        employeesData,
+        incidentsData,
+        budgetData,
+        integrationsData,
+        payrollData,
+        timeTrackingData
+      ] = await Promise.allSettled([
+        // Empleados activos (usar restaurant_id)
+        supabase
+          .from('employees')
+          .select('id', { count: 'exact', head: true })
+          .eq('restaurant_id', restaurantId)
+          .eq('status', 'active'),
+        
+        // Incidencias activas (usar restaurant_id)
+        supabase
+          .from('incidents')
+          .select('id, created_at, resolved_at', { count: 'exact' })
+          .eq('restaurant_id', restaurantId)
+          .in('status', ['open', 'pending', 'in_progress']),
+        
+        // Presupuesto año actual (usar restaurant_id)
+        supabase
+          .from('annual_budgets')
+          .select('*')
+          .eq('restaurant_id', restaurantId)
+          .eq('year', new Date().getFullYear()),
+        
+        // Configuraciones de integración (usar restaurant_id)
+        supabase
+          .from('integration_configs')
+          .select('integration_type, is_active, last_sync')
+          .eq('restaurant_id', restaurantId),
+
+        // Nómina del mes actual (provisional - evitar query compleja)
+        Promise.resolve({ data: [], error: null }),
+
+        // Horas trabajadas del mes actual (usar restaurant_id)
+        supabase
+          .from('employee_time_tracking')
+          .select('total_hours')
+          .eq('restaurant_id', restaurantId)
+          .gte('date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
+          .lt('date', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0])
+      ]);
+
+      // Procesar resultados con valores por defecto
+      const employeeCount = employeesData.status === 'fulfilled' ? employeesData.value.count || 0 : 0;
+      const incidentsResult = incidentsData.status === 'fulfilled' ? incidentsData.value : { count: 0, data: [] };
+      const budgets = budgetData.status === 'fulfilled' ? budgetData.value.data || [] : [];
+      const integrations = integrationsData.status === 'fulfilled' ? integrationsData.value.data || [] : [];
+      const payroll = payrollData.status === 'fulfilled' ? payrollData.value.data || [] : [];
+      const timeTracking = timeTrackingData.status === 'fulfilled' ? timeTrackingData.value.data || [] : [];
+
+      // Usar datos del restaurante unificado
+      const totalRevenue = restaurant?.last_year_revenue || 0;
+      const monthlyRevenue = restaurant?.average_monthly_sales || 0;
       
-      const { data: budgetData } = await supabase
-        .from('annual_budgets')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .eq('year', currentYear);
-
-      const { data: actualData } = await supabase
-        .from('monthly_tracking')
-        .select('*')
-        .eq('franchisee_restaurant_id', restaurantId)
-        .eq('year', currentYear)
-        .eq('month', currentMonth)
-        .single();
-
-      let monthlyBudgetDeviation = null;
-      let budgetStatus: HubKPIData['budgetStatus'] = 'no-data';
+      // Calcular progreso del año (% del año transcurrido)
+      const now = new Date();
+      const yearStart = new Date(now.getFullYear(), 0, 1);
+      const yearProgress = ((now.getTime() - yearStart.getTime()) / (365 * 24 * 60 * 60 * 1000)) * 100;
       
-      if (budgetData?.length && actualData) {
-        const monthlyBudget = budgetData.reduce((sum, item) => {
-          const monthKey = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'][currentMonth - 1];
-          return sum + (item[monthKey] || 0);
+      // Calcular desviación presupuestaria (simplificado)
+      const currentMonth = now.getMonth();
+      const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      let budgetedForMonth = 0;
+      budgets.forEach(budget => {
+        budgetedForMonth += budget[monthKeys[currentMonth]] || 0;
+      });
+      const monthlyDeviation = budgetedForMonth > 0 ? 
+        ((monthlyRevenue - budgetedForMonth) / budgetedForMonth) * 100 : 0;
+
+      // Calcular costes de nómina del mes
+      const monthlyCost = payroll.reduce((sum, p) => sum + (p.gross_pay || 0), 0);
+
+      // Calcular horas trabajadas del mes
+      const hoursWorked = timeTracking.reduce((sum, t) => sum + (t.total_hours || 0), 0);
+
+      // Tiempo promedio de resolución de incidencias (en horas)
+      const resolvedIncidents = (incidentsResult.data || []).filter(i => i.resolved_at);
+      let avgResolutionTime = 0;
+      if (resolvedIncidents.length > 0) {
+        const totalTime = resolvedIncidents.reduce((sum, incident) => {
+          const created = new Date(incident.created_at);
+          const resolved = new Date(incident.resolved_at);
+          return sum + (resolved.getTime() - created.getTime());
         }, 0);
-        
-        const actualRevenue = actualData.actual_revenue || 0;
-        
-        if (monthlyBudget > 0) {
-          monthlyBudgetDeviation = ((actualRevenue - monthlyBudget) / monthlyBudget) * 100;
-          budgetStatus = monthlyBudgetDeviation > 5 ? 'over-budget' : 
-                        monthlyBudgetDeviation < -5 ? 'under-budget' : 'on-track';
-        }
+        avgResolutionTime = totalTime / resolvedIncidents.length / (1000 * 60 * 60); // en horas
       }
 
-      return {
-        monthlyBudgetDeviation,
-        yearCompletionPercent: (currentMonth / 12) * 100,
-        budgetStatus
-      };
-    } catch (error) {
-      console.error('Error fetching budget data:', error);
-      return {
-        monthlyBudgetDeviation: null,
-        yearCompletionPercent: (new Date().getMonth() + 1 / 12) * 100,
-        budgetStatus: 'no-data' as const
-      };
-    }
-  };
-
-  const fetchDocumentsData = async () => {
-    try {
-      // For now, simulate pending documents
-      // In a real implementation, this would query a documents table
-      return {
-        pendingDocuments: Math.floor(Math.random() * 5),
-        lastDocumentUpdate: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
-      };
-    } catch (error) {
-      console.error('Error fetching documents data:', error);
-      return {
-        pendingDocuments: 0,
-        lastDocumentUpdate: null
-      };
-    }
-  };
-
-  const calculateEmployeeTurnover = async () => {
-    try {
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      // Estados de integración
+      const orquestIntegration = integrations.find(i => i.integration_type === 'orquest');
+      const biloopIntegration = integrations.find(i => i.integration_type === 'biloop');
       
-      const { data: terminatedEmployees } = await supabase
-        .from('employees')
-        .select('id')
-        .eq('restaurant_id', restaurantId)
-        .gte('termination_date', threeMonthsAgo.toISOString());
-
-      const avgEmployees = employeeStats?.total_employees || 1;
-      return terminatedEmployees?.length ? (terminatedEmployees.length / avgEmployees) * 100 : 0;
-    } catch (error) {
-      console.error('Error calculating employee turnover:', error);
-      return null;
-    }
-  };
-
-  const calculatePayrollData = () => {
-    const totalSalaries = employeeStats?.total_payroll || 0;
-    const activeCount = employeeStats?.active_employees || 0;
-    
-    // Estimate working hours (40 hours/week * 4.33 weeks/month * active employees)
-    const estimatedHours = activeCount * 40 * 4.33;
-    const avgCostPerHour = estimatedHours > 0 ? totalSalaries / estimatedHours : null;
-    
-    return {
-      monthlyPayrollCost: totalSalaries,
-      totalWorkingHours: estimatedHours,
-      averageCostPerHour: avgCostPerHour
-    };
-  };
-
-  const calculatePLData = () => {
-    if (!profitLossData?.length) return { ebitda: null, netMargin: null, ytdRevenue: null };
-    
-    const currentYearData = profitLossData.filter(pl => pl.year === new Date().getFullYear());
-    const ytdRevenue = currentYearData.reduce((sum, pl) => sum + (pl.total_revenue || 0), 0);
-    
-    const latestPL = currentYearData[0];
-    if (!latestPL) return { ebitda: null, netMargin: null, ytdRevenue };
-    
-    const ebitda = latestPL.operating_income || 0;
-    const netMargin = latestPL.total_revenue > 0 ? (latestPL.operating_income / latestPL.total_revenue) * 100 : 0;
-    
-    return { ebitda, netMargin, ytdRevenue };
-  };
-
-  const getIntegrationStatus = (): { 
-    orquestStatus: 'connected' | 'disconnected' | 'error';
-    biloopStatus: 'connected' | 'disconnected' | 'error';
-    lastSyncDate: Date | null;
-  } => {
-    const orquestStatus: 'connected' | 'disconnected' | 'error' = orquestServices?.length > 0 ? 'connected' : 'disconnected';
-    const biloopStatus: 'connected' | 'disconnected' | 'error' = 'disconnected'; // Would need biloop data
-    const lastSyncDate = orquestServices?.length > 0 ? new Date(orquestServices[0].updated_at || Date.now()) : null;
-    
-    return { orquestStatus, biloopStatus, lastSyncDate };
-  };
-
-  useEffect(() => {
-    const consolidateData = async () => {
-      if (kpisLoading || employeesLoading || plLoading || orquestLoading) {
-        return;
-      }
+      const orquestStatus = orquestIntegration?.is_active ? 'connected' : 'disconnected';
+      const biloopStatus = biloopIntegration?.is_active ? 'connected' : 'disconnected';
       
-      setLoading(true);
-      
-      try {
-        const [budgetData, documentsData, turnover] = await Promise.all([
-          fetchBudgetData(),
-          fetchDocumentsData(),
-          calculateEmployeeTurnover()
-        ]);
+      const lastSyncTimes = integrations.map(i => i.last_sync).filter(Boolean);
+      const lastSync = lastSyncTimes.length > 0 ? 
+        Math.max(...lastSyncTimes.map(d => new Date(d).getTime())) : null;
+
+      return {
+        // KPIs Generales
+        totalRevenue,
+        revenueGrowth: 0, // TODO: Calcular basado en datos históricos
         
-        const payrollData = calculatePayrollData();
-        const plData = calculatePLData();
-        const integrationData = getIntegrationStatus();
+        // Equipo  
+        activeEmployees: employeeCount,
+        monthlyTurnover: 0, // TODO: Calcular basado en contrataciones/bajas
         
-        setHubData({
-          // KPIs Generales
-          monthlyRevenue: restaurantKPIs.monthlyRevenue,
-          revenueGrowth: restaurantKPIs.revenueGrowth,
-          performanceScore: restaurantKPIs.performanceScore,
-          
-          // Equipo
-          activeEmployees: restaurantKPIs.activeEmployees,
-          totalEmployees: restaurantKPIs.totalEmployees,
-          employeeTurnover: turnover,
-          
-          // Nómina
-          ...payrollData,
-          
-          // P&L
-          ...plData,
-          
-          // Presupuesto
-          ...budgetData,
-          
-          // Incidencias
-          activeIncidents: restaurantKPIs.activeIncidents,
-          criticalIncidents: restaurantKPIs.criticalIncidents,
-          avgResolutionTime: 2.5, // Hardcoded for now
-          
-          // Integraciones
-          ...integrationData,
-          
-          // Documentos
-          ...documentsData,
-        });
-      } catch (error) {
-        console.error('Error consolidating hub data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+        // Nómina
+        monthlyCost,
+        hoursWorked,
+        
+        // P&L
+        ebitda: 0, // TODO: Calcular basado en P&L data
+        netMargin: 0, // TODO: Calcular basado en P&L data
+        
+        // Presupuesto
+        monthlyDeviation,
+        yearProgress,
+        
+        // Incidencias
+        activeIncidents: incidentsResult.count || 0,
+        avgResolutionTime,
+        
+        // Integraciones
+        orquestStatus,
+        biloopStatus,
+        lastSync: lastSync ? new Date(lastSync).toISOString() : null,
+        
+        // Documentos
+        pendingDocuments: 0, // TODO: Implementar sistema de documentos
+        lastUpdate: null, // TODO: Implementar sistema de documentos
+      };
+    },
+    enabled: !!restaurantId,
+    staleTime: 2 * 60 * 1000, // 2 minutos
+    refetchInterval: 5 * 60 * 1000, // Refrescar cada 5 minutos
+  });
 
-    consolidateData();
-  }, [restaurantId, franchiseeId, kpisLoading, employeesLoading, plLoading, orquestLoading, restaurantKPIs, employeeStats, profitLossData, orquestServices]);
-
-  return { hubData, loading };
+  return {
+    kpis: query.data || null,
+    isLoading: query.isLoading,
+    error: query.error as Error | null,
+    refetch: query.refetch,
+  };
 };
