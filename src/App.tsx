@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,31 +13,46 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import AdvisorAuthPage from "./pages/AdvisorAuthPage";
-import DashboardPage from "./pages/DashboardPage";
-import OptimizedDashboardPage from "./pages/OptimizedDashboardPage";
-import RestaurantManagementPage from "./pages/RestaurantManagementPage";
-import RestaurantDetailPage from "./pages/RestaurantDetailPage";
-import RestaurantPanelPage from "./pages/RestaurantPanelPage";
-import ProfitLossPage from "./pages/ProfitLossPage";
-import HistoricalDataPage from "./pages/HistoricalDataPage";
-import AnalysisPage from "./pages/AnalysisPage";
 import AdvisorPage from "./pages/AdvisorPage";
 import FranchiseeDetailPage from "./pages/FranchiseeDetailPage";
 import FranchiseeManagementPage from "./pages/FranchiseeManagementPage";
 import ValuationApp from "./pages/ValuationApp";
 import SettingsPage from "./pages/SettingsPage";
-import AnnualBudgetPage from "./pages/AnnualBudgetPage";
+import HistoricalDataPage from "./pages/HistoricalDataPage";
 import FinancialSummaryPage from "./pages/FinancialSummaryPage";
-import EmployeePage from "./pages/EmployeePage";
-import OrquestPage from "./pages/OrquestPage";
-import IncidentManagementPage from "./pages/IncidentManagementPage";
-import BiloopPage from "./pages/BiloopPage";
 import WorkersPage from "./pages/WorkersPage";
 
+// Legacy pages (will be phased out)
+import RestaurantManagementPage from "./pages/RestaurantManagementPage";
+import RestaurantDetailPage from "./pages/RestaurantDetailPage";
+import RestaurantPanelPage from "./pages/RestaurantPanelPage";
+
+// New restaurant-based pages
+import RestaurantHubPage from "./pages/restaurant/RestaurantHubPage";
+import RestaurantStaffPage from "./pages/restaurant/RestaurantStaffPage";
+import RestaurantPayrollPage from "./pages/restaurant/RestaurantPayrollPage";
+import RestaurantBudgetPage from "./pages/restaurant/RestaurantBudgetPage";
+import RestaurantProfitLossPage from "./pages/restaurant/RestaurantProfitLossPage";
+import RestaurantIncidentsPage from "./pages/restaurant/RestaurantIncidentsPage";
+import RestaurantAnalyticsPage from "./pages/restaurant/RestaurantAnalyticsPage";
+import RestaurantIntegrationsPage from "./pages/restaurant/RestaurantIntegrationsPage";
+
+// Legacy redirects
+import {
+  DashboardRedirect,
+  RestaurantListRedirect,
+  EmployeesRedirect,
+  BudgetRedirect,
+  ProfitLossRedirect,
+  IncidentsRedirect,
+  AnalysisRedirect,
+  IntegrationsRedirect
+} from "./components/navigation/LegacyRouteRedirects";
 
 import NotFound from "./pages/NotFound";
 import { mark, measure } from '@/lib/monitoring/marks';
 import { PerfDebugPanel } from '@/components/debug/PerfDebugPanel';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -88,19 +102,79 @@ function AppWithRestaurantContext() {
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/advisor-auth" element={<AdvisorAuthPage />} />
+
+          {/* ============= RESTAURANT-BASED ROUTES (NEW) ============= */}
           <Route
-            path="/dashboard"
+            path="/restaurant/:restaurantId/hub"
             element={
               <ProtectedRoute>
-                <OptimizedDashboardPage />
+                <RestaurantHubPage />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/dashboard-legacy"
+            path="/restaurant/:restaurantId/staff"
             element={
               <ProtectedRoute>
-                <DashboardPage />
+                <RestaurantStaffPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/restaurant/:restaurantId/payroll"
+            element={
+              <ProtectedRoute>
+                <RestaurantPayrollPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/restaurant/:restaurantId/budget"
+            element={
+              <ProtectedRoute>
+                <RestaurantBudgetPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/restaurant/:restaurantId/profit-loss"
+            element={
+              <ProtectedRoute>
+                <RestaurantProfitLossPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/restaurant/:restaurantId/incidents"
+            element={
+              <ProtectedRoute>
+                <RestaurantIncidentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/restaurant/:restaurantId/analytics"
+            element={
+              <ProtectedRoute>
+                <RestaurantAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/restaurant/:restaurantId/integrations"
+            element={
+              <ProtectedRoute>
+                <RestaurantIntegrationsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ============= LEGACY REDIRECTS ============= */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardRedirect />
               </ProtectedRoute>
             }
           />
@@ -108,10 +182,68 @@ function AppWithRestaurantContext() {
             path="/restaurant"
             element={
               <ProtectedRoute>
-                <RestaurantManagementPage />
+                <RestaurantListRedirect />
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/employees"
+            element={
+              <ProtectedRoute>
+                <EmployeesRedirect />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/annual-budget"
+            element={
+              <ProtectedRoute>
+                <BudgetRedirect />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profit-loss"
+            element={
+              <ProtectedRoute>
+                <ProfitLossRedirect />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/incidents"
+            element={
+              <ProtectedRoute>
+                <IncidentsRedirect />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analysis"
+            element={
+              <ProtectedRoute>
+                <AnalysisRedirect />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/biloop"
+            element={
+              <ProtectedRoute>
+                <IntegrationsRedirect />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orquest"
+            element={
+              <ProtectedRoute>
+                <IntegrationsRedirect />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ============= LEGACY RESTAURANT ROUTES (KEEP FOR COMPATIBILITY) ============= */}
           <Route
             path="/restaurant/:restaurantId"
             element={
@@ -128,51 +260,8 @@ function AppWithRestaurantContext() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/analysis"
-            element={
-              <ProtectedRoute>
-                <AnalysisPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/resumen-financiero"
-            element={
-              <ProtectedRoute>
-                <FinancialSummaryPage />
-              </ProtectedRoute>
-            }
-          />
-          {/* Redirección de /profit-loss a /profit-loss/001 (primer restaurante) */}
-          <Route
-            path="/profit-loss"
-            element={<Navigate to="/profit-loss/001" replace />}
-          />
-          <Route
-            path="/profit-loss/:siteNumber"
-            element={
-              <ProtectedRoute>
-                <ProfitLossPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/historical-data"
-            element={
-              <ProtectedRoute>
-                <HistoricalDataPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/annual-budget"
-            element={
-              <ProtectedRoute>
-                <AnnualBudgetPage />
-              </ProtectedRoute>
-            }
-          />
+
+          {/* ============= ADMIN & ADVISOR ROUTES ============= */}
           <Route
             path="/advisor"
             element={
@@ -197,6 +286,8 @@ function AppWithRestaurantContext() {
                </ProtectedRoute>
              }
            />
+
+          {/* ============= GLOBAL ROUTES (NOT RESTAURANT-SPECIFIC) ============= */}
           <Route
             path="/valuation"
             element={
@@ -206,26 +297,26 @@ function AppWithRestaurantContext() {
             }
           />
           <Route
-            path="/employees"
+            path="/resumen-financiero"
             element={
               <ProtectedRoute>
-                <EmployeePage />
+                <FinancialSummaryPage />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/orquest"
+            path="/historical-data"
             element={
               <ProtectedRoute>
-                <OrquestPage />
+                <HistoricalDataPage />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/incidents"
+            path="/workers"
             element={
               <ProtectedRoute>
-                <IncidentManagementPage />
+                <WorkersPage />
               </ProtectedRoute>
             }
           />
@@ -237,15 +328,26 @@ function AppWithRestaurantContext() {
               </ProtectedRoute>
             }
           />
-          <Route path="/biloop" element={<BiloopPage />} />
+
+          {/* ============= LEGACY ROUTES (TEMPORARY - WILL BE REMOVED) ============= */}
           <Route
-            path="/workers"
+            path="/restaurants"
             element={
               <ProtectedRoute>
-                <WorkersPage />
+                <RestaurantManagementPage />
               </ProtectedRoute>
             }
           />
+          {/* Legacy P&L redirect with site number */}
+          <Route
+            path="/profit-loss/:siteNumber"
+            element={
+              <ProtectedRoute>
+                <ProfitLossRedirect />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
         {import.meta.env.MODE === 'development' && <PerfDebugPanel />}

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useRestaurantContext } from "@/providers/RestaurantContext";
 import { useFranchiseeRestaurants } from "@/hooks/useFranchiseeRestaurants";
 import { SearchableRestaurantSelect } from "@/components/ui/searchable-restaurant-select";
+import { useRestaurantRoutes } from "@/hooks/useRestaurantRoutes";
 
 interface CountChip {
   label: string;
@@ -30,6 +31,8 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
 }) => {
   const { currentRestaurantId, setRestaurantId } = useRestaurantContext();
   const { restaurants, loading: restaurantsLoading } = useFranchiseeRestaurants();
+  const { getCurrentRestaurantRoutes } = useRestaurantRoutes();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // SEO básico: actualizar el título del documento
@@ -37,13 +40,55 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
     document.title = `${title} · ${brand}`.slice(0, 60);
   }, [title]);
 
+  // Obtener rutas para el restaurante actual
+  const restaurantRoutes = getCurrentRestaurantRoutes();
+
+  // Navitems actualizados para usar rutas basadas en restaurante
   const navItems = [
-    { label: "Dashboard", href: "/dashboard" },
+    { 
+      label: "Hub", 
+      href: restaurantRoutes?.hub || "/dashboard",
+      fallback: "/dashboard"
+    },
+    { 
+      label: "Personal", 
+      href: restaurantRoutes?.staff || "/employees",
+      fallback: "/employees"
+    },
+    { 
+      label: "Presupuestos", 
+      href: restaurantRoutes?.budget || "/annual-budget",
+      fallback: "/annual-budget"
+    },
+    { 
+      label: "Financiero", 
+      href: restaurantRoutes?.profitLoss || "/profit-loss",
+      fallback: "/profit-loss"
+    },
+    { 
+      label: "Incidencias", 
+      href: restaurantRoutes?.incidents || "/incidents",
+      fallback: "/incidents"
+    },
+    { 
+      label: "Análisis", 
+      href: restaurantRoutes?.analytics || "/analysis",
+      fallback: "/analysis"
+    },
     { label: "Franquiciados", href: "/franchisees" },
-    { label: "Restaurantes", href: "/restaurant" },
     { label: "Advisor", href: "/advisor" },
     { label: "Ajustes", href: "/settings" },
   ];
+
+  // Manejar cambio de restaurante
+  const handleRestaurantChange = (value: string | null) => {
+    setRestaurantId(value);
+    
+    // Si hay un restaurante seleccionado, navegar a su hub
+    if (value && restaurantRoutes) {
+      navigate(`/restaurant/${value}/hub`);
+    }
+  };
 
   return (
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b animate-fade-in" role="banner">
@@ -113,7 +158,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
                   franchisee_name: r.base_restaurant?.franchisee_name
                 }))}
                 value={currentRestaurantId || ''}
-                onValueChange={(value) => setRestaurantId(value || null)}
+                onValueChange={handleRestaurantChange}
                 placeholder="Seleccionar restaurante..."
                 loading={restaurantsLoading}
                 disabled={restaurantsLoading}

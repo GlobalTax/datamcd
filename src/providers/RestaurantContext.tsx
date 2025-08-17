@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useCallback, ReactNode, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { logger } from '@/lib/logger';
 
@@ -23,6 +24,26 @@ export const RestaurantContextProvider = ({
     'current-restaurant-id', 
     null
   );
+
+  // Hook para sincronizar con URL automáticamente
+  const useAutoSetRestaurant = () => {
+    const params = useParams<{ restaurantId?: string }>();
+    
+    useEffect(() => {
+      const urlRestaurantId = params.restaurantId;
+      
+      if (urlRestaurantId && urlRestaurantId !== currentRestaurantId) {
+        logger.info('RestaurantContext: URL changed, updating context', {
+          urlRestaurantId,
+          currentRestaurantId
+        });
+        setCurrentRestaurantIdStorage(urlRestaurantId);
+      }
+    }, [params.restaurantId, currentRestaurantId]);
+  };
+
+  // Ejecutar la sincronización automática
+  useAutoSetRestaurant();
 
   const setRestaurantId = useCallback((id: string | null) => {
     logger.info('RestaurantContext: Changing restaurant', { 
