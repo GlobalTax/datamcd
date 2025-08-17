@@ -77,6 +77,13 @@ export type Database = {
             foreignKeyName: "accounting_integration_configs_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "accounting_integration_configs_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -293,6 +300,78 @@ export type Database = {
           },
         ]
       }
+      advisor_restaurant: {
+        Row: {
+          access_level: string | null
+          advisor_user_id: string
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_level?: string | null
+          advisor_user_id: string
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_level?: string | null
+          advisor_user_id?: string
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_restaurant_advisor_user_id_fkey"
+            columns: ["advisor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advisor_restaurant_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advisor_restaurant_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advisor_restaurant_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_access_view"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "advisor_restaurant_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_tasks: {
         Row: {
           advisor_id: string
@@ -409,6 +488,13 @@ export type Database = {
           year?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "annual_budgets_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
           {
             foreignKeyName: "annual_budgets_franchisee_id_fkey"
             columns: ["franchisee_id"]
@@ -733,6 +819,13 @@ export type Database = {
             foreignKeyName: "delivery_integration_configs_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "delivery_integration_configs_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -830,6 +923,13 @@ export type Database = {
             foreignKeyName: "employee_payroll_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "employee_payroll_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -895,6 +995,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "employees"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_time_off_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
           },
           {
             foreignKeyName: "employee_time_off_franchisee_id_fkey"
@@ -1103,6 +1210,13 @@ export type Database = {
             foreignKeyName: "employees_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "employees_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -1165,6 +1279,13 @@ export type Database = {
             foreignKeyName: "franchisee_access_log_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "franchisee_access_log_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -1205,6 +1326,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "franchisee_activity_log_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
           {
             foreignKeyName: "franchisee_activity_log_franchisee_id_fkey"
             columns: ["franchisee_id"]
@@ -1250,6 +1378,13 @@ export type Database = {
             foreignKeyName: "franchisee_biloop_companies_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "franchisee_biloop_companies_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -1290,6 +1425,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "franchisee_invitations_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
           {
             foreignKeyName: "franchisee_invitations_franchisee_id_fkey"
             columns: ["franchisee_id"]
@@ -1380,6 +1522,13 @@ export type Database = {
             foreignKeyName: "franchisee_restaurants_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "franchisee_restaurants_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -1414,6 +1563,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "franchisee_staff_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
           {
             foreignKeyName: "franchisee_staff_franchisee_id_fkey"
             columns: ["franchisee_id"]
@@ -1708,6 +1864,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "integration_configs_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
           {
             foreignKeyName: "integration_configs_franchisee_id_fkey"
             columns: ["franchisee_id"]
@@ -2023,6 +2186,13 @@ export type Database = {
             foreignKeyName: "orquest_employee_metrics_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "orquest_employee_metrics_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -2178,6 +2348,13 @@ export type Database = {
             foreignKeyName: "orquest_employees_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "orquest_employees_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -2312,6 +2489,13 @@ export type Database = {
             foreignKeyName: "orquest_measures_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "orquest_measures_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -2414,6 +2598,13 @@ export type Database = {
             foreignKeyName: "orquest_payroll_raw_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "orquest_payroll_raw_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -2472,6 +2663,13 @@ export type Database = {
           username_encrypted?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pos_integration_configs_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
           {
             foreignKeyName: "pos_integration_configs_franchisee_id_fkey"
             columns: ["franchisee_id"]
@@ -3165,6 +3363,81 @@ export type Database = {
         }
         Relationships: []
       }
+      restaurant_members: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          permissions: Json | null
+          restaurant_id: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          permissions?: Json | null
+          restaurant_id: string
+          role: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          permissions?: Json | null
+          restaurant_id?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_members_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_members_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_members_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_access_view"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "restaurant_members_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurant_valuations: {
         Row: {
           change_date: string | null
@@ -3285,6 +3558,13 @@ export type Database = {
             foreignKeyName: "restaurants_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "restaurants_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -3326,6 +3606,13 @@ export type Database = {
             foreignKeyName: "servicios_orquest_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "servicios_orquest_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -3351,6 +3638,13 @@ export type Database = {
           service_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "temp_orquest_service_mapping_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
           {
             foreignKeyName: "temp_orquest_service_mapping_franchisee_id_fkey"
             columns: ["franchisee_id"]
@@ -3687,6 +3981,26 @@ export type Database = {
       }
     }
     Views: {
+      franchisee_staff_compat: {
+        Row: {
+          created_at: string | null
+          franchisee_id: string | null
+          id: string | null
+          permissions: Json | null
+          position: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurant: {
         Row: {
           address: string | null
@@ -3759,6 +4073,13 @@ export type Database = {
             foreignKeyName: "franchisee_restaurants_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "franchisee_restaurants_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -3816,6 +4137,13 @@ export type Database = {
             foreignKeyName: "franchisee_restaurants_franchisee_id_fkey"
             columns: ["franchisee_id"]
             isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "franchisee_restaurants_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
             referencedRelation: "franchisees"
             referencedColumns: ["id"]
           },
@@ -3823,6 +4151,10 @@ export type Database = {
       }
     }
     Functions: {
+      advisor_has_restaurant_access: {
+        Args: { _advisor_id: string; _restaurant_id: string }
+        Returns: boolean
+      }
       check_session_security: {
         Args:
           | Record<PropertyKey, never>
@@ -3860,6 +4192,10 @@ export type Database = {
       get_user_auth_status: {
         Args: { user_uuid: string }
         Returns: Json
+      }
+      get_user_restaurant_role: {
+        Args: { _restaurant_id: string; _user_id: string }
+        Returns: string
       }
       get_user_restaurants: {
         Args: { user_uuid?: string }
@@ -3930,6 +4266,14 @@ export type Database = {
       }
       user_has_franchisee_data: {
         Args: { user_uuid: string }
+        Returns: boolean
+      }
+      user_has_restaurant_access: {
+        Args: {
+          _required_role?: string
+          _restaurant_id: string
+          _user_id: string
+        }
         Returns: boolean
       }
       user_is_staff_of_franchisee: {
