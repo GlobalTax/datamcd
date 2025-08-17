@@ -1,6 +1,35 @@
-// === DOMINIO: RESTAURANTES ===
-// Tipos relacionados con restaurantes, asignaciones y gestión
-// ACTUALIZADO: Modelo pivotado en restaurant_id con vista unificada
+// Re-export tipos RBAC
+export type {
+  RestaurantRole,
+  AdvisorAccessLevel,
+  RestaurantMember,
+  AdvisorRestaurant,
+  RestaurantMembersManagerProps,
+  RestaurantAccessControlProps,
+  AddMemberDialogProps,
+  RestaurantRoleSelectProps,
+  RestaurantMembersFilters,
+  RestaurantAccessCheck
+} from './rbac';
+
+// Tipos base para compatibilidad
+export interface Franchisee {
+  id: string;
+  user_id?: string;
+  franchisee_name: string;
+  company_name?: string;
+  tax_id?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+  email?: string;
+  biloop_company_id?: string;
+  created_at: string;
+  updated_at: string;
+  total_restaurants?: number;
+}
 
 export interface Restaurant {
   id: string;

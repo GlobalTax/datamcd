@@ -4189,6 +4189,18 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_franchisee_staff_compat: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          franchisee_id: string
+          id: string
+          permissions: Json
+          position: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_user_auth_status: {
         Args: { user_uuid: string }
         Returns: Json

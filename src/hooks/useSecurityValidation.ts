@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/auth/AuthProvider';
 
@@ -118,6 +119,49 @@ export const useSecurityValidation = () => {
     return true;
   };
 
+  /**
+   * Verificar acceso a restaurante específico
+   */
+  const hasRestaurantAccess = useCallback(async (
+    restaurantId: string, 
+    requiredRole?: 'owner' | 'manager' | 'staff' | 'viewer'
+  ): Promise<boolean> => {
+    if (!user) return false;
+    
+    // Admin/Superadmin siempre tienen acceso
+    if (['admin', 'superadmin'].includes(user.role || '')) return true;
+
+    try {
+      const { data } = await supabase.rpc('user_has_restaurant_access', {
+        _user_id: user.id,
+        _restaurant_id: restaurantId,
+        _required_role: requiredRole
+      });
+      return data || false;
+    } catch (error) {
+      console.error('Error checking restaurant access:', error);
+      return false;
+    }
+  }, [user]);
+
+  /**
+   * Verificar si es asesor de un restaurante
+   */
+  const isRestaurantAdvisor = useCallback(async (restaurantId: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const { data } = await supabase.rpc('advisor_has_restaurant_access', {
+        _advisor_id: user.id,
+        _restaurant_id: restaurantId
+      });
+      return data || false;
+    } catch (error) {
+      console.error('Error checking advisor access:', error);
+      return false;
+    }
+  }, [user]);
+
   return {
     validateRoleAssignment,
     validateUserDeletion,
@@ -128,6 +172,8 @@ export const useSecurityValidation = () => {
     canManageUsers,
     canDeleteUser,
     canAccessSensitiveData,
-    validateDataAccess
+    validateDataAccess,
+    hasRestaurantAccess,
+    isRestaurantAdvisor
   };
 };
