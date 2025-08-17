@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { QueryProvider } from './providers/QueryProvider';
+import { RestaurantContextProvider } from './providers/RestaurantContext';
 import { initMonitoring } from '@/lib/monitoring/web-vitals';
 
 const container = document.getElementById("root");
@@ -16,7 +17,9 @@ initMonitoring();
 root.render(
   <React.StrictMode>
     <QueryProvider>
-      <App />
+      <RestaurantContextProvider>
+        <App />
+      </RestaurantContextProvider>
     </QueryProvider>
   </React.StrictMode>
 );
