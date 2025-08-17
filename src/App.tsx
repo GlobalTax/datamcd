@@ -8,6 +8,8 @@ import { AuthProvider } from "@/hooks/auth/AuthProvider";
 import { ImpersonationProvider } from "@/hooks/useImpersonation";
 import { ConnectionStatusProvider } from "@/components/common/ConnectionStatusProvider";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { RestaurantContextProvider } from "@/providers/RestaurantContext";
+import { useRestaurantPrefetch } from "@/hooks/useRestaurantPrefetch";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
@@ -72,6 +74,184 @@ function RouteChangePerf() {
   return null;
 }
 
+function AppWithRestaurantContext() {
+  const { prefetchRestaurantData } = useRestaurantPrefetch();
+  
+  return (
+    <RestaurantContextProvider onRestaurantChange={prefetchRestaurantData}>
+      <BrowserRouter>
+        <Toaster />
+        <RouteChangePerf />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/advisor-auth" element={<AdvisorAuthPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <OptimizedDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard-legacy"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/restaurant"
+            element={
+              <ProtectedRoute>
+                <RestaurantManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/restaurant/:restaurantId"
+            element={
+              <ProtectedRoute>
+                <RestaurantDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/restaurant/:restaurantId/panel"
+            element={
+              <ProtectedRoute>
+                <RestaurantPanelPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analysis"
+            element={
+              <ProtectedRoute>
+                <AnalysisPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resumen-financiero"
+            element={
+              <ProtectedRoute>
+                <FinancialSummaryPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Redirección de /profit-loss a /profit-loss/001 (primer restaurante) */}
+          <Route
+            path="/profit-loss"
+            element={<Navigate to="/profit-loss/001" replace />}
+          />
+          <Route
+            path="/profit-loss/:siteNumber"
+            element={
+              <ProtectedRoute>
+                <ProfitLossPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/historical-data"
+            element={
+              <ProtectedRoute>
+                <HistoricalDataPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/annual-budget"
+            element={
+              <ProtectedRoute>
+                <AnnualBudgetPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/advisor"
+            element={
+              <ProtectedRoute>
+                <AdvisorPage />
+              </ProtectedRoute>
+            }
+          />
+           <Route
+             path="/franchisees"
+             element={
+               <ProtectedRoute>
+                 <FranchiseeManagementPage />
+               </ProtectedRoute>
+             }
+           />
+           <Route
+             path="/advisor/franchisee/:franchiseeId"
+             element={
+               <ProtectedRoute>
+                 <FranchiseeDetailPage />
+               </ProtectedRoute>
+             }
+           />
+          <Route
+            path="/valuation"
+            element={
+              <ProtectedRoute>
+                <ValuationApp />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employees"
+            element={
+              <ProtectedRoute>
+                <EmployeePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orquest"
+            element={
+              <ProtectedRoute>
+                <OrquestPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/incidents"
+            element={
+              <ProtectedRoute>
+                <IncidentManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/biloop" element={<BiloopPage />} />
+          <Route
+            path="/workers"
+            element={
+              <ProtectedRoute>
+                <WorkersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        {import.meta.env.MODE === 'development' && <PerfDebugPanel />}
+      </BrowserRouter>
+    </RestaurantContextProvider>
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -80,179 +260,11 @@ function App() {
           <AuthProvider>
             <ImpersonationProvider>
               <TooltipProvider>
-                <BrowserRouter>
-                  <Toaster />
-                  <RouteChangePerf />
-                  <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/advisor-auth" element={<AdvisorAuthPage />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <OptimizedDashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard-legacy"
-                element={
-                  <ProtectedRoute>
-                    <DashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/restaurant"
-                element={
-                  <ProtectedRoute>
-                    <RestaurantManagementPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/restaurant/:restaurantId"
-                element={
-                  <ProtectedRoute>
-                    <RestaurantDetailPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/restaurant/:restaurantId/panel"
-                element={
-                  <ProtectedRoute>
-                    <RestaurantPanelPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/analysis"
-                element={
-                  <ProtectedRoute>
-                    <AnalysisPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/resumen-financiero"
-                element={
-                  <ProtectedRoute>
-                    <FinancialSummaryPage />
-                  </ProtectedRoute>
-                }
-              />
-              {/* Redirección de /profit-loss a /profit-loss/001 (primer restaurante) */}
-              <Route
-                path="/profit-loss"
-                element={<Navigate to="/profit-loss/001" replace />}
-              />
-              <Route
-                path="/profit-loss/:siteNumber"
-                element={
-                  <ProtectedRoute>
-                    <ProfitLossPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/historical-data"
-                element={
-                  <ProtectedRoute>
-                    <HistoricalDataPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/annual-budget"
-                element={
-                  <ProtectedRoute>
-                    <AnnualBudgetPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/advisor"
-                element={
-                  <ProtectedRoute>
-                    <AdvisorPage />
-                  </ProtectedRoute>
-                }
-              />
-               <Route
-                 path="/franchisees"
-                 element={
-                   <ProtectedRoute>
-                     <FranchiseeManagementPage />
-                   </ProtectedRoute>
-                 }
-               />
-               <Route
-                 path="/advisor/franchisee/:franchiseeId"
-                 element={
-                   <ProtectedRoute>
-                     <FranchiseeDetailPage />
-                   </ProtectedRoute>
-                 }
-               />
-              <Route
-                path="/valuation"
-                element={
-                  <ProtectedRoute>
-                    <ValuationApp />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/employees"
-                element={
-                  <ProtectedRoute>
-                    <EmployeePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/orquest"
-                element={
-                  <ProtectedRoute>
-                    <OrquestPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/incidents"
-                element={
-                  <ProtectedRoute>
-                    <IncidentManagementPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <SettingsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/biloop" element={<BiloopPage />} />
-              <Route
-                path="/workers"
-                element={
-                  <ProtectedRoute>
-                    <WorkersPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-              </Routes>
-              {import.meta.env.MODE === 'development' && <PerfDebugPanel />}
-            </BrowserRouter>
-          </TooltipProvider>
-        </ImpersonationProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+                <AppWithRestaurantContext />
+              </TooltipProvider>
+            </ImpersonationProvider>
+          </AuthProvider>
+        </QueryClientProvider>
       </ConnectionStatusProvider>
     </ErrorBoundary>
   );
