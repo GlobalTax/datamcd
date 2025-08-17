@@ -1,16 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { BudgetService, AnnualBudgetData } from '@/services/api/budgetService';
-
+import { budgetKeys } from '@/hooks/queryKeys';
 import { BudgetData } from '@/types/budgetTypes';
 import { getDefaultBudgetStructure } from '@/constants/defaultBudgetStructure';
 import { logger } from '@/lib/logger';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
+import { useRestaurantContext } from '@/providers/RestaurantContext';
 
 export interface BudgetConfig {
-  restaurantId?: string;
-  year?: number;
-  autoFetch?: boolean;
+  restaurantId: string;
+  year: number;
 }
 
 export interface UseBudgetsReturn {
@@ -23,89 +24,58 @@ export interface UseBudgetsReturn {
   loading: boolean;
   error: string | null;
   
-  // Annual Budget Methods
-  fetchAnnualBudgets: (restaurantId: string, year: number) => Promise<void>;
-  saveAnnualBudgets: (restaurantId: string, year: number, data: BudgetData[]) => Promise<boolean>;
+  // Actions
+  refetch: () => void;
+  saveAnnualBudgets: (data: BudgetData[]) => void;
   handleCellChange: (id: string, field: string, value: number) => void;
   reloadData: () => void;
 }
 
-export const useBudgets = (config: BudgetConfig = {}): UseBudgetsReturn => {
+export const useBudgets = (config: BudgetConfig): UseBudgetsReturn => {
   const { user } = useUnifiedAuth();
-  const { restaurantId, year, autoFetch = true } = config;
+  const { restaurantId, year } = config;
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   
-  // Annual Budget States
-  const [annualBudgets, setAnnualBudgets] = useState<AnnualBudgetData[]>([]);
+  // Local state for managing grid data and changes
   const [rowData, setRowData] = useState<BudgetData[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  
-  // Common States
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Annual Budget Methods
-  const fetchAnnualBudgets = useCallback(async (restaurantId: string, year: number) => {
-    if (!user) {
-      logger.warn('No user found for annual budgets fetch');
-      return;
-    }
+  // Query para obtener presupuestos anuales
+  const {
+    data: annualBudgets = [],
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: budgetKeys.annual(restaurantId, year),
+    queryFn: () => BudgetService.fetchAnnualBudgets(restaurantId, year, user?.id || ''),
+    enabled: !!restaurantId && !!year && !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
 
-    if (loading) {
-      logger.debug('Already loading, skipping duplicate annual budgets call');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      
-      logger.info('Fetching annual budgets', { restaurantId, year });
-      const data = await BudgetService.fetchAnnualBudgets(restaurantId, year, user.id);
-      
-      setAnnualBudgets(data);
-      logger.info('Annual budgets fetched successfully', { count: data.length });
-      
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar los presupuestos';
-      logger.error('Error in fetchAnnualBudgets', { error: err });
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, loading]);
-
-  const saveAnnualBudgets = useCallback(async (
-    restaurantId: string, 
-    year: number, 
-    budgetData: BudgetData[]
-  ): Promise<boolean> => {
-    if (!user) {
-      logger.warn('No user found for saving annual budgets');
-      return false;
-    }
-
-    try {
-      setLoading(true);
-      logger.info('Saving annual budgets', { restaurantId, year, count: budgetData.length });
-      
-      await BudgetService.saveAnnualBudgets(restaurantId, year, budgetData, user.id);
-      
-      toast.success('Presupuesto guardado correctamente');
-      // Refresh data
-      await fetchAnnualBudgets(restaurantId, year);
-      return true;
-      
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al guardar el presupuesto';
-      logger.error('Error saving annual budgets', { error: err });
-      toast.error(errorMessage);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [user, fetchAnnualBudgets]);
+  // Mutación para guardar presupuestos anuales
+  const saveAnnualBudgetsMutation = useMutation({
+    mutationFn: (budgetData: BudgetData[]) => 
+      BudgetService.saveAnnualBudgets(restaurantId, year, budgetData, user?.id || ''),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: budgetKeys.byRestaurant(restaurantId) });
+      toast({
+        title: "Éxito",
+        description: "Presupuesto guardado correctamente",
+      });
+    },
+    onError: (error: any) => {
+      logger.error('Error saving annual budgets', { error });
+      toast({
+        title: "Error",
+        description: error.message || "Error al guardar el presupuesto",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleCellChange = useCallback((id: string, field: string, value: number) => {
     logger.debug('Cell changed', { id, field, value });
@@ -134,24 +104,18 @@ export const useBudgets = (config: BudgetConfig = {}): UseBudgetsReturn => {
       return updatedData;
     });
     
-    toast.success('Valor actualizado correctamente');
-  }, []);
+    toast({
+      title: "Éxito",
+      description: "Valor actualizado correctamente",
+    });
+  }, [toast]);
 
   const reloadData = useCallback(() => {
     setIsInitialized(false);
     setRowData([]);
     setHasChanges(false);
-    setAnnualBudgets([]);
-  }, []);
-
-  // Auto-fetch annual budgets when config changes
-  useEffect(() => {
-    if (autoFetch && restaurantId && year && !isInitialized) {
-      logger.info('Auto-fetching annual budgets', { restaurantId, year });
-      fetchAnnualBudgets(restaurantId, year);
-      setIsInitialized(true);
-    }
-  }, [restaurantId, year, fetchAnnualBudgets, isInitialized, autoFetch]);
+    refetch();
+  }, [refetch]);
 
   // Process annual budgets data when it changes
   useEffect(() => {
@@ -180,11 +144,12 @@ export const useBudgets = (config: BudgetConfig = {}): UseBudgetsReturn => {
                budget.jul + budget.aug + budget.sep + budget.oct + budget.nov + budget.dec
       }));
       setRowData(gridData);
-    } else if (isInitialized && !loading) {
+      setIsInitialized(true);
+    } else if (isInitialized && !isLoading) {
       logger.debug('No annual budgets found, using default structure');
       setRowData(getDefaultBudgetStructure());
     }
-  }, [annualBudgets, isInitialized, loading]);
+  }, [annualBudgets, isInitialized, isLoading]);
 
   return {
     // Annual Budgets
@@ -193,15 +158,24 @@ export const useBudgets = (config: BudgetConfig = {}): UseBudgetsReturn => {
     hasChanges,
     
     // States
-    loading,
-    error,
+    loading: isLoading,
+    error: error?.message || null,
     
-    // Annual Budget Methods
-    fetchAnnualBudgets,
-    saveAnnualBudgets,
+    // Actions
+    refetch,
+    saveAnnualBudgets: saveAnnualBudgetsMutation.mutate,
     handleCellChange,
-    
-    // Utility Methods
     reloadData
   };
+};
+
+// Hook específico que usa el contexto de restaurante
+export const useRestaurantBudgets = (year: number) => {
+  const { currentRestaurantId } = useRestaurantContext();
+  
+  if (!currentRestaurantId) {
+    throw new Error('useRestaurantBudgets requiere un restaurante seleccionado');
+  }
+  
+  return useBudgets({ restaurantId: currentRestaurantId, year });
 };

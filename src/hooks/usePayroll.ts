@@ -1,163 +1,108 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { EmployeeServiceAPI } from '@/services/api/employeeService';
 import { EmployeePayroll } from '@/types/employee';
-import { toast } from 'sonner';
+import { employeeKeys } from '@/hooks/queryKeys';
+import { useToast } from '@/hooks/use-toast';
+import { useRestaurantContext } from '@/providers/RestaurantContext';
 
-export const usePayroll = (restaurantId?: string) => {
-  const [payrollRecords, setPayrollRecords] = useState<EmployeePayroll[]>([]);
-  const [loading, setLoading] = useState(true);
+interface PayrollConfig {
+  restaurantId: string;
+  period?: string;
+}
 
-  const fetchPayrollRecords = async (period?: string) => {
-    try {
-      setLoading(true);
-      let query = supabase
-        .from('employee_payroll')
-        .select(`
-          *,
-          employee:employees(*)
-        `)
-        .order('period_start', { ascending: false });
+export const usePayroll = (config: PayrollConfig) => {
+  const { restaurantId, period } = config;
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-      if (period) {
-        const year = period.split('-')[0];
-        const month = period.split('-')[1];
-        const startDate = `${year}-${month}-01`;
-        const endDate = `${year}-${month}-31`;
-        
-        query = query
-          .gte('period_start', startDate)
-          .lte('period_end', endDate);
-      }
+  // Query para obtener registros de nómina
+  const {
+    data: payrollRecords = [],
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: employeeKeys.payroll(restaurantId, period),
+    queryFn: () => EmployeeServiceAPI.fetchPayrollRecords(restaurantId, period),
+    enabled: !!restaurantId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
 
-      if (restaurantId) {
-        query = query.eq('employee.restaurant_id', restaurantId);
-      }
+  // Mutación para generar nómina
+  const generatePayrollMutation = useMutation({
+    mutationFn: ({ employeeId, periodStart, periodEnd }: { 
+      employeeId: string; 
+      periodStart: string; 
+      periodEnd: string; 
+    }) => EmployeeServiceAPI.generatePayroll(employeeId, periodStart, periodEnd),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: employeeKeys.payroll(restaurantId) });
+      toast({
+        title: "Éxito",
+        description: "Nómina generada exitosamente",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Error al generar nómina",
+        variant: "destructive",
+      });
+    },
+  });
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching payroll records:', error);
-        toast.error('Error al cargar registros de nómina');
-        return;
-      }
-
-      setPayrollRecords((data || []) as EmployeePayroll[]);
-    } catch (error) {
-      console.error('Error in fetchPayrollRecords:', error);
-      toast.error('Error inesperado al cargar nóminas');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generatePayroll = async (employeeId: string, periodStart: string, periodEnd: string) => {
-    try {
-      // Get employee data
-      const { data: employee, error: empError } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('id', employeeId)
-        .single();
-
-      if (empError || !employee) {
-        toast.error('Error al obtener datos del empleado');
-        return false;
-      }
-
-      // Get time tracking data for the period
-      const { data: timeData } = await supabase
-        .from('employee_time_tracking')
-        .select('*')
-        .eq('employee_id', employeeId)
-        .gte('date', periodStart)
-        .lte('date', periodEnd);
-
-      // Calculate totals
-      const regularHours = timeData?.reduce((sum, record) => sum + (record.total_hours || 0), 0) || 0;
-      const overtimeHours = timeData?.reduce((sum, record) => sum + (record.overtime_hours || 0), 0) || 0;
-
-      const basePay = employee.base_salary || 0;
-      const overtimePay = (employee.hourly_rate || 10) * overtimeHours * 1.5;
-      const grossPay = basePay + overtimePay;
-
-      // Calculate deductions (simplified)
-      const socialSecurity = grossPay * 0.0635; // 6.35%
-      const incomeTax = grossPay * 0.15; // 15% simplified
-      const netPay = grossPay - socialSecurity - incomeTax;
-
-      const { error } = await supabase
-        .from('employee_payroll')
-        .insert({
-          employee_id: employeeId,
-          period_start: periodStart,
-          period_end: periodEnd,
-          regular_hours: regularHours,
-          overtime_hours: overtimeHours,
-          base_pay: basePay,
-          overtime_pay: overtimePay,
-          bonuses: 0,
-          commissions: 0,
-          social_security: socialSecurity,
-          income_tax: incomeTax,
-          other_deductions: 0,
-          gross_pay: grossPay,
-          net_pay: netPay,
-          status: 'draft'
-        });
-
-      if (error) {
-        console.error('Error generating payroll:', error);
-        toast.error('Error al generar nómina: ' + error.message);
-        return false;
-      }
-
-      toast.success('Nómina generada exitosamente');
-      await fetchPayrollRecords();
-      return true;
-    } catch (error) {
-      console.error('Error in generatePayroll:', error);
-      toast.error('Error inesperado al generar nómina');
-      return false;
-    }
-  };
-
-  const updatePayrollStatus = async (payrollId: string, status: 'draft' | 'approved' | 'paid') => {
-    try {
-      const updates: any = { status };
-      if (status === 'paid') {
-        updates.payment_date = new Date().toISOString().split('T')[0];
-      }
-
-      const { error } = await supabase
-        .from('employee_payroll')
-        .update(updates)
-        .eq('id', payrollId);
-
-      if (error) {
-        console.error('Error updating payroll status:', error);
-        toast.error('Error al actualizar estado de nómina');
-        return false;
-      }
-
-      toast.success('Estado de nómina actualizado');
-      await fetchPayrollRecords();
-      return true;
-    } catch (error) {
-      console.error('Error in updatePayrollStatus:', error);
-      toast.error('Error inesperado al actualizar estado');
-      return false;
-    }
-  };
-
-  useEffect(() => {
-    fetchPayrollRecords();
-  }, [restaurantId]);
+  // Mutación para actualizar estado de nómina
+  const updatePayrollStatusMutation = useMutation({
+    mutationFn: ({ payrollId, status }: { 
+      payrollId: string; 
+      status: 'draft' | 'approved' | 'paid' 
+    }) => EmployeeServiceAPI.updatePayrollStatus(payrollId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: employeeKeys.payroll(restaurantId) });
+      toast({
+        title: "Éxito",
+        description: "Estado de nómina actualizado",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Error al actualizar estado de nómina",
+        variant: "destructive",
+      });
+    },
+  });
 
   return {
+    // Data
     payrollRecords,
-    loading,
-    fetchPayrollRecords,
-    generatePayroll,
-    updatePayrollStatus
+    
+    // Loading states
+    loading: isLoading,
+    isLoading,
+    isGenerating: generatePayrollMutation.isPending,
+    isUpdating: updatePayrollStatusMutation.isPending,
+    
+    // Error states
+    error,
+    generateError: generatePayrollMutation.error,
+    updateError: updatePayrollStatusMutation.error,
+    
+    // Actions
+    refetch,
+    generatePayroll: generatePayrollMutation.mutate,
+    updatePayrollStatus: updatePayrollStatusMutation.mutate,
   };
+};
+
+// Hook específico que usa el contexto de restaurante
+export const useRestaurantPayroll = (period?: string) => {
+  const { currentRestaurantId } = useRestaurantContext();
+  
+  if (!currentRestaurantId) {
+    throw new Error('useRestaurantPayroll requiere un restaurante seleccionado');
+  }
+  
+  return usePayroll({ restaurantId: currentRestaurantId, period });
 };

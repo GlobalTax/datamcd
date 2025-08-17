@@ -1,13 +1,21 @@
-import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProfitLossData, ProfitLossFormData, ProfitLossTemplate } from '@/types/profitLoss';
-import { toast } from 'sonner';
+import { profitLossKeys } from '@/hooks/queryKeys';
+import { useToast } from '@/hooks/use-toast';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
+import { useRestaurantContext } from '@/providers/RestaurantContext';
 
-export const useProfitLossData = (restaurantId?: string, year?: number) => {
+interface ProfitLossConfig {
+  restaurantId: string;
+  year?: number;
+}
+
+export const useProfitLossData = (config: ProfitLossConfig) => {
+  const { restaurantId, year } = config;
   const queryClient = useQueryClient();
   const { user } = useUnifiedAuth();
+  const { toast } = useToast();
 
   // Fetch P&L data
   const {
@@ -16,7 +24,7 @@ export const useProfitLossData = (restaurantId?: string, year?: number) => {
     error,
     refetch
   } = useQuery({
-    queryKey: ['profit-loss-data', restaurantId, year, user?.id],
+    queryKey: profitLossKeys.list(restaurantId, year),
     queryFn: async () => {
       if (!restaurantId || !user) return [];
       
@@ -41,6 +49,8 @@ export const useProfitLossData = (restaurantId?: string, year?: number) => {
       return data as ProfitLossData[];
     },
     enabled: !!restaurantId && !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
   });
 
   // Fetch templates
@@ -48,7 +58,7 @@ export const useProfitLossData = (restaurantId?: string, year?: number) => {
     data: templates,
     isLoading: templatesLoading
   } = useQuery({
-    queryKey: ['profit-loss-templates'],
+    queryKey: profitLossKeys.templates(),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profit_loss_templates')
@@ -84,12 +94,19 @@ export const useProfitLossData = (restaurantId?: string, year?: number) => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profit-loss-data'] });
-      toast.success('Datos de P&L guardados exitosamente');
+      queryClient.invalidateQueries({ queryKey: profitLossKeys.byRestaurant(restaurantId) });
+      toast({
+        title: "Éxito",
+        description: "Datos de P&L guardados exitosamente",
+      });
     },
     onError: (error: any) => {
       console.error('Error saving P&L data:', error);
-      toast.error('Error al guardar los datos de P&L');
+      toast({
+        title: "Error",
+        description: "Error al guardar los datos de P&L",
+        variant: "destructive",
+      });
     },
   });
 
@@ -111,12 +128,19 @@ export const useProfitLossData = (restaurantId?: string, year?: number) => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profit-loss-data'] });
-      toast.success('Datos de P&L actualizados exitosamente');
+      queryClient.invalidateQueries({ queryKey: profitLossKeys.byRestaurant(restaurantId) });
+      toast({
+        title: "Éxito",
+        description: "Datos de P&L actualizados exitosamente",
+      });
     },
     onError: (error: any) => {
       console.error('Error updating P&L data:', error);
-      toast.error('Error al actualizar los datos de P&L');
+      toast({
+        title: "Error",
+        description: "Error al actualizar los datos de P&L",
+        variant: "destructive",
+      });
     },
   });
 
@@ -134,12 +158,19 @@ export const useProfitLossData = (restaurantId?: string, year?: number) => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profit-loss-data'] });
-      toast.success('Datos de P&L eliminados exitosamente');
+      queryClient.invalidateQueries({ queryKey: profitLossKeys.byRestaurant(restaurantId) });
+      toast({
+        title: "Éxito",
+        description: "Datos de P&L eliminados exitosamente",
+      });
     },
     onError: (error: any) => {
       console.error('Error deleting P&L data:', error);
-      toast.error('Error al eliminar los datos de P&L');
+      toast({
+        title: "Error",
+        description: "Error al eliminar los datos de P&L",
+        variant: "destructive",
+      });
     },
   });
 
@@ -153,6 +184,17 @@ export const useProfitLossData = (restaurantId?: string, year?: number) => {
     updateProfitLossData,
     deleteProfitLossData,
   };
+};
+
+// Hook específico que usa el contexto de restaurante
+export const useRestaurantProfitLoss = (year?: number) => {
+  const { currentRestaurantId } = useRestaurantContext();
+  
+  if (!currentRestaurantId) {
+    throw new Error('useRestaurantProfitLoss requiere un restaurante seleccionado');
+  }
+  
+  return useProfitLossData({ restaurantId: currentRestaurantId, year });
 };
 
 export const useProfitLossCalculations = () => {
