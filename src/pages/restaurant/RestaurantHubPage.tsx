@@ -1,11 +1,29 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useRestaurantData } from '@/hooks/useRestaurantData';
+import { useRestaurantRoutes } from '@/hooks/useRestaurantRoutes';
+import { useRestaurantHubKPIs } from '@/hooks/useRestaurantHubKPIs';
+import { useAuth } from '@/hooks/auth/AuthProvider';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building, TrendingUp, BarChart3, Users } from 'lucide-react';
+import { 
+  Building, 
+  TrendingUp, 
+  BarChart3, 
+  Users, 
+  CreditCard,
+  AlertTriangle,
+  Settings,
+  FileText,
+  DollarSign,
+  Clock
+} from 'lucide-react';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
+import { HubCard } from '@/components/restaurant/HubCard';
+import { HubKPIValue } from '@/components/restaurant/HubKPIValue';
+import { HubStatusIndicator } from '@/components/restaurant/HubStatusIndicator';
+import { HubGrid } from '@/components/restaurant/HubGrid';
 
 /**
  * Página principal (hub) para un restaurante específico
@@ -14,6 +32,12 @@ import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 const RestaurantHubPage: React.FC = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
   const { restaurant, loading, error } = useRestaurantData(restaurantId!);
+  const { navigateToCurrentRestaurant } = useRestaurantRoutes();
+  const { effectiveFranchisee } = useAuth();
+  
+  // Get franchisee ID for integrations
+  const franchiseeId = effectiveFranchisee?.id;
+  const { hubData, loading: hubLoading } = useRestaurantHubKPIs(restaurantId!, franchiseeId);
 
   if (loading) {
     return (
@@ -52,21 +76,15 @@ const RestaurantHubPage: React.FC = () => {
     );
   }
 
-  // Datos simulados para el dashboard
-  const metrics = {
-    totalRevenue: 450000,
-    operatingMargin: 18.5,
-    averageROI: 24.2,
-    employeeCount: 25
+  const getStatusForValue = (value: number | null, thresholds: { good: number; warning: number }): 'success' | 'warning' | 'error' | 'neutral' => {
+    if (value === null) return 'neutral';
+    if (value >= thresholds.good) return 'success';
+    if (value >= thresholds.warning) return 'warning';
+    return 'error';
   };
 
-  const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
+  const getIntegrationStatus = (status: string): 'success' | 'warning' | 'error' => {
+    return status === 'connected' ? 'success' : 'error';
   };
 
   return (
@@ -89,119 +107,236 @@ const RestaurantHubPage: React.FC = () => {
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
-              {/* Métricas principales */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Ingresos Anuales</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{formatCurrency(metrics.totalRevenue)}</div>
-                    <p className="text-xs text-muted-foreground">Último año</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Margen Operativo</CardTitle>
-                    <BarChart3 className="h-4 w-4 text-purple-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{metrics.operatingMargin}%</div>
-                    <p className="text-xs text-muted-foreground">Objetivo: 20%</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">ROI</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-emerald-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{metrics.averageROI}%</div>
-                    <p className="text-xs text-muted-foreground">Retorno anual</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Empleados</CardTitle>
-                    <Users className="h-4 w-4 text-blue-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{metrics.employeeCount}</div>
-                    <p className="text-xs text-muted-foreground">Personal activo</p>
-                  </CardContent>
-                </Card>
+              {/* Restaurant Hub - 8 Tarjetas Operativas */}
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-foreground mb-2">Hub Operativo</h2>
+                <p className="text-muted-foreground">
+                  Panel de control integral para {restaurant.base_restaurant?.restaurant_name}
+                </p>
               </div>
 
-              {/* Información del restaurante */}
+              <HubGrid>
+                {/* 1. KPIs Generales */}
+                <HubCard
+                  title="KPIs Generales"
+                  icon={TrendingUp}
+                  status={getStatusForValue(hubData.performanceScore, { good: 80, warning: 60 })}
+                  onAction={() => navigateToCurrentRestaurant('analytics')}
+                  actionLabel="Ver Analytics"
+                  loading={hubLoading}
+                >
+                  <div className="space-y-2">
+                    <HubKPIValue 
+                      value={hubData.monthlyRevenue} 
+                      type="currency" 
+                      trend={hubData.revenueGrowth}
+                      size="md"
+                    />
+                    <div className="text-xs text-muted-foreground">
+                      Performance: {hubData.performanceScore?.toFixed(0) || 'N/A'}/100
+                    </div>
+                  </div>
+                </HubCard>
+
+                {/* 2. Equipo */}
+                <HubCard
+                  title="Equipo"
+                  icon={Users}
+                  status={getStatusForValue(hubData.activeEmployees, { good: 20, warning: 15 })}
+                  onAction={() => navigateToCurrentRestaurant('staff')}
+                  actionLabel="Gestionar Personal"
+                  loading={hubLoading}
+                >
+                  <div className="space-y-2">
+                    <HubKPIValue 
+                      value={hubData.activeEmployees} 
+                      type="number"
+                      suffix="activos"
+                      size="md"
+                    />
+                    <div className="text-xs text-muted-foreground">
+                      Rotación: {hubData.employeeTurnover?.toFixed(1) || 'N/A'}% trimestral
+                    </div>
+                  </div>
+                </HubCard>
+
+                {/* 3. Nómina */}
+                <HubCard
+                  title="Nómina"
+                  icon={CreditCard}
+                  status={getStatusForValue(hubData.monthlyPayrollCost, { good: 50000, warning: 40000 })}
+                  onAction={() => navigateToCurrentRestaurant('payroll')}
+                  actionLabel="Ver Nómina"
+                  loading={hubLoading}
+                >
+                  <div className="space-y-2">
+                    <HubKPIValue 
+                      value={hubData.monthlyPayrollCost} 
+                      type="currency"
+                      size="md"
+                    />
+                    <div className="text-xs text-muted-foreground">
+                      {hubData.totalWorkingHours?.toFixed(0) || 'N/A'}h mensuales
+                    </div>
+                  </div>
+                </HubCard>
+
+                {/* 4. P&L */}
+                <HubCard
+                  title="P&L"
+                  icon={BarChart3}
+                  status={getStatusForValue(hubData.netMargin, { good: 15, warning: 10 })}
+                  onAction={() => navigateToCurrentRestaurant('profit-loss')}
+                  actionLabel="Ver Estados"
+                  loading={hubLoading}
+                >
+                  <div className="space-y-2">
+                    <HubKPIValue 
+                      value={hubData.ebitda} 
+                      type="currency"
+                      size="md"
+                    />
+                    <div className="text-xs text-muted-foreground">
+                      Margen neto: {hubData.netMargin?.toFixed(1) || 'N/A'}%
+                    </div>
+                  </div>
+                </HubCard>
+
+                {/* 5. Presupuesto */}
+                <HubCard
+                  title="Presupuesto"
+                  icon={DollarSign}
+                  status={hubData.budgetStatus === 'on-track' ? 'success' : 
+                          hubData.budgetStatus === 'over-budget' ? 'error' :
+                          hubData.budgetStatus === 'under-budget' ? 'warning' : 'neutral'}
+                  onAction={() => navigateToCurrentRestaurant('budget')}
+                  actionLabel="Ver Presupuesto"
+                  loading={hubLoading}
+                >
+                  <div className="space-y-2">
+                    <HubKPIValue 
+                      value={hubData.monthlyBudgetDeviation} 
+                      type="percentage"
+                      size="md"
+                      prefix="Desv:"
+                    />
+                    <div className="text-xs text-muted-foreground">
+                      Año completado: {hubData.yearCompletionPercent.toFixed(0)}%
+                    </div>
+                  </div>
+                </HubCard>
+
+                {/* 6. Incidencias */}
+                <HubCard
+                  title="Incidencias"
+                  icon={AlertTriangle}
+                  status={hubData.criticalIncidents > 0 ? 'error' : 
+                          hubData.activeIncidents > 3 ? 'warning' : 'success'}
+                  onAction={() => navigateToCurrentRestaurant('incidents')}
+                  actionLabel="Ver Incidencias"
+                  loading={hubLoading}
+                >
+                  <div className="space-y-2">
+                    <HubKPIValue 
+                      value={hubData.activeIncidents} 
+                      type="number"
+                      suffix="activas"
+                      size="md"
+                    />
+                    <div className="text-xs text-muted-foreground">
+                      {hubData.criticalIncidents} críticas • {hubData.avgResolutionTime?.toFixed(1) || 'N/A'}d resolución
+                    </div>
+                  </div>
+                </HubCard>
+
+                {/* 7. Integraciones */}
+                <HubCard
+                  title="Integraciones"
+                  icon={Settings}
+                  status={hubData.orquestStatus === 'connected' && hubData.biloopStatus === 'connected' ? 'success' :
+                          hubData.orquestStatus === 'connected' || hubData.biloopStatus === 'connected' ? 'warning' : 'error'}
+                  onAction={() => navigateToCurrentRestaurant('integrations')}
+                  actionLabel="Configurar"
+                  loading={hubLoading}
+                >
+                  <div className="space-y-2">
+                    <HubStatusIndicator 
+                      status={getIntegrationStatus(hubData.orquestStatus)}
+                      label="Orquest"
+                      subtitle={hubData.lastSyncDate ? 
+                        `Sync: ${hubData.lastSyncDate.toLocaleDateString()}` : 'Sin sync'}
+                    />
+                    <HubStatusIndicator 
+                      status={getIntegrationStatus(hubData.biloopStatus)}
+                      label="Biloop"
+                      subtitle="Pendiente configuración"
+                    />
+                  </div>
+                </HubCard>
+
+                {/* 8. Documentos */}
+                <HubCard
+                  title="Documentos"
+                  icon={FileText}
+                  status={hubData.pendingDocuments > 3 ? 'error' : 
+                          hubData.pendingDocuments > 1 ? 'warning' : 'success'}
+                  onAction={() => navigateToCurrentRestaurant('analytics')}
+                  actionLabel="Ver Documentos"
+                  loading={hubLoading}
+                >
+                  <div className="space-y-2">
+                    <HubKPIValue 
+                      value={hubData.pendingDocuments} 
+                      type="number"
+                      suffix="pendientes"
+                      size="md"
+                    />
+                    <div className="text-xs text-muted-foreground">
+                      Última actualización: {hubData.lastDocumentUpdate ? 
+                        hubData.lastDocumentUpdate.toLocaleDateString() : 'N/A'}
+                    </div>
+                  </div>
+                </HubCard>
+              </HubGrid>
+
+              {/* Información Básica del Restaurante */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Información del Restaurante</CardTitle>
+                  <div className="flex items-center space-x-2">
+                    <Building className="h-5 w-5 text-muted-foreground" />
+                    <CardTitle className="text-lg">Información del Restaurante</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 mb-1">Dirección</h3>
-                      <p className="text-sm text-gray-900">{restaurant.base_restaurant?.address}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium text-muted-foreground">Dirección</div>
+                      <div className="text-sm text-foreground">{restaurant.base_restaurant?.address}</div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 mb-1">Tipo</h3>
-                      <p className="text-sm text-gray-900 capitalize">
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium text-muted-foreground">Tipo</div>
+                      <div className="text-sm text-foreground capitalize">
                         {restaurant.base_restaurant?.restaurant_type || 'Tradicional'}
-                      </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 mb-1">Fecha de Apertura</h3>
-                      <p className="text-sm text-gray-900">
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium text-muted-foreground">Apertura</div>
+                      <div className="text-sm text-foreground">
                         {restaurant.base_restaurant?.opening_date 
                           ? new Date(restaurant.base_restaurant.opening_date).toLocaleDateString('es-ES')
                           : 'No disponible'
                         }
-                      </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 mb-1">Capacidad</h3>
-                      <p className="text-sm text-gray-900">
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium text-muted-foreground">Capacidad</div>
+                      <div className="text-sm text-foreground">
                         {restaurant.base_restaurant?.seating_capacity 
                           ? `${restaurant.base_restaurant.seating_capacity} personas`
                           : 'No disponible'
                         }
-                      </p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Accesos rápidos */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Accesos Rápidos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors">
-                      <Users className="w-6 h-6 text-blue-600 mb-2" />
-                      <div className="text-sm font-medium">Personal</div>
-                      <div className="text-xs text-gray-500">Gestionar empleados</div>
-                    </button>
-                    <button className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors">
-                      <BarChart3 className="w-6 h-6 text-green-600 mb-2" />
-                      <div className="text-sm font-medium">Presupuestos</div>
-                      <div className="text-xs text-gray-500">Planificación anual</div>
-                    </button>
-                    <button className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors">
-                      <TrendingUp className="w-6 h-6 text-purple-600 mb-2" />
-                      <div className="text-sm font-medium">P&L</div>
-                      <div className="text-xs text-gray-500">Estados financieros</div>
-                    </button>
-                    <button className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors">
-                      <Building className="w-6 h-6 text-orange-600 mb-2" />
-                      <div className="text-sm font-medium">Incidencias</div>
-                      <div className="text-xs text-gray-500">Mantenimiento</div>
-                    </button>
                   </div>
                 </CardContent>
               </Card>
