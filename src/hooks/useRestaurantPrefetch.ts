@@ -8,8 +8,11 @@ import { BudgetService } from '@/services/api/budgetService';
 import { logger } from '@/lib/logger';
 
 export const useRestaurantPrefetch = () => {
+  console.log('🏪 useRestaurantPrefetch called');
   const queryClient = useQueryClient();
+  console.log('🏪 Getting user from useUnifiedAuth...');
   const { user } = useUnifiedAuth();
+  console.log('🏪 useRestaurantPrefetch user:', user ? 'USER_FOUND' : 'NO_USER');
 
   const prefetchEmployees = useCallback(async (restaurantId: string) => {
     try {

@@ -75,7 +75,9 @@ function RouteChangePerf() {
 }
 
 function AppWithRestaurantContext() {
+  console.log('🚀 AppWithRestaurantContext rendering...');
   const { prefetchRestaurantData } = useRestaurantPrefetch();
+  console.log('🚀 AppWithRestaurantContext - prefetch function obtained');
   
   return (
     <RestaurantContextProvider onRestaurantChange={prefetchRestaurantData}>
@@ -253,6 +255,7 @@ function AppWithRestaurantContext() {
 }
 
 function App() {
+  console.log('🏁 App component rendering...');
   return (
     <ErrorBoundary>
       <ConnectionStatusProvider>

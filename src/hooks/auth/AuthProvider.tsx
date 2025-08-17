@@ -73,10 +73,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Hook principal
 export const useAuth = () => {
+  console.log('🔍 useAuth called - checking context...');
   const context = useContext(AuthContext);
+  console.log('🔍 useAuth context:', context ? 'EXISTS' : 'UNDEFINED');
   if (context === undefined) {
+    console.error('❌ useAuth: AuthContext is undefined - no AuthProvider found!');
     throw new Error('useAuth must be used within an AuthProvider');
   }
+  console.log('✅ useAuth: Context found, returning:', context.user ? 'USER_FOUND' : 'NO_USER');
   return context;
 };
 
