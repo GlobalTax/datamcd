@@ -4,6 +4,9 @@ import { Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useRestaurantContext } from "@/providers/RestaurantContext";
+import { useFranchiseeRestaurants } from "@/hooks/useFranchiseeRestaurants";
+import { SearchableRestaurantSelect } from "@/components/ui/searchable-restaurant-select";
 
 interface CountChip {
   label: string;
@@ -25,6 +28,9 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
   onSignOut,
   onOpenSidebar,
 }) => {
+  const { currentRestaurantId, setRestaurantId } = useRestaurantContext();
+  const { restaurants, loading: restaurantsLoading } = useFranchiseeRestaurants();
+
   useEffect(() => {
     // SEO básico: actualizar el título del documento
     const brand = "McDonald's Portal";
@@ -93,6 +99,26 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
                   <p className="text-xs text-muted-foreground">{subtitle}</p>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* SELECTOR DE RESTAURANTE (solo desktop) */}
+          <div className="hidden lg:flex items-center">
+            <div className="w-80">
+              <SearchableRestaurantSelect
+                restaurants={restaurants.map(r => ({
+                  id: r.id,
+                  name: r.base_restaurant?.restaurant_name || 'Sin nombre',
+                  site_number: r.base_restaurant?.site_number || '',
+                  franchisee_name: r.base_restaurant?.franchisee_name
+                }))}
+                value={currentRestaurantId || ''}
+                onValueChange={(value) => setRestaurantId(value || null)}
+                placeholder="Seleccionar restaurante..."
+                loading={restaurantsLoading}
+                disabled={restaurantsLoading}
+                compact
+              />
             </div>
           </div>
 
