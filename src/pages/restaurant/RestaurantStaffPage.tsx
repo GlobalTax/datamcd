@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useRestaurantData } from '@/hooks/useRestaurantData';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { EmployeeManagement } from '@/components/employees/EmployeeManagement';
+import { RestaurantMembersManager } from '@/components/restaurant/RestaurantMembersManager';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Users, Shield } from 'lucide-react';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 
 /**
@@ -14,6 +16,7 @@ import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 const RestaurantStaffPage: React.FC = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
   const { restaurant, loading, error } = useRestaurantData(restaurantId!);
+  const [activeTab, setActiveTab] = useState('employees');
 
   if (loading) {
     return (
@@ -69,13 +72,35 @@ const RestaurantStaffPage: React.FC = () => {
           </header>
 
           <main className="flex-1 p-6">
-            <EmployeeManagement
-              restaurantId={restaurantId!}
-              restaurantName={
-                restaurant.base_restaurant?.restaurant_name || 
-                `Restaurante ${restaurant.base_restaurant?.site_number}`
-              }
-            />
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="employees" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Empleados
+                </TabsTrigger>
+                <TabsTrigger value="access" className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Accesos y Permisos
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="employees" className="space-y-6">
+                <EmployeeManagement
+                  restaurantId={restaurantId!}
+                  restaurantName={
+                    restaurant.base_restaurant?.restaurant_name || 
+                    `Restaurante ${restaurant.base_restaurant?.site_number}`
+                  }
+                />
+              </TabsContent>
+
+              <TabsContent value="access" className="space-y-6">
+                <RestaurantMembersManager
+                  restaurantId={restaurantId!}
+                  showHeader={false}
+                />
+              </TabsContent>
+            </Tabs>
           </main>
         </SidebarInset>
       </div>

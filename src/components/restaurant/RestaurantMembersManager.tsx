@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LoadingFallback } from '@/components/common/LoadingFallback';
 import { RestaurantAccessControl } from './RestaurantAccessControl';
+import { AddMemberDialog } from './AddMemberDialog';
 import { Users, MoreHorizontal, UserPlus, Search, Shield, UserX } from 'lucide-react';
 import type { RestaurantMembersManagerProps, RestaurantRole } from '@/types/domains/restaurant/rbac';
 
@@ -40,6 +41,7 @@ export const RestaurantMembersManager: React.FC<RestaurantMembersManagerProps> =
 }) => {
   const { canPerformAction } = useRestaurantAccess(restaurantId);
   const [filters, setFilters] = useState({ search: '', role: undefined as RestaurantRole | undefined });
+  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
   
   const { 
     members, 
@@ -86,7 +88,7 @@ export const RestaurantMembersManager: React.FC<RestaurantMembersManagerProps> =
           </div>
           
           <RestaurantAccessControl restaurantId={restaurantId} requiredRole="manager">
-            <Button>
+            <Button onClick={() => setShowAddMemberDialog(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
               Agregar Miembro
             </Button>
@@ -260,6 +262,16 @@ export const RestaurantMembersManager: React.FC<RestaurantMembersManagerProps> =
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog para agregar miembro */}
+      <AddMemberDialog
+        restaurantId={restaurantId}
+        open={showAddMemberDialog}
+        onOpenChange={setShowAddMemberDialog}
+        onMemberAdded={() => {
+          // El hook se recarga automáticamente
+        }}
+      />
     </div>
   );
 };
