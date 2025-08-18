@@ -21,7 +21,7 @@ const ProfitLossDashboard = ({ restaurantId }: ProfitLossDashboardProps) => {
   const [viewMode, setViewMode] = useState<'table' | 'charts'>('table');
   const [showOnlyTotals, setShowOnlyTotals] = useState(false);
 
-  const { profitLossData, isLoading, error } = useProfitLossData(restaurantId, selectedYear);
+  const { profitLossData, isLoading, error } = useProfitLossData({ restaurantId, year: selectedYear });
   const { calculateMetrics, formatCurrency, formatPercentage } = useProfitLossCalculations();
 
   // Generar años disponibles (último 5 años + próximo año)

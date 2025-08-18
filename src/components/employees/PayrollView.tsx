@@ -19,7 +19,7 @@ interface PayrollViewProps {
 export const PayrollView: React.FC<PayrollViewProps> = ({ employees, restaurantId }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
-  const { payrollRecords, loading, fetchPayrollRecords, generatePayroll, updatePayrollStatus } = usePayroll(restaurantId);
+  const { payrollRecords, loading, refetch, generatePayroll, updatePayrollStatus } = usePayroll({ restaurantId: restaurantId || '' });
   const { importJanuaryPayroll, loading: importLoading } = useOrquestPayroll();
   const { franchisee } = useAuth();
 
@@ -32,7 +32,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees, restaurantI
 
   const handleMonthChange = (month: string) => {
     setSelectedMonth(month);
-    fetchPayrollRecords(month);
+    refetch();
   };
 
   const handleGeneratePayrolls = async () => {
@@ -45,7 +45,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees, restaurantI
     const activeEmployees = employees.filter(emp => emp.status === 'active');
     
     for (const employee of activeEmployees) {
-      await generatePayroll(employee.id, periodStart, periodEnd);
+      await generatePayroll({ employeeId: employee.id, periodStart, periodEnd });
     }
   };
 
@@ -58,7 +58,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees, restaurantI
     await importJanuaryPayroll(franchisee.id);
     
     // Refrescar datos después de importar
-    await fetchPayrollRecords(selectedMonth);
+    refetch();
   };
 
   const filteredPayroll = selectedEmployee && selectedEmployee !== 'all'

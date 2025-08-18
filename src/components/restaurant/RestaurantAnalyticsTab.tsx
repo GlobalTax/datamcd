@@ -9,7 +9,7 @@ interface RestaurantAnalyticsTabProps {
 }
 
 export const RestaurantAnalyticsTab: React.FC<RestaurantAnalyticsTabProps> = ({ restaurantId }) => {
-  const { analytics, loading } = useRestaurantAnalytics(restaurantId);
+  const { analytics, loading } = useRestaurantAnalytics({ restaurantId });
 
   if (loading) {
     return (

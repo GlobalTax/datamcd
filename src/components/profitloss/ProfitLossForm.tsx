@@ -23,7 +23,7 @@ interface ProfitLossFormProps {
 }
 
 export const ProfitLossForm = ({ restaurantId, onClose, editData }: ProfitLossFormProps) => {
-  const { createProfitLossData, updateProfitLossData } = useProfitLossData();
+  const { createProfitLossData, updateProfitLossData } = useProfitLossData({ restaurantId });
   
   const [formData, setFormData] = useState<ProfitLossFormData>({
     restaurant_id: restaurantId,

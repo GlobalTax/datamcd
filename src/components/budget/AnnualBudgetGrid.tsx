@@ -35,8 +35,7 @@ export const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({
     reloadData
   } = useBudgets({ 
     restaurantId, 
-    year,
-    autoFetch: true 
+    year
   });
 
   const {
@@ -111,11 +110,9 @@ export const AnnualBudgetGrid: React.FC<AnnualBudgetGridProps> = ({
           loading={loading}
           budgetData={rowData}
           restaurantName={restaurantName}
-          onSave={async () => {
-            const success = await saveAnnualBudgets(restaurantId, year, rowData);
-            if (success) {
-              toast.success('Presupuesto guardado correctamente');
-            }
+          onSave={() => {
+            saveAnnualBudgets(rowData);
+            toast.success('Presupuesto guardado correctamente');
           }}
           viewMode={viewMode}
           onToggleViewMode={handleToggleViewMode}

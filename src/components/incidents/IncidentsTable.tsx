@@ -131,7 +131,7 @@ export const IncidentsTable = ({ incidents, isLoading }: IncidentsTableProps) =>
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [viewMode, setViewMode] = useState<'compact' | 'full'>('compact');
 
-  const { updateIncident, deleteIncident } = useIncidents();
+  const { updateIncident, deleteIncident } = useIncidents({ restaurantId: 'temp' });
 
   const handleView = (incident: any) => {
     setSelectedIncident(incident);
