@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/auth/AuthProvider';
 import { useUserCreation } from '@/hooks/useUserCreation';
@@ -126,9 +125,9 @@ export const UserCreationPanel: React.FC<UserCreationPanelProps> = ({ onUserCrea
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mínimo 8 caracteres"
                 required
-                minLength={6}
+                minLength={8}
               />
             </div>
             
@@ -157,7 +156,7 @@ export const UserCreationPanel: React.FC<UserCreationPanelProps> = ({ onUserCrea
 
           <Button 
             type="submit" 
-            className="w-full bg-blue-600 hover:bg-blue-700"
+            className="w-full"
             disabled={creating}
           >
             {creating ? (

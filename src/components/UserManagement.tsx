@@ -53,31 +53,31 @@ const UserManagement = () => {
   };
 
   const handleDeleteUser = async (userId: string, userName: string, targetUserRole: string) => {
-    // Validate deletion permissions
-    const canDelete = await validateUserDeletion(userId);
-    if (!canDelete) {
-      toast.error('No tienes permisos para eliminar este usuario');
-      return;
-    }
-
     if (!confirm(`¿Estás seguro de que quieres eliminar a ${userName}?`)) {
       return;
     }
 
     try {
-      // Eliminar perfil (esto también eliminará el usuario de auth por cascade)
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
+      // Call admin-users edge function for secure deletion
+      const { data, error } = await supabase.functions.invoke('admin-users/delete', {
+        body: {
+          userId,
+          reason: `Eliminación desde panel de administración por ${user?.email}`
+        }
+      });
 
       if (error) {
         logger.error('Failed to delete user', { error: error.message, action: 'delete_user' });
-        toast.error('Error al eliminar usuario');
+        toast.error(`Error al eliminar usuario: ${error.message}`);
         return;
       }
 
-      toast.success('Usuario eliminado exitosamente');
+      if (!data?.success) {
+        toast.error(data?.error || 'Error al eliminar usuario');
+        return;
+      }
+
+      toast.success(data.message || 'Usuario eliminado exitosamente');
       fetchUsers();
     } catch (error) {
       logger.error('Error in handleDeleteUser', { error: error.message, action: 'delete_user' });

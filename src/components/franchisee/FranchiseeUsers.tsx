@@ -211,22 +211,31 @@ export const FranchiseeUsers = forwardRef<FranchiseeUsersRef, FranchiseeUsersPro
     }
 
     try {
-      // Eliminar perfil (esto también eliminará el usuario de auth por cascade)
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
+      // Call admin-users edge function for secure deletion
+      const { data, error } = await supabase.functions.invoke('admin-users/delete', {
+        body: {
+          userId,
+          franchiseeId,
+          reason: `Eliminación desde gestión de franquiciado por ${user?.email}`
+        }
+      });
 
       if (error) {
         logger.error('Error deleting user', { 
           component: 'FranchiseeUsers',
-          userId
-        }, error);
-        toast.error('Error al eliminar usuario');
+          userId,
+          error
+        });
+        toast.error(`Error al eliminar usuario: ${error.message}`);
         return;
       }
 
-      toast.success('Usuario eliminado exitosamente');
+      if (!data?.success) {
+        toast.error(data?.error || 'Error al eliminar usuario');
+        return;
+      }
+
+      toast.success(data.message || 'Usuario eliminado exitosamente');
       fetchFranchiseeUsers();
     } catch (error) {
       logger.error('Error in handleDeleteUser', { 

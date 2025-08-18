@@ -9,98 +9,59 @@ export const useDeleteUser = () => {
   const { user } = useUnifiedAuth();
   const [deleting, setDeleting] = useState(false);
 
-  const deleteUser = async (franchiseeId: string, userId: string, userName: string) => {
+  const deleteUser = async (franchiseeId: string, userId: string, userName: string, restaurantId?: string) => {
     if (!user) {
       toast.error('No tienes permisos para eliminar usuarios');
       return false;
     }
 
-    // Server-side validation using our new function
-    const { data: canDeleteUser, error: deletionValidationError } = await supabase
-      .rpc('validate_user_deletion', {
-        target_user_id: userId,
-        deleter_user_id: user.id
-      });
-
-    if (deletionValidationError) {
-      logger.error('Error validating user deletion', {
-        component: 'useDeleteUser',
-        error: deletionValidationError,
-        targetUserId: userId
-      });
-      toast.error('Error al validar permisos de eliminación');
-      return false;
-    }
-
-    if (!canDeleteUser) {
-      logger.warn('Unauthorized user deletion attempt', {
-        component: 'useDeleteUser',
-        attemptedBy: user.id,
-        targetUserId: userId
-      });
-      toast.error('No tienes permisos para eliminar este usuario');
-      return false;
-    }
-
     try {
       setDeleting(true);
-      logger.info('Starting user deletion', { 
+      logger.info('Starting user deletion via admin-users endpoint', { 
         component: 'useDeleteUser',
         action: 'deleteUser',
         franchiseeId,
         userId,
         userName,
+        restaurantId,
         deletedBy: user.id
       });
 
-      // 1. Desvincular el franquiciado del usuario (esto es lo más importante)
-      const { error: franchiseeError } = await supabase
-        .from('franchisees')
-        .update({ user_id: null })
-        .eq('id', franchiseeId)
-        .eq('user_id', userId); // Asegurar que solo actualizamos el franquiciado correcto
+      // Call admin-users edge function for secure deletion
+      const { data, error } = await supabase.functions.invoke('admin-users/delete', {
+        body: {
+          userId,
+          franchiseeId,
+          restaurantId,
+          reason: `Eliminación solicitada por ${user.email}`
+        }
+      });
 
-      if (franchiseeError) {
-        console.error('Error desvinculando franquiciado:', franchiseeError);
-        toast.error('Error al desvincular el acceso del franquiciado');
+      if (error) {
+        logger.error('Error from admin-users delete function', {
+          component: 'useDeleteUser',
+          error,
+          targetUserId: userId
+        });
+        toast.error(`Error al eliminar usuario: ${error.message}`);
         return false;
       }
 
-      console.log('Franquiciado desvinculado exitosamente');
-
-      // 2. Marcar invitaciones como expiradas
-      const { error: invitationError } = await supabase
-        .from('franchisee_invitations')
-        .update({ status: 'expired' })
-        .eq('franchisee_id', franchiseeId);
-
-      if (invitationError) {
-        console.error('Error actualizando invitaciones:', invitationError);
-        // No es crítico, continuamos
+      if (!data?.success) {
+        toast.error(data?.error || 'Error al eliminar usuario');
+        return false;
       }
 
-      // 3. Intentar eliminar el perfil (opcional, el usuario puede seguir existiendo)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-      if (profileError) {
-        console.error('Error eliminando perfil:', profileError);
-        // No es crítico para el proceso principal
-      } else {
-        console.log('Perfil eliminado exitosamente');
-      }
-
-      // Nota: No podemos eliminar el usuario de auth.users con el token actual
-      // pero hemos desvinculado al franquiciado, que es lo más importante
-      
-      toast.success(`Acceso eliminado para ${userName}. El franquiciado ya no tiene acceso al sistema.`);
+      toast.success(data.message || `Usuario ${userName} eliminado exitosamente`);
       return true;
 
     } catch (error) {
-      console.error('Error en deleteUser:', error);
-      toast.error('Error inesperado al eliminar acceso de usuario');
+      logger.error('Error in deleteUser', {
+        component: 'useDeleteUser',
+        error: error as Error,
+        targetUserId: userId
+      });
+      toast.error('Error inesperado al eliminar usuario');
       return false;
     } finally {
       setDeleting(false);

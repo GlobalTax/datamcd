@@ -1,5 +1,8 @@
 project_id = "ckvqfrppnfhoadcpqhld"
 
+[functions.admin-users]
+verify_jwt = true
+
 [functions.biloop-integration]
 verify_jwt = true
 

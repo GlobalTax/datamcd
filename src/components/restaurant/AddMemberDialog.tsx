@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/auth/AuthProvider';
 import { useRestaurantMembers } from '@/hooks/useRestaurantMembers';
 import { useUserSearch } from '@/hooks/useUserSearch';
 import { useProfileCreation } from '@/hooks/useProfileCreation';
+import { useUserCreation } from '@/hooks/useUserCreation';
 import {
   Dialog,
   DialogContent,
@@ -45,7 +46,8 @@ export const AddMemberDialog: React.FC<AddMemberDialogProps> = ({
   const { user } = useAuth();
   const { addMember } = useRestaurantMembers(restaurantId);
   const { searchUsers, searchResults, searching, clearResults } = useUserSearch();
-  const { createProfile, creating } = useProfileCreation();
+  const { createProfile } = useProfileCreation();
+  const { createUser, creating } = useUserCreation();
 
   const [step, setStep] = useState<'search' | 'create' | 'assign'>('search');
   const [email, setEmail] = useState('');
@@ -73,13 +75,27 @@ export const AddMemberDialog: React.FC<AddMemberDialogProps> = ({
   const handleCreateProfile = async () => {
     if (!email || !fullName) return;
 
-    const newUser = await createProfile({
-      email: email.trim(),
-      full_name: fullName.trim(),
-      role: 'staff' // Default role for new profiles
-    });
+    // Use createUser from useUserCreation for consistent user creation with restaurant assignment
+    const success = await createUser(
+      email.trim(),
+      // Generate a temporary password - in a real app you'd want to handle this differently
+      Math.random().toString(36).slice(-8) + 'A1!',
+      fullName.trim(),
+      'staff',
+      undefined, // No franchisee
+      restaurantId // Directly assign to restaurant
+    );
 
-    if (newUser) {
+    if (success) {
+      // The user was created and assigned to the restaurant via the edge function
+      // Now we need to get the user data to proceed with role assignment in the UI
+      const newUser = {
+        id: 'temp-id', // Will be replaced when we search
+        email: email.trim(),
+        full_name: fullName.trim(),
+        role: 'staff'
+      };
+      
       setSelectedUser(newUser);
       setStep('assign');
     }

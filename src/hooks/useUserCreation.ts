@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
@@ -15,190 +14,39 @@ export const useUserCreation = () => {
     password: string, 
     fullName: string, 
     role: UserRole = 'franchisee',
-    existingFranchiseeId?: string
+    existingFranchiseeId?: string,
+    restaurantId?: string
   ) => {
     if (!user) {
       toast.error('No tienes permisos para crear usuarios');
       return false;
     }
 
-    // Enhanced input validation and sanitization
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email) || email.length > 254) {
-      toast.error('Email inválido');
-      return false;
-    }
-
-    const sanitizedEmail = email.trim().toLowerCase();
-    const sanitizedFullName = fullName.trim().replace(/[<>]/g, '');
-    
-    if (sanitizedFullName.length < 2 || sanitizedFullName.length > 100) {
-      toast.error('Nombre debe tener entre 2 y 100 caracteres');
-      return false;
-    }
-
-    // Enhanced password validation
-    if (password.length < 8 || password.length > 128) {
-      toast.error('Contraseña debe tener entre 8 y 128 caracteres');
-      return false;
-    }
-
-    // Server-side role validation using our enhanced function
-    const { data: canAssignRole, error: roleValidationError } = await supabase
-      .rpc('validate_admin_action_enhanced', {
-        action_type: 'user_creation',
-        target_user_id: null,
-        action_data: { role, email: sanitizedEmail }
-      });
-
-    if (roleValidationError) {
-      console.error('Error validating user creation:', roleValidationError);
-      toast.error('Error al validar permisos');
-      return false;
-    }
-
-    if (!canAssignRole) {
-      toast.error('No tienes permisos para crear este usuario');
-      return false;
-    }
-
     try {
       setCreating(true);
-      console.log('Creando usuario:', { email, fullName, role, existingFranchiseeId });
+      console.log('Creating user via admin-users endpoint:', { email, fullName, role, existingFranchiseeId, restaurantId });
 
-      // Verificar si ya existe un perfil con este email
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (existingProfile) {
-        toast.error('Ya existe un usuario con este email');
-        return false;
-      }
-
-      // Crear usuario con signUp normal pero con datos adicionales
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: role
-          }
+      // Call admin-users edge function
+      const { data, error } = await supabase.functions.invoke('admin-users/create', {
+        body: {
+          email: email.trim().toLowerCase(),
+          password,
+          fullName: fullName.trim(),
+          role,
+          existingFranchiseeId,
+          restaurantId
         }
       });
 
-      if (signUpError) {
-        console.error('Error with signUp:', signUpError);
-        toast.error(`Error al crear usuario: ${signUpError.message}`);
+      if (error) {
+        console.error('Error from admin-users function:', error);
+        toast.error(`Error al crear usuario: ${error.message}`);
         return false;
       }
 
-      if (!signUpData.user) {
-        toast.error('Error al crear usuario - no se recibió el usuario');
+      if (!data?.success) {
+        toast.error(data?.error || 'Error al crear usuario');
         return false;
-      }
-
-      console.log('Usuario creado:', signUpData.user);
-
-      // Esperar un momento para que el trigger funcione
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Verificar si el perfil se creó automáticamente, si no, crearlo manualmente
-      const { data: profileData, error: profileCheckError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', signUpData.user.id)
-        .maybeSingle();
-
-      if (profileCheckError) {
-        console.error('Error checking profile:', profileCheckError);
-      }
-
-      if (!profileData) {
-        console.log('Perfil no encontrado, creando manualmente...');
-        // Crear perfil manualmente si el trigger no funcionó
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: signUpData.user.id,
-            email: email,
-            full_name: fullName,
-            role: role
-          });
-
-        if (profileError) {
-          console.error('Error creating profile manually:', profileError);
-          toast.error('Usuario creado pero error al crear perfil: ' + profileError.message);
-          return false;
-        }
-      } else {
-        console.log('Perfil encontrado, actualizando rol...');
-        // Actualizar el rol si el perfil ya existe pero con rol incorrecto
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ role: role, full_name: fullName })
-          .eq('id', signUpData.user.id);
-
-        if (updateError) {
-          console.error('Error updating profile role:', updateError);
-          toast.error('Usuario creado pero error al actualizar el rol');
-          return false;
-        }
-      }
-
-      // Si es franquiciado, manejar la asignación
-      if (role === 'franchisee') {
-        if (existingFranchiseeId) {
-          // Vincular usuario a franquiciado existente
-          const { error: updateError } = await supabase
-            .from('franchisees')
-            .update({ user_id: signUpData.user.id })
-            .eq('id', existingFranchiseeId);
-
-          if (updateError) {
-            console.error('Error linking to existing franchisee:', updateError);
-            toast.error('Usuario creado pero error al vincular con franquiciado existente');
-            return false;
-          }
-
-          console.log('Usuario vinculado a franquiciado existente:', existingFranchiseeId);
-        } else {
-          // Crear nuevo franquiciado
-          const { error: franchiseeError } = await supabase
-            .from('franchisees')
-            .insert({
-              user_id: signUpData.user.id,
-              franchisee_name: fullName
-            });
-
-          if (franchiseeError) {
-            console.error('Error creating franchisee:', franchiseeError);
-            toast.error('Usuario creado pero error al crear franquiciado');
-            return false;
-          }
-        }
-      }
-
-      // Si es staff, manejar la asignación a franquiciado
-      if (role === 'staff' && existingFranchiseeId) {
-        const { error: staffError } = await supabase
-          .from('franchisee_staff')
-          .insert({
-            user_id: signUpData.user.id,
-            franchisee_id: existingFranchiseeId,
-            position: 'Empleado'
-          });
-
-        if (staffError) {
-          console.error('Error creating staff assignment:', staffError);
-          toast.error('Usuario creado pero error al asignar como staff');
-          return false;
-        }
-
-        console.log('Usuario asignado como staff del franquiciado:', existingFranchiseeId);
       }
 
       toast.success(`Usuario ${fullName} creado exitosamente`);
