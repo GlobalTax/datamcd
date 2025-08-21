@@ -4248,6 +4248,10 @@ export type Database = {
             }
         Returns: undefined
       }
+      log_sensitive_data_access: {
+        Args: { access_type?: string; record_id: string; table_name: string }
+        Returns: undefined
+      }
       manually_assign_restaurants_to_existing_franchisees: {
         Args: Record<PropertyKey, never>
         Returns: undefined
