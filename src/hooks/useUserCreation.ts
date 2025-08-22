@@ -34,7 +34,8 @@ export const useUserCreation = () => {
           fullName: fullName.trim(),
           role,
           existingFranchiseeId,
-          restaurantId
+          restaurantId,
+          mustChangePassword: true // Forzar cambio de contraseña en primer login
         }
       });
 

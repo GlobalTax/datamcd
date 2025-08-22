@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { FirstLoginModal } from '@/components/auth/FirstLoginModal';
 
 // Tipos consolidados - Simplificado para superadmin
 interface UserProfile {
@@ -107,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [franchisee, setFranchisee] = useState<Franchisee | null>(null);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFirstLoginModal, setShowFirstLoginModal] = useState(false);
   
   // Referencias para control de estado
   const authInitialized = useRef(false);
@@ -171,6 +173,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: profile.email,
         isAdmin: profile.role === 'superadmin' || profile.role === 'admin'
       });
+
+      // Verificar si debe cambiar contraseña (primer login)
+      if (session?.user?.user_metadata?.must_change_password !== false) {
+        setShowFirstLoginModal(true);
+      }
 
       // Solo cargar franquiciado para usuarios que no son superadmin/admin
       if (profile.role !== 'superadmin' && profile.role !== 'admin') {
@@ -494,6 +501,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionExists: !!session?.access_token
   }), [user, session, franchisee, loading]);
 
+  // Manejar completar el cambio de contraseña del primer login
+  const handleFirstLoginComplete = useCallback(() => {
+    setShowFirstLoginModal(false);
+    toast.success('¡Bienvenido! Configuración completada correctamente');
+  }, []);
+
   const value: AuthContextType = {
     // Estados principales
     user,
@@ -520,6 +533,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <AuthContext.Provider value={value}>
       {children}
+      
+      {/* Modal de primer login */}
+      {showFirstLoginModal && user && (
+        <FirstLoginModal
+          isOpen={showFirstLoginModal}
+          userEmail={user.email}
+          onPasswordChanged={handleFirstLoginComplete}
+        />
+      )}
     </AuthContext.Provider>
   );
 };

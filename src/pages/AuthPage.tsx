@@ -150,9 +150,8 @@ const AuthPage = () => {
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
-                <TabsTrigger value="signup">Registrarse</TabsTrigger>
                 <TabsTrigger value="reset">Recuperar</TabsTrigger>
               </TabsList>
               
@@ -209,101 +208,6 @@ const AuthPage = () => {
                 </form>
               </TabsContent>
               
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Nombre Completo</Label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                      placeholder="Tu nombre completo"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signupEmail">Email</Label>
-                    <Input
-                      id="signupEmail"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      placeholder="tu.email@ejemplo.com"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signupPassword">Contraseña</Label>
-                    <div className="relative">
-                      <Input
-                        id="signupPassword"
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => handlePasswordChange(e.target.value)}
-                        required
-                        placeholder="Mínimo 8 caracteres con mayúscula, número y carácter especial"
-                        className={`pr-10 ${passwordErrors.length > 0 ? 'border-red-500' : ''} ${passwordStrength === 'fuerte' ? 'border-green-500' : ''}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    
-                    {/* Password strength indicator */}
-                    {password.length > 0 && (
-                      <div className="space-y-1">
-                        {passwordStrength && (
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-full rounded-full ${
-                              passwordStrength === 'débil' ? 'bg-red-200' : 
-                              passwordStrength === 'media' ? 'bg-yellow-200' : 'bg-green-200'
-                            }`}>
-                              <div className={`h-full rounded-full transition-all duration-300 ${
-                                passwordStrength === 'débil' ? 'w-1/3 bg-red-500' : 
-                                passwordStrength === 'media' ? 'w-2/3 bg-yellow-500' : 'w-full bg-green-500'
-                              }`} />
-                            </div>
-                            <span className={`text-xs ${
-                              passwordStrength === 'débil' ? 'text-red-600' : 
-                              passwordStrength === 'media' ? 'text-yellow-600' : 'text-green-600'
-                            }`}>
-                              {passwordStrength}
-                            </span>
-                          </div>
-                        )}
-                        
-                        {passwordErrors.length > 0 && (
-                          <div className="text-xs text-red-600">
-                            {passwordErrors[0]}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-red-600 hover:bg-red-700"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creando cuenta...
-                      </>
-                    ) : (
-                      'Crear Cuenta de Franquiciado'
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
 
               <TabsContent value="reset">
                 <form onSubmit={handlePasswordReset} className="space-y-4">
@@ -348,15 +252,20 @@ const AuthPage = () => {
             </Tabs>
 
             <div className="mt-6 pt-4 border-t text-center">
-              <p className="text-sm text-gray-600">
-                ¿Eres asesor de McDonald's?{' '}
-                <button
-                  onClick={() => navigate('/advisor-auth')}
-                  className="text-blue-600 hover:text-blue-700 underline font-medium"
-                >
-                  Accede aquí
-                </button>
-              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  ¿Eres asesor de McDonald's?{' '}
+                  <button
+                    onClick={() => navigate('/advisor-auth')}
+                    className="text-blue-600 hover:text-blue-700 underline font-medium"
+                  >
+                    Accede aquí
+                  </button>
+                </p>
+                <p className="text-xs text-gray-500">
+                  Si necesitas una cuenta, contacta con tu administrador
+                </p>
+              </div>
             </div>
 
           </CardContent>
