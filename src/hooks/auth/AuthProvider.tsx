@@ -5,6 +5,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { FirstLoginModal } from '@/components/auth/FirstLoginModal';
+import { useRateLimiting } from '@/hooks/useRateLimiting';
 
 // Tipos consolidados - Simplificado para superadmin
 interface UserProfile {
@@ -109,6 +110,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFirstLoginModal, setShowFirstLoginModal] = useState(false);
+  
+  // Security enhancements
+  const { checkAuthRateLimit } = useRateLimiting();
   
   // Referencias para control de estado
   const authInitialized = useRef(false);
@@ -423,6 +427,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Acciones de autenticación
   const signIn = useCallback(async (email: string, password: string) => {
     try {
+      // Check rate limiting before attempting authentication
+      const rateLimitAllowed = await checkAuthRateLimit(email);
+      if (!rateLimitAllowed) {
+        const message = 'Demasiados intentos de inicio de sesión. Por favor, espera antes de intentar de nuevo.';
+        toast.error(message);
+        return { error: message };
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -441,7 +453,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error('Error inesperado al iniciar sesión');
       return { error: 'Error inesperado al iniciar sesión' };
     }
-  }, []);
+  }, [checkAuthRateLimit]);
 
   const signUp = useCallback(async (email: string, password: string, fullName: string) => {
     try {

@@ -1,173 +1,164 @@
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/auth/AuthProvider';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface AuditLogEntry {
   action_type: string;
   table_name?: string;
   record_id?: string;
-  old_values?: any;
-  new_values?: any;
-  ip_address?: string;
-  user_agent?: string;
+  old_values?: Record<string, any>;
+  new_values?: Record<string, any>;
 }
 
 export const useSecurityAudit = () => {
   const { user } = useAuth();
 
-  const logAction = async (entry: AuditLogEntry) => {
+  const logAction = useCallback(async (entry: AuditLogEntry) => {
     if (!user?.id) return;
 
     try {
-      // Get client IP and user agent (if available)
-      const clientInfo = {
-        ip_address: entry.ip_address || 'unknown',
-        user_agent: entry.user_agent || navigator.userAgent,
-      };
-
-      const { error } = await supabase
-        .from('audit_logs')
-        .insert({
-          user_id: user.id,
-          action_type: entry.action_type,
-          table_name: entry.table_name,
-          record_id: entry.record_id,
-          old_values: entry.old_values,
-          new_values: entry.new_values,
-          ip_address: clientInfo.ip_address,
-          user_agent: clientInfo.user_agent,
-        });
-
-      if (error) {
-        console.error('Error logging audit entry:', error);
-      }
+      await supabase.from('audit_logs').insert({
+        user_id: user.id,
+        action_type: entry.action_type,
+        table_name: entry.table_name,
+        record_id: entry.record_id,
+        old_values: entry.old_values,
+        new_values: {
+          ...entry.new_values,
+          timestamp: new Date().toISOString(),
+          user_agent: navigator.userAgent,
+          ip_address: null // Will be logged server-side
+        }
+      });
     } catch (error) {
       console.error('Failed to log audit entry:', error);
     }
-  };
+  }, [user]);
 
-  const logUserCreation = async (newUser: any) => {
+  const logUserCreation = useCallback(async (newUser: any) => {
     await logAction({
-      action_type: 'user_created',
+      action_type: 'USER_CREATED',
       table_name: 'profiles',
       record_id: newUser.id,
       new_values: {
         email: newUser.email,
         role: newUser.role,
-        full_name: newUser.full_name,
-      },
+        created_by_admin: true
+      }
     });
-  };
+  }, [logAction]);
 
-  const logUserDeletion = async (deletedUserId: string, deletedUserData: any) => {
+  const logUserDeletion = useCallback(async (deletedUserId: string, deletedUserData: any) => {
     await logAction({
-      action_type: 'user_deleted',
+      action_type: 'USER_DELETED',
       table_name: 'profiles',
       record_id: deletedUserId,
-      old_values: deletedUserData,
+      old_values: deletedUserData
     });
-  };
+  }, [logAction]);
 
-  const logRoleChange = async (userId: string, oldRole: string, newRole: string) => {
+  const logRoleChange = useCallback(async (userId: string, oldRole: string, newRole: string) => {
     await logAction({
-      action_type: 'role_changed',
+      action_type: 'ROLE_CHANGED',
       table_name: 'profiles',
       record_id: userId,
       old_values: { role: oldRole },
-      new_values: { role: newRole },
+      new_values: { role: newRole }
     });
-  };
+  }, [logAction]);
 
-  const logSensitiveDataAccess = async (tableName: string, recordId?: string) => {
+  const logSensitiveDataAccess = useCallback(async (tableName: string, recordId?: string) => {
     await logAction({
-      action_type: 'sensitive_data_access',
+      action_type: 'SENSITIVE_DATA_ACCESS',
       table_name: tableName,
       record_id: recordId,
+      new_values: {
+        access_type: 'READ',
+        user_role: user?.role
+      }
     });
-  };
+  }, [logAction, user]);
 
-  const logFailedAuthentication = async (email: string, reason: string) => {
+  const logFailedAuthentication = useCallback(async (email: string, reason: string) => {
     await logAction({
-      action_type: 'failed_authentication',
-      new_values: { email, reason },
+      action_type: 'FAILED_AUTHENTICATION',
+      table_name: 'auth_attempts',
+      record_id: email,
+      new_values: {
+        failure_reason: reason,
+        attempt_time: new Date().toISOString()
+      }
     });
-  };
+  }, [logAction]);
 
-  const logPermissionDenied = async (resource: string, action: string) => {
+  const logPermissionDenied = useCallback(async (resource: string, action: string) => {
     await logAction({
-      action_type: 'permission_denied',
-      new_values: { resource, action },
+      action_type: 'PERMISSION_DENIED',
+      table_name: resource,
+      new_values: {
+        attempted_action: action,
+        user_role: user?.role
+      }
     });
-  };
+  }, [logAction, user]);
 
-  // Security monitoring functions
-  const checkForSuspiciousActivity = async () => {
+  // Enhanced security monitoring
+  const checkForSuspiciousActivity = useCallback(async () => {
     if (!user?.id) return;
 
     try {
       // Check for multiple failed logins in the last hour
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      
-      const { data: failedLogins, error } = await supabase
+      const { data: suspiciousActivity } = await supabase
         .from('audit_logs')
         .select('*')
+        .eq('action_type', 'FAILED_AUTHENTICATION')
         .eq('user_id', user.id)
-        .eq('action_type', 'failed_authentication')
-        .gte('created_at', oneHourAgo);
+        .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+        .limit(10);
 
-      if (error) throw error;
+      if (suspiciousActivity && suspiciousActivity.length >= 5) {
+        toast.error('Actividad Sospechosa Detectada: Se han detectado múltiples intentos de inicio de sesión fallidos en tu cuenta.');
 
-      if (failedLogins && failedLogins.length >= 5) {
-        toast({
-          title: 'Actividad sospechosa detectada',
-          description: 'Se han detectado múltiples intentos de autenticación fallidos en su cuenta.',
-          variant: 'destructive',
-        });
-        
-        // Log the suspicious activity
+        // Log security event
         await logAction({
-          action_type: 'suspicious_activity_detected',
-          new_values: { 
-            type: 'multiple_failed_logins',
-            count: failedLogins.length 
-          },
+          action_type: 'SUSPICIOUS_ACTIVITY_DETECTED',
+          new_values: {
+            event_type: 'multiple_failed_logins',
+            count: suspiciousActivity.length,
+            time_window: '1_hour'
+          }
         });
       }
     } catch (error) {
       console.error('Error checking for suspicious activity:', error);
     }
-  };
+  }, [user, logAction]);
 
-  const validateDataAccess = async (tableName: string, recordId?: string): Promise<boolean> => {
+  // Validate data access permissions
+  const validateDataAccess = useCallback(async (tableName: string, recordId?: string): Promise<boolean> => {
     if (!user) return false;
 
-    try {
-      // Check if user has permission to access this data
-      const { data: userRole } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (!userRole) return false;
-
-      // Log the data access attempt
-      await logSensitiveDataAccess(tableName, recordId);
-
-      // Basic role-based access control
-      const sensitiveDataAccess = ['admin', 'superadmin'].includes(userRole.role);
+    // Check for sensitive tables that require admin access
+    const sensitiveDataTables = ['audit_logs', 'profiles', 'franchisee_access_log', 'franchisee_activity_log'];
+    
+    if (sensitiveDataTables.includes(tableName) && !['admin', 'superadmin'].includes(user.role || '')) {
+      console.warn(`Access denied to sensitive table: ${tableName}`);
       
-      if (!sensitiveDataAccess && ['audit_logs', 'profiles'].includes(tableName)) {
-        await logPermissionDenied(tableName, 'read');
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error validating data access:', error);
+      await logPermissionDenied(tableName, 'READ');
+      
+      toast.error('Acceso Denegado: No tienes permisos para acceder a estos datos.');
+      
       return false;
     }
-  };
+
+    // Log access to sensitive data
+    if (sensitiveDataTables.includes(tableName)) {
+      await logSensitiveDataAccess(tableName, recordId);
+    }
+
+    return true;
+  }, [user, logPermissionDenied, logSensitiveDataAccess]);
 
   return {
     logAction,
@@ -178,6 +169,6 @@ export const useSecurityAudit = () => {
     logFailedAuthentication,
     logPermissionDenied,
     checkForSuspiciousActivity,
-    validateDataAccess,
+    validateDataAccess
   };
 };

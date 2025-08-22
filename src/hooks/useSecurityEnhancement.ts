@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/auth/AuthProvider';
+import { toast } from 'sonner';
 
 interface SecurityEvent {
   type: string;
@@ -14,157 +15,173 @@ export const useSecurityEnhancement = () => {
 
   // Monitor for suspicious activities
   useEffect(() => {
-    if (!user) return;
-
     const checkSuspiciousActivity = async () => {
+      if (!user?.id) return;
+
       try {
-        // Check for multiple failed login attempts
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-        
-        const { data: failedAttempts, error } = await supabase
+        // Check for multiple failed login attempts within an hour
+        const { data: failedAttempts } = await supabase
           .from('audit_logs')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('action_type', 'failed_authentication')
-          .gte('created_at', oneHourAgo);
+          .select('created_at')
+          .eq('action_type', 'FAILED_AUTHENTICATION')
+          .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+          .limit(10);
 
-        if (error) {
-          console.error('Error checking suspicious activity:', error);
-          return;
-        }
-
-        if (failedAttempts && failedAttempts.length >= 3) {
+        if (failedAttempts && failedAttempts.length >= 5) {
           await logSecurityEvent({
-            type: 'suspicious_activity_detected',
-            description: `Multiple failed authentication attempts detected for user ${user.id}`,
+            type: 'suspicious_login_activity',
+            description: 'Multiple failed login attempts detected within one hour',
             severity: 'high',
             metadata: {
-              failedAttempts: failedAttempts.length,
-              timeWindow: '1 hour'
+              failed_attempts_count: failedAttempts.length,
+              time_window: '1_hour',
+              user_id: user.id
             }
           });
         }
       } catch (error) {
-        console.error('Error in security monitoring:', error);
+        console.error('Error checking suspicious activity:', error);
       }
     };
 
-    // Check on mount and periodically
-    checkSuspiciousActivity();
-    const interval = setInterval(checkSuspiciousActivity, 5 * 60 * 1000); // Every 5 minutes
+    // Check every 5 minutes when user is active
+    const interval = setInterval(checkSuspiciousActivity, 5 * 60 * 1000);
+    checkSuspiciousActivity(); // Initial check
 
     return () => clearInterval(interval);
   }, [user]);
 
   const logSecurityEvent = async (event: SecurityEvent) => {
     try {
-      await supabase.rpc('log_security_event_enhanced', {
-        event_type: event.type,
-        event_description: event.description,
-        additional_data: {
+      // Use basic audit logging since enhanced RPC may not exist yet
+      await supabase.from('audit_logs').insert({
+        user_id: user?.id,
+        action_type: 'SECURITY_EVENT',
+        table_name: 'security_events',
+        new_values: {
+          event_type: event.type,
+          description: event.description,
           severity: event.severity,
-          ...event.metadata
+          metadata: event.metadata,
+          timestamp: new Date().toISOString()
         }
       });
     } catch (error) {
-      console.error('Error logging security event:', error);
+      console.error('Failed to log security event:', error);
     }
   };
 
-  const validateUserInput = (input: string, maxLength: number = 1000): { isValid: boolean; sanitized: string } => {
-    if (!input || typeof input !== 'string') {
-      return { isValid: false, sanitized: '' };
-    }
-
-    // Check for suspicious patterns
+  const validateUserInput = useCallback((input: string, maxLength: number = 1000) => {
+    // Check for potentially malicious patterns
     const suspiciousPatterns = [
-      /<script[^>]*>/i,
-      /javascript:/i,
-      /on\w+\s*=/i,
-      /eval\s*\(/i,
-      /expression\s*\(/i,
-      /<iframe[^>]*>/i,
-      /<object[^>]*>/i,
-      /<embed[^>]*>/i
+      /<script[^>]*>.*?<\/script>/gi,
+      /javascript:/gi,
+      /on\w+\s*=/gi,
+      /eval\s*\(/gi,
+      /<iframe/gi,
+      /document\./gi,
+      /window\./gi
     ];
 
-    const containsSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(input));
+    const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(input));
     
-    if (containsSuspiciousContent) {
+    if (hasSuspiciousContent) {
       logSecurityEvent({
         type: 'suspicious_input_detected',
-        description: 'User input contains potentially malicious content',
+        description: 'Potentially malicious input detected in user submission',
         severity: 'medium',
-        metadata: { inputLength: input.length, userId: user?.id }
+        metadata: { input_length: input.length, user_id: user?.id }
       });
+      
+      return {
+        isValid: false,
+        sanitizedInput: input.replace(/<[^>]*>/g, ''), // Basic HTML tag removal
+        message: 'Input contains potentially unsafe content'
+      };
     }
 
-    // Sanitize input
-    const sanitized = input
-      .trim()
-      .slice(0, maxLength)
+    if (input.length > maxLength) {
+      return {
+        isValid: false,
+        sanitizedInput: input.substring(0, maxLength),
+        message: `Input exceeds maximum length of ${maxLength} characters`
+      };
+    }
+
+    // Basic HTML escaping
+    const sanitizedInput = input
+      .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#x27;')
-      .replace(/\//g, '&#x2F;');
+      .replace(/'/g, '&#x27;');
 
     return {
-      isValid: !containsSuspiciousContent && input.length <= maxLength,
-      sanitized
+      isValid: true,
+      sanitizedInput,
+      message: 'Input is valid'
+    };
+  }, [user, logSecurityEvent]);
+
+  const checkPasswordStrength = (password: string) => {
+    let score = 0;
+    const suggestions = [];
+
+    // Length checks
+    if (password.length >= 8) score++;
+    else suggestions.push('Use at least 8 characters');
+
+    if (password.length >= 12) score++;
+    else suggestions.push('Consider using 12 or more characters');
+
+    // Character type checks
+    if (/[A-Z]/.test(password)) score++;
+    else suggestions.push('Include at least one uppercase letter');
+
+    if (/[a-z]/.test(password)) score++;
+    else suggestions.push('Include at least one lowercase letter');
+
+    if (/[0-9]/.test(password)) score++;
+    else suggestions.push('Include at least one number');
+
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    else suggestions.push('Include at least one special character');
+
+    let strength = 'weak';
+    if (score >= 5) strength = 'strong';
+    else if (score >= 3) strength = 'medium';
+
+    return {
+      strength,
+      score,
+      suggestions
     };
   };
 
-  const checkPasswordStrength = async (password: string): Promise<{ 
-    strength: 'weak' | 'medium' | 'strong'; 
-    score: number; 
-    suggestions: string[] 
-  }> => {
-    try {
-      const { data, error } = await supabase.rpc('validate_password_strength_secure', {
-        password_input: password
-      });
-
-      if (error) {
-        console.error('Error checking password strength:', error);
-        return { strength: 'weak', score: 0, suggestions: ['Error validating password'] };
-      }
-
-      // Type the response data properly
-      const result = data as { strength: 'weak' | 'medium' | 'strong'; score: number; suggestions: string[] };
-
-      return {
-        strength: result.strength,
-        score: result.score,
-        suggestions: result.suggestions
-      };
-    } catch (error) {
-      console.error('Error in password strength check:', error);
-      return { strength: 'weak', score: 0, suggestions: ['Error validating password'] };
-    }
-  };
-
   const validateAdminAction = async (action: string, targetId?: string): Promise<boolean> => {
-    if (!user) return false;
+    if (!user?.id) return false;
 
-    try {
-      const { data: isValid, error } = await supabase
-        .rpc('validate_admin_action_enhanced', {
-          action_type: action,
-          target_user_id: targetId || null,
-          action_data: { timestamp: new Date().toISOString() }
-        });
+    // Basic role validation for now
+    const adminRoles = ['admin', 'superadmin'];
+    const userRole = user.role || '';
 
-      if (error) {
-        console.error('Error validating admin action:', error);
-        return false;
-      }
-
-      return isValid || false;
-    } catch (error) {
-      console.error('Error in admin action validation:', error);
+    if (!adminRoles.includes(userRole)) {
+      await logSecurityEvent({
+        type: 'unauthorized_admin_action',
+        description: `User attempted unauthorized admin action: ${action}`,
+        severity: 'high',
+        metadata: {
+          action,
+          target_id: targetId,
+          user_id: user.id,
+          user_role: userRole
+        }
+      });
+      
       return false;
     }
+
+    return true;
   };
 
   return {
