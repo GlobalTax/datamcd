@@ -4193,6 +4193,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_employee_summary_for_advisor: {
+        Args: { restaurant_uuid: string }
+        Returns: {
+          employee_position: string
+          first_name: string
+          hire_date: string
+          id: string
+          last_name: string
+          status: string
+        }[]
+      }
       get_franchisee_staff_compat: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -4254,6 +4265,15 @@ export type Database = {
               user_agent_param?: string
               user_id_param?: string
             }
+        Returns: undefined
+      }
+      log_sensitive_access_attempt: {
+        Args: {
+          operation: string
+          table_name: string
+          user_role: string
+          was_granted: boolean
+        }
         Returns: undefined
       }
       log_sensitive_data_access: {
