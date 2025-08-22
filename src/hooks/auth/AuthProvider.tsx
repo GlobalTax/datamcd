@@ -174,8 +174,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin: profile.role === 'superadmin' || profile.role === 'admin'
       });
 
-      // Verificar si debe cambiar contraseña (primer login)
-      if (session?.user?.user_metadata?.must_change_password !== false) {
+      // Verificar si debe cambiar contraseña usando la nueva función de BD
+      const { data: mustChangePasswordData } = await supabase
+        .rpc('user_must_change_password', { user_uuid: userId });
+      
+      if (mustChangePasswordData) {
         setShowFirstLoginModal(true);
       }
 
@@ -502,10 +505,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }), [user, session, franchisee, loading]);
 
   // Manejar completar el cambio de contraseña del primer login
-  const handleFirstLoginComplete = useCallback(() => {
+  const handleFirstLoginComplete = useCallback(async () => {
+    if (user?.id) {
+      // Marcar contraseña como cambiada en la BD
+      await supabase.rpc('mark_password_changed', { user_uuid: user.id });
+    }
     setShowFirstLoginModal(false);
     toast.success('¡Bienvenido! Configuración completada correctamente');
-  }, []);
+  }, [user]);
 
   const value: AuthContextType = {
     // Estados principales

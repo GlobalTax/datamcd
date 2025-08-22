@@ -3654,6 +3654,30 @@ export type Database = {
           },
         ]
       }
+      user_temp_passwords: {
+        Row: {
+          changed_at: string | null
+          created_at: string
+          id: string
+          must_change_password: boolean
+          user_id: string | null
+        }
+        Insert: {
+          changed_at?: string | null
+          created_at?: string
+          id?: string
+          must_change_password?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          changed_at?: string | null
+          created_at?: string
+          id?: string
+          must_change_password?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       valuation_budgets: {
         Row: {
           budget_name: string
@@ -4169,6 +4193,10 @@ export type Database = {
         Args: { days_to_keep?: number }
         Returns: undefined
       }
+      cleanup_old_temp_passwords: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_rate_limit_records: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -4183,6 +4211,10 @@ export type Database = {
       }
       create_test_user: {
         Args: { test_email: string; test_role: string }
+        Returns: string
+      }
+      generate_secure_temp_password: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       get_current_user_role: {
@@ -4284,6 +4316,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      mark_password_changed: {
+        Args: { user_uuid: string }
+        Returns: undefined
+      }
       run_rls_tests: {
         Args: Record<PropertyKey, never>
         Returns: string[]
@@ -4322,6 +4358,10 @@ export type Database = {
       }
       user_is_staff_of_franchisee: {
         Args: { franchisee_uuid: string }
+        Returns: boolean
+      }
+      user_must_change_password: {
+        Args: { user_uuid: string }
         Returns: boolean
       }
       validate_admin_action_enhanced: {

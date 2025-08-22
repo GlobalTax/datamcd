@@ -29,6 +29,7 @@ interface CreateUserRequest {
   role: 'admin' | 'franchisee' | 'staff' | 'superadmin';
   existingFranchiseeId?: string;
   restaurantId?: string;
+  mustChangePassword?: boolean;
 }
 
 interface DeleteUserRequest {
@@ -67,7 +68,7 @@ async function validateUserRole(authHeader: string): Promise<{ userId: string; r
 }
 
 async function createUser(request: CreateUserRequest, requesterId: string): Promise<Response> {
-  const { email, password, fullName, role, existingFranchiseeId, restaurantId } = request;
+  const { email, password, fullName, role, existingFranchiseeId, restaurantId, mustChangePassword = true } = request;
 
   console.log('Creating user:', { email, fullName, role, existingFranchiseeId, restaurantId, requesterId });
 
@@ -129,6 +130,21 @@ async function createUser(request: CreateUserRequest, requesterId: string): Prom
     }
 
     console.log('User created successfully:', userData.user.id);
+
+    // Marcar como usuario que debe cambiar contraseña si es necesario
+    if (mustChangePassword) {
+      const { error: tempPasswordError } = await supabase
+        .from('user_temp_passwords')
+        .insert({
+          user_id: userData.user.id,
+          must_change_password: true
+        });
+
+      if (tempPasswordError) {
+        console.error('Error marking user for password change:', tempPasswordError);
+        // No es crítico, continuar con la creación
+      }
+    }
 
     // Create/update profile
     const { error: profileError } = await supabase
