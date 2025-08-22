@@ -4165,6 +4165,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      cleanup_old_audit_logs: {
+        Args: { days_to_keep?: number }
+        Returns: undefined
+      }
       cleanup_rate_limit_records: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -4204,6 +4208,10 @@ export type Database = {
       get_user_auth_status: {
         Args: { user_uuid: string }
         Returns: Json
+      }
+      get_user_restaurant_owner_status: {
+        Args: { restaurant_uuid: string; user_uuid: string }
+        Returns: boolean
       }
       get_user_restaurant_role: {
         Args: { _restaurant_id: string; _user_id: string }
