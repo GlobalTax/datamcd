@@ -4213,6 +4213,10 @@ export type Database = {
         Args: { test_email: string; test_role: string }
         Returns: string
       }
+      current_user_is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       generate_secure_temp_password: {
         Args: Record<PropertyKey, never>
         Returns: string
