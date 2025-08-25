@@ -42,17 +42,17 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
       if (targetFranchiseeId.startsWith('temp-')) {
         console.log('useFranchiseeRestaurants - Temporary franchisee detected, using mock data');
         
-        // Crear datos de prueba para franquiciados temporales
+        // Crear datos de prueba para franquiciados temporales con UUIDs válidos
         const mockRestaurants: FranchiseeRestaurant[] = [
           {
-            id: 'mock-1',
+            id: '550e8400-e29b-41d4-a716-446655440001',
             franchisee_id: targetFranchiseeId,
-            base_restaurant_id: 'mock-base-1',
+            base_restaurant_id: '550e8400-e29b-41d4-a716-446655440002',
             status: 'active',
             assigned_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             base_restaurant: {
-              id: 'mock-base-1',
+              id: '550e8400-e29b-41d4-a716-446655440002',
               site_number: '001',
               restaurant_name: 'McDonald\'s Test 1',
               address: 'Calle Principal 123',
@@ -75,14 +75,14 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
             }
           },
           {
-            id: 'mock-2',
+            id: '550e8400-e29b-41d4-a716-446655440003',
             franchisee_id: targetFranchiseeId,
-            base_restaurant_id: 'mock-base-2',
+            base_restaurant_id: '550e8400-e29b-41d4-a716-446655440004',
             status: 'active',
             assigned_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             base_restaurant: {
-              id: 'mock-base-2',
+              id: '550e8400-e29b-41d4-a716-446655440004',
               site_number: '002',
               restaurant_name: 'McDonald\'s Test 2',
               address: 'Avenida de la Paz 456',
