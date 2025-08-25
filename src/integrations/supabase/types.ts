@@ -4269,6 +4269,18 @@ export type Database = {
           site_number: string
         }[]
       }
+      has_restaurant_member_access: {
+        Args: { restaurant_uuid: string }
+        Returns: boolean
+      }
+      is_franchisee_owner: {
+        Args: { franchisee_uuid: string }
+        Returns: boolean
+      }
+      is_franchisee_staff_member: {
+        Args: { franchisee_uuid: string }
+        Returns: boolean
+      }
       is_superadmin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
