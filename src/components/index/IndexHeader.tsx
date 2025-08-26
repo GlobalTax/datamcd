@@ -54,7 +54,7 @@ export const IndexHeader = () => {
           <div className="flex items-center space-x-3">
             {user ? (
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">Hola, {user.full_name || user.email}</span>
+                <span className="text-sm text-gray-600">Hola, {user?.full_name || user?.email}</span>
                 <Button 
                   onClick={handleUserRedirect}
                   className="bg-red-600 hover:bg-red-700 text-white"

@@ -1,11 +1,11 @@
 // Páginas simplificadas que eliminan verificaciones de role
 import React from 'react';
-import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { Navigate } from 'react-router-dom';
 
 // AdvisorAuthPage simplificado
 export const SimplifiedAdvisorAuthPage = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -16,7 +16,7 @@ export const SimplifiedAdvisorAuthPage = () => {
 
 // AdvisorPage simplificado
 export const SimplifiedAdvisorPage = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   if (!user) {
     return <Navigate to="/auth" replace />;
@@ -32,7 +32,7 @@ export const SimplifiedAdvisorPage = () => {
 
 // DashboardPage simplificado sin impersonation
 export const SimplifiedDashboardPage = () => {
-  const { user, franchisee } = useAuth();
+  const { user, franchisee } = useUnifiedAuth();
   
   if (!user) {
     return <Navigate to="/auth" replace />;
@@ -53,7 +53,7 @@ export const SimplifiedDashboardPage = () => {
 
 // FranchiseeDetailPage simplificado
 export const SimplifiedFranchiseeDetailPage = () => {
-  const { user, franchisee } = useAuth();
+  const { user, franchisee } = useUnifiedAuth();
   
   if (!user) {
     return <Navigate to="/auth" replace />;
@@ -76,7 +76,7 @@ export const SimplifiedFranchiseeDetailPage = () => {
 
 // Index simplificado
 export const SimplifiedIndex = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -87,7 +87,7 @@ export const SimplifiedIndex = () => {
 
 // LaborDashboardPage simplificado
 export const SimplifiedLaborDashboardPage = () => {
-  const { user, franchisee } = useAuth();
+  const { user, franchisee } = useUnifiedAuth();
   
   if (!user) {
     return <Navigate to="/auth" replace />;
@@ -105,7 +105,7 @@ export const SimplifiedLaborDashboardPage = () => {
 
 // OptimizedDashboardPage simplificado
 export const SimplifiedOptimizedDashboardPage = () => {
-  const { user, franchisee } = useAuth();
+  const { user, franchisee } = useUnifiedAuth();
   
   if (!user) {
     return <Navigate to="/auth" replace />;
@@ -126,7 +126,7 @@ export const SimplifiedOptimizedDashboardPage = () => {
 
 // RestaurantDetailPage simplificado
 export const SimplifiedRestaurantDetailPage = () => {
-  const { user, franchisee } = useAuth();
+  const { user, franchisee } = useUnifiedAuth();
   
   if (!user) {
     return <Navigate to="/auth" replace />;
@@ -144,7 +144,7 @@ export const SimplifiedRestaurantDetailPage = () => {
 
 // RestaurantManagementPage simplificado
 export const SimplifiedRestaurantManagementPage = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   if (!user) {
     return <Navigate to="/auth" replace />;

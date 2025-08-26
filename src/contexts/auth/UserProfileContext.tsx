@@ -71,7 +71,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
           .rpc('create_franchisee_profile', {
             user_id: userId,
             user_email: user?.email || '',
-            user_full_name: user?.user_metadata?.full_name || ''
+            user_full_name: ''
           });
 
         if (!createError) {

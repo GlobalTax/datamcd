@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
-import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { useSecurityValidation } from '@/hooks/useSecurityValidation';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { User } from '@/types/auth';
 
 const UserManagement = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { canManageUsers, canDeleteUser, validateUserDeletion } = useSecurityValidation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);

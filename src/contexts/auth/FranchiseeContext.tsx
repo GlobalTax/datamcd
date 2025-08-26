@@ -3,11 +3,31 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { useAuth } from './AuthContext';
 import { useUserProfile } from './UserProfileContext';
-import type { Franchisee, Restaurant } from '@/types/domains';
+import type { Franchisee, UnifiedRestaurant } from '@/types/domains';
+
+// Custom type for restaurants with base restaurant data
+interface RestaurantWithBase extends UnifiedRestaurant {
+  base_restaurant?: {
+    id: string;
+    site_number: string;
+    restaurant_name: string;
+    address: string;
+    city: string;
+    state?: string;
+    postal_code?: string;
+    country: string;
+    opening_date?: string;
+    restaurant_type: string;
+    square_meters?: number;
+    seating_capacity?: number;
+    created_at?: string;
+    updated_at?: string;
+  };
+}
 
 interface FranchiseeContextType {
   franchisee: Franchisee | null;
-  restaurants: Restaurant[];
+  restaurants: RestaurantWithBase[];
   loading: boolean;
   refreshData: () => Promise<void>;
 }
@@ -30,7 +50,7 @@ export const FranchiseeProvider: React.FC<FranchiseeProviderProps> = ({ children
   const { user } = useAuth();
   const { profile } = useUserProfile();
   const [franchisee, setFranchisee] = useState<Franchisee | null>(null);
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [restaurants, setRestaurants] = useState<RestaurantWithBase[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchFranchiseeData = async (userId: string) => {
@@ -139,30 +159,45 @@ export const FranchiseeProvider: React.FC<FranchiseeProviderProps> = ({ children
         return;
       }
 
-      // Transform data to match Restaurant interface
-      const transformedRestaurants = restaurantData?.map(fr => ({
+      // Transform data to match RestaurantWithBase interface
+      const transformedRestaurants: RestaurantWithBase[] = restaurantData?.map(fr => ({
         id: fr.id,
-        franchisee_id: fr.franchisee_id,
+        base_restaurant_id: fr.base_restaurant_id || '',
         site_number: fr.base_restaurants?.site_number || '',
         restaurant_name: fr.base_restaurants?.restaurant_name || '',
         address: fr.base_restaurants?.address || '',
         city: fr.base_restaurants?.city || '',
-        state: fr.base_restaurants?.state,
-        postal_code: fr.base_restaurants?.postal_code,
+        state: fr.base_restaurants?.state || null,
+        postal_code: fr.base_restaurants?.postal_code || null,
         country: fr.base_restaurants?.country || 'España',
-        opening_date: fr.base_restaurants?.opening_date,
-        restaurant_type: (fr.base_restaurants?.restaurant_type as Restaurant['restaurant_type']) || 'traditional',
-        status: fr.status as Restaurant['status'],
-        square_meters: fr.base_restaurants?.square_meters,
-        seating_capacity: fr.base_restaurants?.seating_capacity,
-        created_at: fr.assigned_at,
+        restaurant_type: fr.base_restaurants?.restaurant_type || 'traditional',
+        opening_date: fr.base_restaurants?.opening_date || null,
+        square_meters: fr.base_restaurants?.square_meters || null,
+        seating_capacity: fr.base_restaurants?.seating_capacity || null,
+        autonomous_community: fr.base_restaurants?.autonomous_community || null,
+        property_type: fr.base_restaurants?.property_type || null,
+        status: fr.status || 'active',
+        franchisee_id: fr.franchisee_id,
+        franchise_start_date: fr.franchise_start_date || null,
+        franchise_end_date: fr.franchise_end_date || null,
+        lease_start_date: fr.lease_start_date || null,
+        lease_end_date: fr.lease_end_date || null,
+        monthly_rent: fr.monthly_rent || null,
+        franchise_fee_percentage: fr.franchise_fee_percentage || null,
+        advertising_fee_percentage: fr.advertising_fee_percentage || null,
+        last_year_revenue: fr.last_year_revenue || null,
+        average_monthly_sales: fr.average_monthly_sales || null,
+        notes: fr.notes || null,
+        franchisee_name: '',
+        company_name: null,
+        tax_id: null,
+        franchisee_city: null,
+        franchisee_country: null,
+        base_created_at: fr.assigned_at,
+        assigned_at: fr.assigned_at,
         updated_at: fr.updated_at,
-        // Additional franchise-specific data
-        franchise_start_date: fr.franchise_start_date,
-        franchise_end_date: fr.franchise_end_date,
-        monthly_rent: fr.monthly_rent,
-        last_year_revenue: fr.last_year_revenue,
-        base_restaurant_id: fr.base_restaurant_id,
+        status_display: fr.status || 'active',
+        is_assigned: true,
         base_restaurant: fr.base_restaurants
       })) || [];
 

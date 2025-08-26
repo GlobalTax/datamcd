@@ -62,6 +62,6 @@ export const useUnifiedAuth = () => {
   };
 };
 
-// Type exports
-export type { User, AuthContextType } from '@/types/domains/auth';
+// Type exports - Use the auth domain types
+export type { User, AuthContextType } from '@/types/domains/auth/types';
 export type { Franchisee, Restaurant } from '@/types/domains';

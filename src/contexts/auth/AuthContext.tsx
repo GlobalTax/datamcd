@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Session } from '@supabase/supabase-js';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import { User } from '@/types/domains/auth/types';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { useRateLimiting } from '@/hooks/useRateLimiting';
@@ -47,7 +48,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         logger.info('Auth state changed', { event, userId: session?.user?.id });
         
         setSession(session);
-        setUser(session?.user ?? null);
+        setUser(session?.user ? {
+          id: session.user.id,
+          email: session.user.email || '',
+          role: 'franchisee' as const
+        } : null);
         setLoading(false);
 
         if (event === 'SIGNED_IN') {
@@ -62,7 +67,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      setUser(session?.user ? {
+        id: session.user.id,
+        email: session.user.email || '',
+        role: 'franchisee' as const
+      } : null);
       setLoading(false);
     });
 

@@ -69,19 +69,17 @@ const OptimizedDashboardPage = () => {
   // Transformar datos para el componente
   const displayRestaurants: DisplayRestaurant[] = restaurants.map(r => ({
     id: r.id || `restaurant-${Math.random()}`,
-    name: r.base_restaurant?.restaurant_name || 'Restaurante',
-    restaurant_name: r.base_restaurant?.restaurant_name || 'Restaurante',
-    location: r.base_restaurant ? 
-      `${r.base_restaurant.city || 'Ciudad'}, ${r.base_restaurant.address || 'Dirección'}` : 
-      'Ubicación',
-    city: r.base_restaurant?.city || 'Ciudad',
-    address: r.base_restaurant?.address || 'Dirección',
-    siteNumber: r.base_restaurant?.site_number || 'N/A',
-    site_number: r.base_restaurant?.site_number || 'N/A',
+    name: r.restaurant_name || 'Restaurante',
+    restaurant_name: r.restaurant_name || 'Restaurante', 
+    location: `${r.city || 'Ciudad'}, ${r.address || 'Dirección'}`,
+    city: r.city || 'Ciudad',
+    address: r.address || 'Dirección',
+    siteNumber: r.site_number || 'N/A',
+    site_number: r.site_number || 'N/A',
     franchiseeName: effectiveFranchisee?.franchisee_name || 'Franquiciado',
     franchise_start_date: r.franchise_start_date,
     franchise_end_date: r.franchise_end_date,
-    restaurant_type: r.base_restaurant?.restaurant_type || 'traditional',
+    restaurant_type: r.restaurant_type || 'traditional',
     status: r.status || 'active',
     lastYearRevenue: typeof r.last_year_revenue === 'number' ? r.last_year_revenue : 0,
     baseRent: typeof r.monthly_rent === 'number' ? r.monthly_rent : 0,
@@ -234,7 +232,7 @@ const OptimizedDashboardPage = () => {
                             Panel de Administración Global
                           </h3>
                           <p className="text-sm text-emerald-700">
-                            Usuario: {user.full_name} ({user.email}) • Rol: {user.role}
+                            Usuario: {user?.full_name || user?.email} ({user?.email}) • Rol: {user?.role}
                           </p>
                           <p className="text-xs text-emerald-600">
                             Acceso completo al sistema - Gestión de franquiciados y restaurantes
@@ -260,7 +258,7 @@ const OptimizedDashboardPage = () => {
                               {franchisee.franchisee_name}
                             </h3>
                             <p className="text-sm text-blue-700">
-                              Usuario: {user.full_name} ({user.email}) • Rol: {user.role}
+                              Usuario: {user?.full_name || user?.email} ({user?.email}) • Rol: {user?.role}
                             </p>
                             <p className="text-xs text-blue-600">
                               ID Franquiciado: {franchisee.id} • Restaurantes: {restaurants.length}

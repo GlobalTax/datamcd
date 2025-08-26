@@ -1,11 +1,11 @@
 // Componentes simplificados que eliminan verificaciones de role
 import React from 'react';
-import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { logger } from '@/lib/logger';
 
 // Quantum components simplificados
 export const SimplifiedQuantumDataDialog = ({ children }: { children: React.ReactNode }) => {
-  const { franchisee } = useAuth();
+  const { franchisee } = useUnifiedAuth();
   
   return (
     <div onClick={() => logger.debug('Quantum data requested', { franchiseeName: franchisee?.franchisee_name })}>
@@ -15,7 +15,7 @@ export const SimplifiedQuantumDataDialog = ({ children }: { children: React.Reac
 };
 
 export const SimplifiedQuantumSyncStatus = () => {
-  const { franchisee } = useAuth();
+  const { franchisee } = useUnifiedAuth();
   
   return (
     <div className="p-4 bg-gray-50 rounded-lg">
@@ -28,7 +28,7 @@ export const SimplifiedQuantumSyncStatus = () => {
 
 // FranchiseeUsers simplificado
 export const SimplifiedFranchiseeUsers = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   if (!user) {
     return <div>Cargando...</div>;
@@ -46,7 +46,7 @@ export const SimplifiedFranchiseeUsers = () => {
 
 // DebugSection simplificado
 export const SimplifiedDebugSection = () => {
-  const { user, getDebugInfo } = useAuth();
+  const { user, getDebugInfo } = useUnifiedAuth();
   
   const debugInfo = getDebugInfo?.();
   
@@ -65,7 +65,7 @@ export const SimplifiedDebugSection = () => {
 
 // IndexHeader simplificado
 export const SimplifiedIndexHeader = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   return (
     <header className="bg-white shadow-sm">

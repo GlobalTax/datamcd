@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Calculator, Calendar, Database, Home, Settings, LogOut, Building, BarChart3, Users, Cog, AlertTriangle, Receipt, UserCheck, Store, FileText, Bell, TrendingUp, Activity, Monitor, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useUnifiedAuth } from '@/hooks/auth/useUnifiedAuth';
 import { logger } from '@/lib/logger';
 
 type GeneralMenuItem = {
@@ -190,7 +190,7 @@ export function AppSidebar() {
     signOut, 
     franchisee,
     getDebugInfo
-  } = useAuth();
+  } = useUnifiedAuth();
 
   const { setOpen, isMobile } = useSidebar();
 
