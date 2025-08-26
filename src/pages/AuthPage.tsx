@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/auth';
+import { useUnifiedAuth } from '@/contexts/auth';
 import { Loader2, Store, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -24,7 +24,7 @@ const AuthPage = () => {
   const [passwordStrength, setPasswordStrength] = useState<string>('');
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   
-  const { signIn, signUp, user, loading } = useAuth();
+  const { signIn, signUp, user, loading } = useUnifiedAuth();
   const navigate = useNavigate();
   const { validatePassword, validateEmail, sanitizeEmail, sanitizeString } = useInputValidation();
 

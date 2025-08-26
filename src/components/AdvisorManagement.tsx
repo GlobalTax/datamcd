@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/auth';
+import { useUnifiedAuth } from '@/contexts/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,7 +12,7 @@ import { advisorService } from '@/services/advisor/AdvisorService';
 import type { User } from '@/types/domains/auth';
 
 const AdvisorManagement = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [advisors, setAdvisors] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 

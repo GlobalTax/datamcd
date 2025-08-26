@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/auth';
+import { useUnifiedAuth } from '@/contexts/auth';
 import { useRestaurantContext } from '@/providers/RestaurantContext';
 import { useRestaurantAccess } from '@/hooks/useRestaurantAccess';
 import { Loader2 } from 'lucide-react';
@@ -16,7 +16,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requiredRoles, adminOnly, requiredRestaurantRoles }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useUnifiedAuth();
   const { currentRestaurantId } = useRestaurantContext();
   const [showTimeout, setShowTimeout] = useState(false);
 
