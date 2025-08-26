@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw, Wifi, WifiOff, AlertTriangle, BarChart3, Building, TrendingUp, Zap, Database, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { logger } from '@/lib/logger';
 
 type DisplayRestaurant = {
   id: string;
@@ -48,8 +49,8 @@ const OptimizedDashboardPage = () => {
 
   // Debug completo del estado
   const debugInfo = getDebugInfo();
-  console.log('OptimizedDashboardPage - Estado completo:', debugInfo);
-  console.log('OptimizedDashboardPage - Datos específicos:', {
+      logger.info('OptimizedDashboardPage - Complete state', debugInfo);
+      logger.info('OptimizedDashboardPage - Specific data', {
     user: user ? { id: user.id, role: user.role, email: user.email } : null,
     franchisee: franchisee ? { id: franchisee.id, name: franchisee.franchisee_name } : null,
     effectiveFranchisee: effectiveFranchisee ? { id: effectiveFranchisee.id, name: effectiveFranchisee.franchisee_name } : null,
@@ -59,7 +60,7 @@ const OptimizedDashboardPage = () => {
     isImpersonating
   });
 
-  console.log('🚨 CRITICAL DEBUG - Role check:', {
+  logger.info('CRITICAL DEBUG - Role check', {
     userRole: user?.role,
     isSuperadmin: user?.role === 'superadmin',
     isAdmin: user?.role === 'admin',

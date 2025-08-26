@@ -2,10 +2,10 @@ import React from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { WorkersPanel } from '@/components/workers/WorkersPanel';
-import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useUnifiedAuth } from '@/contexts/auth';
 
 export default function WorkersPage() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   return (
     <SidebarProvider>

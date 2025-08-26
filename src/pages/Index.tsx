@@ -1,6 +1,6 @@
 
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/auth/AuthProvider";
+import { useUnifiedAuth } from "@/contexts/auth";
 import { useEffect, useCallback, useState } from "react";
 import { IndexHeader } from "@/components/index/IndexHeader";
 import { HeroSection } from "@/components/index/HeroSection";
@@ -11,7 +11,7 @@ import { LoadingSpinner } from "@/components/index/LoadingSpinner";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading } = useUnifiedAuth();
   const [hasNavigated, setHasNavigated] = useState(false);
 
   // Función memoizada para manejar la navegación

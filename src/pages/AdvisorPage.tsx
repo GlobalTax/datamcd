@@ -229,7 +229,7 @@ const AdvisorPage = () => {
                     <div>
                       <h1 className="text-lg font-bold text-foreground">Panel Asesor</h1>
                       <p className="text-sm text-muted-foreground">
-                        {user.full_name}
+        {user?.full_name || user?.email}
                       </p>
                     </div>
                   </div>
@@ -260,7 +260,7 @@ const AdvisorPage = () => {
                 <div>
                   <h1 className="text-xl font-bold text-foreground">Panel de Asesor</h1>
                   <p className="text-sm text-muted-foreground">
-                    {user.full_name} • {getRoleDisplay(user.role)}
+                    {user?.full_name || user?.email} • {getRoleDisplay(user.role)}
                   </p>
                 </div>
               </div>

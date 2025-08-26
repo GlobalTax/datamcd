@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useUnifiedAuth } from '@/contexts/auth';
 import { useRestaurantMembers } from '@/hooks/useRestaurantMembers';
 import { useUserSearch } from '@/hooks/useUserSearch';
 import { useProfileCreation } from '@/hooks/useProfileCreation';
@@ -43,7 +43,7 @@ export const AddMemberDialog: React.FC<AddMemberDialogProps> = ({
   onOpenChange,
   onMemberAdded
 }) => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { addMember } = useRestaurantMembers(restaurantId);
   const { searchUsers, searchResults, searching, clearResults } = useUserSearch();
   const { createProfile } = useProfileCreation();

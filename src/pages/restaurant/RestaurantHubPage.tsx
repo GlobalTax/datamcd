@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useRestaurantData } from '@/hooks/useRestaurantData';
 import { useRestaurantRoutes } from '@/hooks/useRestaurantRoutes';
 import { useRestaurantHubKPIs } from '@/hooks/useRestaurantHubKPIs';
-import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useUnifiedAuth } from '@/contexts/auth';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +33,7 @@ const RestaurantHubPage: React.FC = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
   const { restaurant, loading, error } = useRestaurantData(restaurantId!);
   const { navigateToCurrentRestaurant } = useRestaurantRoutes();
-  const { effectiveFranchisee } = useAuth();
+  const { effectiveFranchisee } = useUnifiedAuth();
   
   // Get KPIs data for the restaurant
   const { kpis: hubData, isLoading: hubLoading } = useRestaurantHubKPIs(restaurantId);

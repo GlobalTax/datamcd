@@ -9,7 +9,7 @@ import { DollarSign, FileText, Download, Calendar, Play, CloudDownload } from 'l
 import { Employee } from '@/types/employee';
 import { usePayroll } from '@/hooks/usePayroll';
 import { useOrquestPayroll } from '@/hooks/useOrquestPayroll';
-import { useAuth } from '@/hooks/auth';
+import { useUnifiedAuth } from '@/contexts/auth';
 
 interface PayrollViewProps {
   employees: Employee[];
@@ -21,7 +21,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ employees, restaurantI
   const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
   const { payrollRecords, loading, refetch, generatePayroll, updatePayrollStatus } = usePayroll({ restaurantId: restaurantId || '' });
   const { importJanuaryPayroll, loading: importLoading } = useOrquestPayroll();
-  const { franchisee } = useAuth();
+  const { franchisee } = useUnifiedAuth();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-ES', {

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useUnifiedAuth } from '@/contexts/auth';
 import { useRestaurants } from '@/hooks/data/useRestaurants';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
@@ -11,6 +11,7 @@ import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Wifi, WifiOff, BarChart3, Building, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 
 type DisplayRestaurant = {
   id: string;
@@ -40,7 +41,7 @@ const DashboardPage = () => {
     isImpersonating,
     effectiveFranchisee,
     getDebugInfo
-  } = useAuth();
+  } = useUnifiedAuth();
   
   // Solo cargar restaurants si no es superadmin/admin
   const shouldLoadRestaurants = user?.role !== 'superadmin' && user?.role !== 'admin';
@@ -53,15 +54,15 @@ const DashboardPage = () => {
   const isUsingCache = connectionStatus === 'offline';
 
   const debugInfo = getDebugInfo();
-  console.log('DASHBOARD DEBUG:', debugInfo);
-  console.log('🎯 Dashboard Page - User role check:', {
+      logger.info('Dashboard Page - Debug info', debugInfo);
+      logger.info('Dashboard Page - User role check', {
     userId: user?.id,
     userRole: user?.role,
     isSuperadmin: user?.role === 'superadmin',
     isAdmin: user?.role === 'admin',
-    shouldLoadRestaurants,
-    franchiseeExists: !!franchisee
-  });
+        shouldLoadRestaurants,
+        franchiseeExists: !!franchisee
+      });
 
   // Transformar datos para el componente (solo para franchisees)
   const displayRestaurants: DisplayRestaurant[] = shouldLoadRestaurants ? restaurants.map(r => ({

@@ -4,7 +4,7 @@ import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RefreshCw } from 'lucide-react';
-import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useUnifiedAuth } from '@/contexts/auth';
 import { useBiloop } from '@/hooks/useBiloop';
 import { useBiloopCompanies } from '@/hooks/useBiloopCompanies';
 import { BiloopWorkersTable } from './BiloopWorkersTable';
@@ -18,7 +18,7 @@ interface BiloopWorkersPanelProps {
 }
 
 export const BiloopWorkersPanel: React.FC<BiloopWorkersPanelProps> = ({ onRefresh }) => {
-  const { franchisee } = useAuth();
+  const { franchisee } = useUnifiedAuth();
   const [refreshKey, setRefreshKey] = useState(0);
 
   const { 

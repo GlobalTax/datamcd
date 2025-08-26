@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRestaurants } from '@/hooks/data/useRestaurants';
 import { useValuationManager } from '@/hooks/useValuationManager';
-import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useUnifiedAuth } from '@/contexts/auth';
 import { Building2, RefreshCw, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import RestaurantSelectorCard from './RestaurantSelectorCard';
@@ -26,7 +26,7 @@ const SimpleValuationManager = ({
   onValuationLoaded, 
   currentData 
 }: SimpleValuationManagerProps) => {
-  const { user: authUser, franchisee, restaurants: franchiseeRestaurants, loading: fastAuthLoading } = useAuth();
+  const { user: authUser, franchisee, restaurants: franchiseeRestaurants, loading: fastAuthLoading } = useUnifiedAuth();
   const { restaurants: allRestaurants, isLoading: unifiedLoading } = useRestaurants();
   
   // Use unified restaurants for admin/superadmin, fast auth for franchisees

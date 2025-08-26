@@ -25,7 +25,7 @@ export const SimplifiedAdvisorPage = () => {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Panel de Asesor</h1>
-      <p>Usuario autenticado como administrador: {user.full_name}</p>
+      <p>Usuario autenticado como administrador: {user?.full_name || user?.email}</p>
     </div>
   );
 };
@@ -115,7 +115,7 @@ export const SimplifiedOptimizedDashboardPage = () => {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Dashboard Optimizado</h1>
       <div className="space-y-4">
-        <p>Usuario: {user.full_name} - Administrador</p>
+        <p>Usuario: {user?.full_name || user?.email} - Administrador</p>
         {franchisee && (
           <p>Franquiciado: {franchisee.franchisee_name}</p>
         )}
@@ -153,7 +153,7 @@ export const SimplifiedRestaurantManagementPage = () => {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Gestión de Restaurantes</h1>
-      <p>Usuario administrador: {user.full_name}</p>
+      <p>Usuario administrador: {user?.full_name || user?.email}</p>
     </div>
   );
 };

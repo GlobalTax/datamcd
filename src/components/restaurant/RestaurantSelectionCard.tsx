@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { SearchableRestaurantSelect } from '@/components/ui/searchable-restaurant-select';
 import { useUserRestaurants } from '@/hooks/useUnifiedRestaurants';
 import { useRestaurantContext } from '@/providers/RestaurantContext';
-import { useAuth } from '@/hooks/auth/AuthProvider';
+import { useUnifiedAuth } from '@/contexts/auth';
 import { Building2, ArrowRight } from 'lucide-react';
 import { LoadingFallback } from '@/components/common/LoadingFallback';
 
 export const RestaurantSelectionCard: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { setRestaurantId } = useRestaurantContext();
   const { data: restaurants = [], isLoading } = useUserRestaurants();
   const [selectedRestaurantId, setSelectedRestaurantId] = useState('');
