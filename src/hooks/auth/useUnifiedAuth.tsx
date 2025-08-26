@@ -1,2 +1,1 @@
-// Archivo de compatibilidad temporal
-export { useAuth as useUnifiedAuth } from './AuthProvider';
+export { useUnifiedAuth as useAuth, useUnifiedAuth } from '@/contexts/auth';

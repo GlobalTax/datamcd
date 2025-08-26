@@ -1,3 +1,2 @@
-// Exportaciones centralizadas de autenticación
-export { useAuth, useUnifiedAuth, AuthProvider } from './AuthProvider';
-export type { AuthContextType } from '@/types/auth';
+// Update the auth hook import
+export { useUnifiedAuth as useAuth } from '@/contexts/auth';

@@ -3,8 +3,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { AuthProvider } from "@/hooks/auth/AuthProvider";
-import { ImpersonationProvider } from "@/hooks/useImpersonation";
+import { AuthProvider } from '@/contexts/auth';
+import { ImpersonationProvider } from '@/hooks/useImpersonation';
 import { ConnectionStatusProvider } from "@/components/common/ConnectionStatusProvider";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { RestaurantContextProvider } from "@/providers/RestaurantContext";
@@ -89,9 +89,7 @@ function RouteChangePerf() {
 }
 
 function AppWithRestaurantContext() {
-  console.log('🚀 AppWithRestaurantContext rendering...');
   const { prefetchRestaurantData } = useRestaurantPrefetch();
-  console.log('🚀 AppWithRestaurantContext - prefetch function obtained');
   
   return (
     <RestaurantContextProvider onRestaurantChange={prefetchRestaurantData}>
@@ -357,17 +355,14 @@ function AppWithRestaurantContext() {
 }
 
 function App() {
-  console.log('🏁 App component rendering...');
   return (
     <ErrorBoundary>
       <ConnectionStatusProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <ImpersonationProvider>
-              <TooltipProvider>
-                <AppWithRestaurantContext />
-              </TooltipProvider>
-            </ImpersonationProvider>
+            <TooltipProvider>
+              <AppWithRestaurantContext />
+            </TooltipProvider>
           </AuthProvider>
         </QueryClientProvider>
       </ConnectionStatusProvider>
