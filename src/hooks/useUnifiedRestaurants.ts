@@ -127,15 +127,17 @@ export const useUserRestaurants = () => {
   return useQuery({
     queryKey: ['user-restaurants'],
     queryFn: async () => {
-      console.log('Fetching user restaurants');
+      console.log('🔍 useUserRestaurants: Starting to fetch user restaurants');
       
       const { data, error } = await supabase
         .rpc('get_user_restaurants');
 
       if (error) {
-        console.error('Error fetching user restaurants:', error);
+        console.error('❌ useUserRestaurants: Error fetching user restaurants:', error);
         throw error;
       }
+
+      console.log('✅ useUserRestaurants: Successfully fetched restaurants:', data);
 
       return data as Array<{
         restaurant_id: string;

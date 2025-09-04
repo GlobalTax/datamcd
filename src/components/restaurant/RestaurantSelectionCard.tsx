@@ -11,17 +11,31 @@ import { LoadingFallback } from '@/components/common/LoadingFallback';
 export const RestaurantSelectionCard: React.FC = () => {
   const { user } = useUnifiedAuth();
   const { setRestaurantId } = useRestaurantContext();
-  const { data: restaurants = [], isLoading } = useUserRestaurants();
+  const { data: restaurants = [], isLoading, error } = useUserRestaurants();
   const [selectedRestaurantId, setSelectedRestaurantId] = useState('');
+
+  console.log('🏪 RestaurantSelectionCard: Rendering with data:', {
+    user: user?.id,
+    restaurantsCount: restaurants.length,
+    isLoading,
+    error,
+    restaurants
+  });
 
   const handleRestaurantSelect = () => {
     if (selectedRestaurantId) {
+      console.log('🏪 RestaurantSelectionCard: Selecting restaurant:', selectedRestaurantId);
       setRestaurantId(selectedRestaurantId);
     }
   };
 
   if (isLoading) {
+    console.log('🏪 RestaurantSelectionCard: Still loading...');
     return <LoadingFallback />;
+  }
+
+  if (error) {
+    console.error('🏪 RestaurantSelectionCard: Error loading restaurants:', error);
   }
 
   const restaurantOptions = restaurants.map(restaurant => ({
