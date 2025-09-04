@@ -129,6 +129,53 @@ export const useUserRestaurants = () => {
     queryFn: async () => {
       console.log('🔍 useUserRestaurants: Starting to fetch user restaurants');
       
+      // First check user role
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (profileError) {
+        console.error('❌ useUserRestaurants: Error fetching user profile:', profileError);
+        throw profileError;
+      }
+
+      console.log('👤 useUserRestaurants: User role:', userProfile?.role);
+
+      // If superadmin, get ALL restaurants
+      if (userProfile?.role === 'superadmin' || userProfile?.role === 'admin') {
+        console.log('🔑 useUserRestaurants: Fetching ALL restaurants for admin/superadmin');
+        
+        const { data, error } = await supabase
+          .from('franchisee_restaurants')
+          .select(`
+            id,
+            franchisee_id,
+            base_restaurant:base_restaurants(
+              restaurant_name,
+              site_number
+            )
+          `)
+          .eq('status', 'active');
+
+        if (error) {
+          console.error('❌ useUserRestaurants: Error fetching all restaurants:', error);
+          throw error;
+        }
+
+        const formattedData = data?.map(restaurant => ({
+          restaurant_id: restaurant.id,
+          franchisee_id: restaurant.franchisee_id,
+          restaurant_name: restaurant.base_restaurant?.restaurant_name || 'Sin nombre',
+          site_number: restaurant.base_restaurant?.site_number || 'N/A'
+        })) || [];
+
+        console.log('✅ useUserRestaurants: Successfully fetched admin restaurants:', formattedData);
+        return formattedData;
+      }
+
+      // For regular users, use the RPC function
       const { data, error } = await supabase
         .rpc('get_user_restaurants');
 
@@ -137,7 +184,7 @@ export const useUserRestaurants = () => {
         throw error;
       }
 
-      console.log('✅ useUserRestaurants: Successfully fetched restaurants:', data);
+      console.log('✅ useUserRestaurants: Successfully fetched user restaurants:', data);
 
       return data as Array<{
         restaurant_id: string;
