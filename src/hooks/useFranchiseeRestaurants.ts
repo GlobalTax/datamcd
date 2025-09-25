@@ -26,6 +26,61 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
         return;
       }
 
+      // Si el usuario es admin/superadmin, devolver TODOS los restaurantes activos
+      if (['admin', 'superadmin'].includes(user.role || '')) {
+        console.log('useFranchiseeRestaurants - Admin/Superadmin detected, fetching ALL active restaurants');
+        setLoading(true);
+        setError(null);
+
+        const { data, error } = await supabase
+          .from('franchisee_restaurants')
+          .select(`
+            *,
+            base_restaurant:base_restaurant_id (
+              id,
+              site_number,
+              restaurant_name,
+              address,
+              city,
+              state,
+              postal_code,
+              country,
+              restaurant_type,
+              square_meters,
+              seating_capacity,
+              franchisee_name,
+              franchisee_email,
+              company_tax_id,
+              opening_date,
+              property_type,
+              autonomous_community,
+              created_at,
+              updated_at,
+              created_by
+            )
+          `)
+          .eq('status', 'active');
+
+        if (error) {
+          console.error('useFranchiseeRestaurants - Error fetching ALL restaurants:', error);
+          setError(`Error al cargar restaurantes: ${error.message}`);
+          setRestaurants([]);
+          toast.error('Error al cargar restaurantes: ' + error.message);
+        } else {
+          const validRestaurants = Array.isArray(data) ? data : [];
+          console.log('useFranchiseeRestaurants - Admin fetched restaurants:', validRestaurants.length);
+          setRestaurants(validRestaurants);
+          if (validRestaurants.length === 0) {
+            toast.info('No se encontraron restaurantes activos');
+          } else {
+            toast.success(`Se cargaron ${validRestaurants.length} restaurantes`);
+          }
+        }
+
+        setLoading(false);
+        return;
+      }
+
       // Determinar qué franquiciado usar: el parámetro o el del contexto
       const targetFranchiseeId = franchiseeId || franchisee?.id;
       const targetFranchisee = franchiseeId ? null : franchisee; // Si viene por parámetro, no tenemos el objeto completo
@@ -37,7 +92,6 @@ export const useFranchiseeRestaurants = (franchiseeId?: string) => {
         setLoading(false);
         return;
       }
-
       // Si es un franquiciado temporal, crear datos de prueba para desarrollo
       if (targetFranchiseeId.startsWith('temp-')) {
         console.log('useFranchiseeRestaurants - Temporary franchisee detected, using mock data');
