@@ -89,6 +89,35 @@ export type Database = {
           },
         ]
       }
+      advisor_access_all: {
+        Row: {
+          advisor_id: string | null
+          can_access_all: boolean | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          advisor_id?: string | null
+          can_access_all?: boolean | null
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          advisor_id?: string | null
+          can_access_all?: boolean | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_access_all_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_alert_instances: {
         Row: {
           acknowledged_at: string | null
