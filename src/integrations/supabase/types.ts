@@ -4667,6 +4667,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_franchisee_owner: {
         Args: { franchisee_uuid: string }
         Returns: boolean
