@@ -4627,6 +4627,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_my_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_auth_status: {
         Args: { user_uuid: string }
         Returns: Json
