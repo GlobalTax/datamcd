@@ -49,7 +49,9 @@ export const useValuationCalculations = (
       // Calcular montos basados en las nuevas fórmulas:
       const pacAmount = salesValue * (yearData.pacPercentage || 0) / 100;
       const rentAmount = salesValue * (yearData.rentPercentage || 0) / 100;
-      const serviceFees = salesValue * 0.05; // Fixed 5%
+      const serviceFees = (yearData.serviceFees && yearData.serviceFees > 0)
+        ? yearData.serviceFees
+        : salesValue * 0.05;
       const miscellAmount = calculateMiscellForYear(i);
       
       // CASHFLOW = PAC - RENT - SERVICE FEES - RENT INDEX - MISCELL - LOAN PAYMENT

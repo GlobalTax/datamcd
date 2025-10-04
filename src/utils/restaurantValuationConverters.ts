@@ -14,7 +14,8 @@ export const convertToYearlyData = (data: any): YearlyValuationData[] => {
     depreciation: item.depreciation || 0,
     interest: item.interest || 0,
     rentIndex: item.rentIndex || 0,
-    miscell: item.miscell || 0,
+    // Accept both 'miscell' and 'miscellaneous' field names
+    miscell: (item.miscell ?? item.miscellaneous) || 0,
     loanPayment: item.loanPayment || 0,
     reinversion: item.reinversion || 0,
   }));
