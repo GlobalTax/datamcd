@@ -9,8 +9,9 @@ import { SingleYearCopyPasteCard } from './historical/SingleYearCopyPasteCard';
 import { ManualEntryCard } from './historical/ManualEntryCard';
 import { DataReviewSection } from './historical/DataReviewSection';
 import { ImportConfirmationSection } from './historical/ImportConfirmationSection';
-import { YearlyData, ImportStep, ImportMethod } from './historical/types';
 import { createEmptyYearlyData } from './historical/utils';
+import { useHistoricalPL } from '@/hooks/useHistoricalPL';
+import type { YearlyData, ImportStep, ImportMethod } from '@/types/domains/financial';
 
 interface HistoricalDataImporterProps {
   restaurantId: string;
@@ -84,22 +85,35 @@ export const HistoricalDataImporter: React.FC<HistoricalDataImporterProps> = ({
     setYearlyDataList(prev => prev.filter((_, i) => i !== index));
   };
 
+  const { importData } = useHistoricalPL(restaurantId);
+
   const handleImportData = async () => {
     setImporting(true);
     setStep('import');
+    setProgress(0);
     
     try {
-      // Simular progreso de importación
-      for (let i = 0; i <= 100; i += 10) {
+      // Progreso inicial
+      for (let i = 0; i <= 50; i += 10) {
         setProgress(i);
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Importar datos reales
+      await importData(yearlyDataList);
+      
+      // Progreso final
+      for (let i = 60; i <= 100; i += 10) {
+        setProgress(i);
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
       
       toast.success(`${yearlyDataList.length} años importados correctamente`);
       setTimeout(() => {
         onClose();
-      }, 1000);
+      }, 500);
     } catch (error) {
+      console.error('Import error:', error);
       toast.error('Error al importar los datos');
       setImporting(false);
       setStep('review');

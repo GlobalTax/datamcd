@@ -1674,6 +1674,276 @@ export type Database = {
           },
         ]
       }
+      historical_profit_loss: {
+        Row: {
+          additional_rent: number | null
+          advertising: number | null
+          cash_differences: number | null
+          created_at: string | null
+          created_by: string | null
+          crew_labor: number | null
+          depreciation: number | null
+          draw_salary: number | null
+          external_services: number | null
+          food_cost: number | null
+          food_employees: number | null
+          franchisee_id: string | null
+          general_expenses: number | null
+          id: string
+          import_batch_id: string | null
+          insurance: number | null
+          interest: number | null
+          investment_own_funds: number | null
+          loan_payment: number | null
+          maintenance: number | null
+          management_labor: number | null
+          month: number | null
+          net_sales: number
+          non_product_cost: number | null
+          non_product_sales: number | null
+          notes: string | null
+          office_expenses: number | null
+          office_legal: number | null
+          operation_supplies: number | null
+          other_controllable: number | null
+          other_non_controllable: number | null
+          other_revenue: number | null
+          pac: number | null
+          paper_cost: number | null
+          period_type: string
+          promotion: number | null
+          rent: number | null
+          restaurant_id: string
+          royalty: number | null
+          social_security: number | null
+          taxes_licenses: number | null
+          travel_expenses: number | null
+          uniforms: number | null
+          updated_at: string | null
+          utilities: number | null
+          waste: number | null
+          year: number
+        }
+        Insert: {
+          additional_rent?: number | null
+          advertising?: number | null
+          cash_differences?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          crew_labor?: number | null
+          depreciation?: number | null
+          draw_salary?: number | null
+          external_services?: number | null
+          food_cost?: number | null
+          food_employees?: number | null
+          franchisee_id?: string | null
+          general_expenses?: number | null
+          id?: string
+          import_batch_id?: string | null
+          insurance?: number | null
+          interest?: number | null
+          investment_own_funds?: number | null
+          loan_payment?: number | null
+          maintenance?: number | null
+          management_labor?: number | null
+          month?: number | null
+          net_sales?: number
+          non_product_cost?: number | null
+          non_product_sales?: number | null
+          notes?: string | null
+          office_expenses?: number | null
+          office_legal?: number | null
+          operation_supplies?: number | null
+          other_controllable?: number | null
+          other_non_controllable?: number | null
+          other_revenue?: number | null
+          pac?: number | null
+          paper_cost?: number | null
+          period_type?: string
+          promotion?: number | null
+          rent?: number | null
+          restaurant_id: string
+          royalty?: number | null
+          social_security?: number | null
+          taxes_licenses?: number | null
+          travel_expenses?: number | null
+          uniforms?: number | null
+          updated_at?: string | null
+          utilities?: number | null
+          waste?: number | null
+          year: number
+        }
+        Update: {
+          additional_rent?: number | null
+          advertising?: number | null
+          cash_differences?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          crew_labor?: number | null
+          depreciation?: number | null
+          draw_salary?: number | null
+          external_services?: number | null
+          food_cost?: number | null
+          food_employees?: number | null
+          franchisee_id?: string | null
+          general_expenses?: number | null
+          id?: string
+          import_batch_id?: string | null
+          insurance?: number | null
+          interest?: number | null
+          investment_own_funds?: number | null
+          loan_payment?: number | null
+          maintenance?: number | null
+          management_labor?: number | null
+          month?: number | null
+          net_sales?: number
+          non_product_cost?: number | null
+          non_product_sales?: number | null
+          notes?: string | null
+          office_expenses?: number | null
+          office_legal?: number | null
+          operation_supplies?: number | null
+          other_controllable?: number | null
+          other_non_controllable?: number | null
+          other_revenue?: number | null
+          pac?: number | null
+          paper_cost?: number | null
+          period_type?: string
+          promotion?: number | null
+          rent?: number | null
+          restaurant_id?: string
+          royalty?: number | null
+          social_security?: number | null
+          taxes_licenses?: number | null
+          travel_expenses?: number | null
+          uniforms?: number | null
+          updated_at?: string | null
+          utilities?: number | null
+          waste?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_profit_loss_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "historical_profit_loss_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_profit_loss_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_profit_loss_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_access_view"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "historical_profit_loss_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_batches: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          error_details: Json | null
+          franchisee_id: string | null
+          id: string
+          import_method: string | null
+          import_type: string
+          metadata: Json | null
+          records_failed: number | null
+          records_imported: number | null
+          restaurant_id: string | null
+          status: string | null
+          years_range: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          error_details?: Json | null
+          franchisee_id?: string | null
+          id?: string
+          import_method?: string | null
+          import_type: string
+          metadata?: Json | null
+          records_failed?: number | null
+          records_imported?: number | null
+          restaurant_id?: string | null
+          status?: string | null
+          years_range?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          error_details?: Json | null
+          franchisee_id?: string | null
+          id?: string
+          import_method?: string | null
+          import_type?: string
+          metadata?: Json | null
+          records_failed?: number | null
+          records_imported?: number | null
+          restaurant_id?: string | null
+          status?: string | null
+          years_range?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_batches_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "import_batches_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_batches_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_batches_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_access_view"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "import_batches_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incident_comments: {
         Row: {
           comment: string
@@ -3683,6 +3953,75 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          franchisee_id: string | null
+          id: string
+          is_active: boolean
+          restaurant_id: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          franchisee_id?: string | null
+          id?: string
+          is_active?: boolean
+          restaurant_id?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          franchisee_id?: string | null
+          id?: string
+          is_active?: boolean
+          restaurant_id?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_staff_compat"
+            referencedColumns: ["franchisee_id"]
+          },
+          {
+            foreignKeyName: "user_roles_franchisee_id_fkey"
+            columns: ["franchisee_id"]
+            isOneToOne: false
+            referencedRelation: "franchisees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "franchisee_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_access_view"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "user_roles_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "unified_restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_temp_passwords: {
         Row: {
           changed_at: string | null
@@ -4208,6 +4547,13 @@ export type Database = {
         Args: { _advisor_id: string; _restaurant_id: string }
         Returns: boolean
       }
+      can_create_role: {
+        Args: {
+          _creator_id: string
+          _target_role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
       check_session_security: {
         Args:
           | Record<PropertyKey, never>
@@ -4302,8 +4648,19 @@ export type Database = {
           site_number: string
         }[]
       }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       has_restaurant_member_access: {
         Args: { restaurant_uuid: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
         Returns: boolean
       }
       is_franchisee_owner: {
@@ -4389,6 +4746,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string[]
       }
+      user_has_access_to_restaurant: {
+        Args: { _restaurant_id: string; _user_id: string }
+        Returns: boolean
+      }
       user_has_franchisee_data: {
         Args: { user_uuid: string }
         Returns: boolean
@@ -4443,7 +4804,12 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "asesor"
+        | "admin_organizacion"
+        | "franquiciado"
+        | "gerente_franquicia"
+        | "viewer_tienda"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4570,6 +4936,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "asesor",
+        "admin_organizacion",
+        "franquiciado",
+        "gerente_franquicia",
+        "viewer_tienda",
+      ],
+    },
   },
 } as const
