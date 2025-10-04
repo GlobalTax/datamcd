@@ -28,9 +28,14 @@ export const useUnifiedAuth = () => {
   const franchisee = useFranchisee();
   const impersonation = useImpersonation();
 
+  // Construct user with correct role from profile
+  const user = auth.user && profile.profile 
+    ? { ...auth.user, role: profile.profile.role }
+    : auth.user;
+
   return {
     // Core auth
-    user: auth.user,
+    user,
     session: auth.session,
     loading: auth.loading || profile.loading || franchisee.loading,
     connectionStatus: auth.connectionStatus,
