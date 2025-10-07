@@ -226,14 +226,16 @@ const ProjectionTable = ({ inputs, yearlyData, onYearlyDataChange, tableStyles }
                 })}
               </tr>
               
-              {/* SERVICE FEES row - Fixed 5% calculation */}
+              {/* SERVICE FEES row - Uses provided value or 5% default */}
               <tr>
                 <td className="border p-2 bg-gray-800 text-white font-semibold font-manrope" style={getHeaderStyle()}>
                   SERVICE FEES (€)
                 </td>
                 {Array.from({ length: yearsCount }, (_, i) => {
                   const salesValue = yearlyData[i]?.sales || 0;
-                  const serviceFees = salesValue * 0.05; // Fixed 5%
+                  const serviceFees = (yearlyData[i]?.serviceFees && yearlyData[i]!.serviceFees > 0)
+                    ? yearlyData[i]!.serviceFees
+                    : salesValue * 0.05;
                   
                   return (
                     <React.Fragment key={`serviceFees-${i}`}>
@@ -241,7 +243,7 @@ const ProjectionTable = ({ inputs, yearlyData, onYearlyDataChange, tableStyles }
                         {serviceFees > 0 ? formatNumber(serviceFees) + ' €' : <span className="text-gray-300">0 €</span>}
                       </td>
                       <td className="border p-2 text-right text-xs" style={getCellStyle()}>
-                        {salesValue > 0 ? formatPercentage(5) : <span className="text-gray-300">5%</span>}
+                        {salesValue > 0 ? formatPercentage((serviceFees / salesValue) * 100) : <span className="text-gray-300">0%</span>}
                       </td>
                     </React.Fragment>
                   );
@@ -408,7 +410,9 @@ const ProjectionTable = ({ inputs, yearlyData, onYearlyDataChange, tableStyles }
                   const salesValue = yearlyData[i]?.sales || 0;
                   const rentPercentage = yearlyData[i]?.rentPercentage || 0;
                   const rentAmount = salesValue * rentPercentage / 100;
-                  const serviceFees = salesValue * 0.05; // Fixed 5%
+                  const serviceFees = (yearlyData[i]?.serviceFees && yearlyData[i]!.serviceFees > 0)
+                    ? yearlyData[i]!.serviceFees
+                    : salesValue * 0.05;
                   const depreciation = yearlyData[i]?.depreciation || 0;
                   const interest = yearlyData[i]?.interest || 0;
                   const rentIndex = yearlyData[i]?.rentIndex || 0;
@@ -442,7 +446,9 @@ const ProjectionTable = ({ inputs, yearlyData, onYearlyDataChange, tableStyles }
                   const pacAmount = salesValue * pacPercentage / 100;
                   const rentPercentage = yearlyData[i]?.rentPercentage || 0;
                   const rentAmount = salesValue * rentPercentage / 100;
-                  const serviceFees = salesValue * 0.05; // Fixed 5%
+                  const serviceFees = (yearlyData[i]?.serviceFees && yearlyData[i]!.serviceFees > 0)
+                    ? yearlyData[i]!.serviceFees
+                    : salesValue * 0.05;
                   const depreciation = yearlyData[i]?.depreciation || 0;
                   const interest = yearlyData[i]?.interest || 0;
                   const rentIndex = yearlyData[i]?.rentIndex || 0;
@@ -549,7 +555,9 @@ const ProjectionTable = ({ inputs, yearlyData, onYearlyDataChange, tableStyles }
                   const pacAmount = salesValue * pacPercentage / 100;
                   const rentPercentage = yearlyData[i]?.rentPercentage || 0;
                   const rentAmount = salesValue * rentPercentage / 100;
-                  const serviceFees = salesValue * 0.05; // Fixed 5%
+                  const serviceFees = (yearlyData[i]?.serviceFees && yearlyData[i]!.serviceFees > 0)
+                    ? yearlyData[i]!.serviceFees
+                    : salesValue * 0.05;
                   const rentIndex = yearlyData[i]?.rentIndex || 0;
                   const miscell = calculateMiscellForYear(i);
                   const loanPayment = yearlyData[i]?.loanPayment || 0;
